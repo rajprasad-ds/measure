@@ -1,6 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { User } from "@supabase/supabase-js";
 import { database, type SessionRecord } from "./database";
+import {
+  assignLocalSessionsToUser,
+  syncAccountSessions,
+} from "./cloudSync";
 import SearchSelect from "./SearchSelect";
+import { supabase, supabaseConfigured } from "./supabase";
 import {
   getChapter,
   getSubject,
@@ -40,17 +46,35 @@ type ActiveSession = SessionSetup & {
   record: SessionRecord | null;
 };
 
-function formatCountdown(seconds: number) {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
-}
-
 function formatStopwatch(milliseconds: number) {
   const minutes = Math.floor(milliseconds / 60_000);
   const seconds = Math.floor((milliseconds % 60_000) / 1_000);
   const remainingMilliseconds = milliseconds % 1_000;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(remainingMilliseconds).padStart(3, "0")}`;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}:${String(remainingMilliseconds).padStart(3, "0")}`;
+}
+
+function TimerDigits({
+  values,
+  units,
+  className,
+}: {
+  values: string[];
+  units: string[];
+  className: string;
+}) {
+  return (
+    <span className={`timer-digits ${className}`}>
+      {values.map((value, index) => (
+        <span className="timer-group" key={units[index]}>
+          {index > 0 && <span className="timer-separator">:</span>}
+          <span className="timer-unit">
+            <span className="timer-value">{value}</span>
+            <span className="timer-unit-label">{units[index]}</span>
+          </span>
+        </span>
+      ))}
+    </span>
+  );
 }
 
 function App() {
@@ -67,15 +91,70 @@ function App() {
   const [isSavingSession, setIsSavingSession] = useState(false);
   const [databaseError, setDatabaseError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [authMode, setAuthMode] = useState<"sign_in" | "sign_up">("sign_in");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authMessage, setAuthMessage] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<
+    "idle" | "syncing" | "synced" | "offline" | "error"
+  >("idle");
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [unassignedSessionCount, setUnassignedSessionCount] = useState(0);
+  const syncInProgress = useRef(false);
+
+  useEffect(() => {
+    if (!supabase) return;
+    let cancelled = false;
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, authSession) => {
+      setAuthUser(authSession?.user ?? null);
+      setAuthError(null);
+      setAuthMessage(null);
+    });
+
+    supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          setAuthError(`Could not restore sign-in: ${error.message}`);
+          return;
+        }
+        setAuthUser(data.session?.user ?? null);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setAuthError(
+            error instanceof Error
+              ? `Could not restore sign-in: ${error.message}`
+              : "Could not restore sign-in.",
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     database.sessions
-      .orderBy("endedAt")
-      .reverse()
       .toArray()
       .then((records) => {
-        if (!cancelled) setSavedSessions(records);
+        if (cancelled) return;
+        const unassigned = records.filter((record) => !record.ownerUserId);
+        setUnassignedSessionCount(unassigned.length);
+        setSavedSessions(
+          authUser
+            ? records.filter((record) => record.ownerUserId === authUser.id)
+            : unassigned,
+        );
       })
       .catch((error: unknown) => {
         if (!cancelled) {
@@ -93,7 +172,54 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authUser]);
+
+  async function performSync(user: User) {
+    if (syncInProgress.current) return;
+    if (!navigator.onLine) {
+      setSyncStatus("offline");
+      setSyncError(null);
+      return;
+    }
+
+    syncInProgress.current = true;
+    setSyncStatus("syncing");
+    setSyncError(null);
+    try {
+      await syncAccountSessions(user);
+      const localRecords = await database.sessions.toArray();
+      setSavedSessions(
+        localRecords
+          .filter((record) => record.ownerUserId === user.id)
+          .sort((left, right) => right.endedAt.localeCompare(left.endedAt)),
+      );
+      setUnassignedSessionCount(
+        localRecords.filter((record) => !record.ownerUserId).length,
+      );
+      setSyncStatus("synced");
+    } catch (error) {
+      setSyncStatus("error");
+      setSyncError(
+        error instanceof Error
+          ? error.message
+          : "Could not sync sessions. Please try again.",
+      );
+    } finally {
+      syncInProgress.current = false;
+    }
+  }
+
+  useEffect(() => {
+    if (!authUser) {
+      setSyncStatus("idle");
+      return;
+    }
+
+    void performSync(authUser);
+    const retryWhenOnline = () => void performSync(authUser);
+    window.addEventListener("online", retryWhenOnline);
+    return () => window.removeEventListener("online", retryWhenOnline);
+  }, [authUser]);
 
   useEffect(() => {
     if (!session || session.phase !== "active") return;
@@ -116,9 +242,8 @@ function App() {
   const savedQuestionCount = savedSessions.reduce(
     (total, record) =>
       total +
-      record.rightCount +
-      record.wrongCount +
-      record.couldntSolveCount,
+      (record.timedQuestionCount ??
+        record.rightCount + record.wrongCount + record.couldntSolveCount),
     0,
   );
   const savedActiveTimeMs = savedSessions.reduce(
@@ -145,6 +270,84 @@ function App() {
     value: SessionSetup[K],
   ) {
     setSetup((current) => ({ ...current, [key]: value }));
+  }
+
+  async function submitAuth(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase) {
+      setAuthError("Supabase is not configured for this app.");
+      return;
+    }
+
+    setIsSubmittingAuth(true);
+    setAuthError(null);
+    setAuthMessage(null);
+    try {
+      if (authMode === "sign_up") {
+        const { data, error } = await supabase.auth.signUp({
+          email: authEmail.trim(),
+          password: authPassword,
+          options: { emailRedirectTo: window.location.origin },
+        });
+        if (error) throw error;
+        if (!data.session) {
+          setAuthMessage(
+            "Check your email to confirm your account, then sign in here.",
+          );
+        } else {
+          setAuthUser(data.user);
+        }
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: authEmail.trim(),
+          password: authPassword,
+        });
+        if (error) throw error;
+        setAuthUser(data.user);
+      }
+      setAuthPassword("");
+    } catch (error) {
+      setAuthError(
+        error instanceof Error ? error.message : "Authentication failed.",
+      );
+    } finally {
+      setIsSubmittingAuth(false);
+    }
+  }
+
+  async function signOut() {
+    if (!supabase) return;
+    setAuthError(null);
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      setAuthError(`Could not sign out: ${error.message}`);
+      return;
+    }
+    setAuthUser(null);
+    setSavedSessions(
+      (await database.sessions.toArray()).filter(
+        (record) => !record.ownerUserId,
+      ),
+    );
+  }
+
+  async function importLocalSessions() {
+    if (!authUser) return;
+    try {
+      await assignLocalSessionsToUser(authUser.id);
+      const localRecords = await database.sessions.toArray();
+      setUnassignedSessionCount(
+        localRecords.filter((record) => !record.ownerUserId).length,
+      );
+      await performSync(authUser);
+    } catch (error) {
+      setSyncStatus("error");
+      setSyncError(
+        error instanceof Error
+          ? error.message
+          : "Could not import local sessions.",
+      );
+    }
   }
 
   function startSession(event: React.FormEvent<HTMLFormElement>) {
@@ -337,8 +540,16 @@ function App() {
       return;
     }
 
+    const timedQuestionCount = rightCount + wrongCount + couldntSolveCount;
+    const activeTimeMs = Object.values(session.questionTimesMs).reduce(
+      (total, duration) => total + duration,
+      0,
+    );
     const record: SessionRecord = {
       id: globalThis.crypto.randomUUID(),
+      ...(authUser
+        ? { ownerUserId: authUser.id, syncStatus: "pending" as const }
+        : { syncStatus: "local" as const }),
       subject: subject.name,
       subjectId: subject.id,
       chapter: chapter.name,
@@ -351,10 +562,12 @@ function App() {
       rightCount,
       wrongCount,
       couldntSolveCount,
-      activeTimeMs: Object.values(session.questionTimesMs).reduce(
-        (total, duration) => total + duration,
-        0,
-      ),
+      timedQuestionCount,
+      activeTimeMs,
+      avgTimePerQuestionMs:
+        timedQuestionCount > 0
+          ? Math.round(activeTimeMs / timedQuestionCount)
+          : null,
       weakTopics: Array.from(topicCounts, ([topicId, topic]) => ({
         topic: topic.topic,
         topicId,
@@ -371,7 +584,11 @@ function App() {
           right.endedAt.localeCompare(left.endedAt),
         ),
       );
+      if (!authUser) {
+        setUnassignedSessionCount((count) => count + 1);
+      }
       setSession({ ...session, phase: "summary", record });
+      if (authUser) void performSync(authUser);
     } catch (error) {
       setSaveError(
         error instanceof Error
@@ -390,10 +607,12 @@ function App() {
   if (session?.phase === "summary" && session.record) {
     const { record } = session;
     const totalQuestions =
+      record.timedQuestionCount ??
       record.rightCount + record.wrongCount + record.couldntSolveCount;
     const averageTime =
       totalQuestions > 0
-        ? Math.round(record.activeTimeMs / totalQuestions)
+        ? (record.avgTimePerQuestionMs ??
+          Math.round(record.activeTimeMs / totalQuestions))
         : 0;
     const accuracyDenominator = record.rightCount + record.wrongCount;
     const accuracy =
@@ -419,7 +638,11 @@ function App() {
             <p><span>Accuracy</span><strong>{accuracy === null ? "—" : `${accuracy}%`}</strong></p>
           </div>
           <p className="storage-note">
-            Saved on this device in your browser. Cloud sync is not set up yet.
+            {record.ownerUserId
+              ? syncStatus === "synced"
+                ? "Saved on this device and synced to your account."
+                : "Saved on this device. Cloud sync is pending."
+              : "Saved on this device only. Sign in to sync it to your account."}
           </p>
           {record.weakTopics.length > 0 && (
             <div className="summary-topics">
@@ -585,8 +808,19 @@ function App() {
         <section className="session-view" aria-label="Practice session controls">
           <header className="session-header">
             <p className="global-timer-label">SESSION TIME LEFT</p>
-            <p className="global-timer" aria-live="off">
-              {formatCountdown(remaining)}
+            <p
+              className="global-timer"
+              aria-label={`${Math.floor(remaining / 60)} minutes ${remaining % 60} seconds remaining`}
+              aria-live="off"
+            >
+              <TimerDigits
+                className="global-timer-digits"
+                values={[
+                  String(Math.floor(remaining / 60)).padStart(2, "0"),
+                  String(remaining % 60).padStart(2, "0"),
+                ]}
+                units={["MIN", "SEC"]}
+              />
             </p>
             <button className="end-button" onClick={endSession}>
               End session
@@ -643,7 +877,21 @@ function App() {
                 aria-label={`${formatStopwatch(stopwatchElapsed)} elapsed`}
                 aria-live="off"
               >
-                {formatStopwatch(stopwatchElapsed)}
+                <TimerDigits
+                  className="stopwatch-digits"
+                  values={[
+                    String(Math.floor(stopwatchElapsed / 60_000)).padStart(
+                      2,
+                      "0",
+                    ),
+                    String(Math.floor((stopwatchElapsed % 60_000) / 1_000)).padStart(
+                      2,
+                      "0",
+                    ),
+                    String(Math.floor(stopwatchElapsed % 1_000)).padStart(3, "0"),
+                  ]}
+                  units={["MIN", "SEC", "MS"]}
+                />
               </p>
               <div className="stopwatch-actions">
                 <button
@@ -691,9 +939,149 @@ function App() {
           view.
         </p>
 
+        <section className="account-card" aria-labelledby="account-title">
+          <div className="account-heading">
+            <div>
+              <p className="eyebrow">CLOUD SYNC</p>
+              <h2 id="account-title">
+                {authUser ? "Your account" : "Sync across devices"}
+              </h2>
+            </div>
+            {authUser && (
+              <button
+                className="account-secondary-button"
+                type="button"
+                onClick={signOut}
+              >
+                Sign out
+              </button>
+            )}
+          </div>
+          {!supabaseConfigured ? (
+            <p className="account-note">
+              Add your Supabase URL and publishable key to .env.local, then
+              restart the development server to enable cloud sync.
+            </p>
+          ) : authUser ? (
+            <>
+              <p className="account-email">{authUser.email}</p>
+              <p className="sync-status" role="status">
+                {syncStatus === "syncing" && "Syncing sessions…"}
+                {syncStatus === "synced" && "Your sessions are synced."}
+                {syncStatus === "offline" &&
+                  "You’re offline. Saved sessions will sync when reconnected."}
+                {syncStatus === "error" &&
+                  "Sync needs attention. Your sessions remain saved on this device."}
+                {syncStatus === "idle" && "Checking cloud sync…"}
+              </p>
+              {syncError && (
+                <p className="database-error" role="alert">
+                  {syncError}
+                </p>
+              )}
+              {unassignedSessionCount > 0 && (
+                <div className="account-note">
+                  <p>
+                    {unassignedSessionCount} existing device{" "}
+                    {unassignedSessionCount === 1 ? "session is" : "sessions are"}{" "}
+                    not linked to an account.
+                  </p>
+                  <button
+                    className="account-action-button"
+                    type="button"
+                    onClick={importLocalSessions}
+                    disabled={syncStatus === "syncing"}
+                  >
+                    Import local sessions to this account
+                  </button>
+                </div>
+              )}
+              <button
+                className="account-action-button"
+                type="button"
+                onClick={() => void performSync(authUser)}
+                disabled={syncStatus === "syncing"}
+              >
+                {syncStatus === "syncing" ? "Syncing…" : "Sync now"}
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="account-note">
+                Sign in to back up completed sessions and access them on your
+                other devices. You can still practice offline.
+              </p>
+              <form className="auth-form" onSubmit={submitAuth}>
+                <label>
+                  Email
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    value={authEmail}
+                    onChange={(event) => setAuthEmail(event.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  Password
+                  <input
+                    type="password"
+                    autoComplete={
+                      authMode === "sign_up"
+                        ? "new-password"
+                        : "current-password"
+                    }
+                    minLength={8}
+                    value={authPassword}
+                    onChange={(event) => setAuthPassword(event.target.value)}
+                    required
+                  />
+                </label>
+                <button
+                  className="account-action-button"
+                  type="submit"
+                  disabled={isSubmittingAuth}
+                >
+                  {isSubmittingAuth
+                    ? "Please wait…"
+                    : authMode === "sign_in"
+                      ? "Sign in"
+                      : "Create account"}
+                </button>
+                <button
+                  className="account-text-button"
+                  type="button"
+                  onClick={() => {
+                    setAuthMode((mode) =>
+                      mode === "sign_in" ? "sign_up" : "sign_in",
+                    );
+                    setAuthError(null);
+                    setAuthMessage(null);
+                  }}
+                >
+                  {authMode === "sign_in"
+                    ? "New here? Create an account"
+                    : "Already have an account? Sign in"}
+                </button>
+              </form>
+              {authMessage && (
+                <p className="account-message" role="status">
+                  {authMessage}
+                </p>
+              )}
+              {authError && (
+                <p className="database-error" role="alert">
+                  {authError}
+                </p>
+              )}
+            </>
+          )}
+        </section>
+
         <p className="storage-note">
-          Sessions are saved on this device and work offline. They do not sync
-          to your other devices yet.
+          {authUser
+            ? "Sessions are stored locally first and synced securely when online."
+            : "Sessions are saved on this device. Sign in to enable cloud backup and sync."}
         </p>
         {databaseError && (
           <p className="database-error" role="alert">
