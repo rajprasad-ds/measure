@@ -67,30 +67,29 @@ npm run preview
 
 ## Hosting
 
-Cloudflare Pages Git integration provides the deployment loop:
+The repository is connected to Cloudflare Workers Builds. `wrangler.jsonc`
+configures the built `dist` directory as static assets with SPA fallback, and
+the checked-in Wrangler CLI makes Git deployments reproducible.
 
-- Every push to `main` builds and publishes the production site.
-- Pull requests receive preview deployments, so changes can be tested before
-  merging.
-- GitHub Actions runs the same type-check and production build on pushes and
-  pull requests.
+Configure the Cloudflare build settings:
 
-To set it up once, connect the private GitHub repository to a Cloudflare Pages
-project and configure:
-
+- Production branch: `main`
 - Build command: `npm run build`
-- Build output directory: `dist`
+- Deploy command: `npx wrangler deploy`
+- Root directory: `/`
+- Build variable `VITE_SUPABASE_URL`: the Supabase project URL
+- Build variable `VITE_SUPABASE_ANON_KEY`: the Supabase publishable key (never a
+  secret/service-role key)
 - Node.js version: `24` (set `NODE_VERSION=24` if Cloudflare does not detect
   `.nvmrc`)
-- Production and Preview environment variables: `VITE_SUPABASE_URL` and
-  `VITE_SUPABASE_ANON_KEY`
 
-In the GitHub repository's **Settings → Branches**, add a branch protection
-rule for `main` and require the **Type check and production build** status check.
-Then changes go through a pull request: CI validates them, Cloudflare publishes
-a preview for review, and merging to `main` triggers the production deployment.
+Git deployments publish `main` to production and create branch/PR preview
+deployments when enabled for the Worker. GitHub Actions independently runs the
+type-check and production build on pushes and pull requests. In the GitHub
+repository's **Settings → Branches**, protect `main` and require the **Type
+check and production build** status check before merging.
 
-After the first deployment, add the HTTPS production URL to Supabase's
-Authentication URL Configuration as the site URL and as an allowed redirect
-URL. Add Cloudflare preview URLs to Supabase's redirect allow list only if you
-intend to test authentication on previews.
+After the first successful deployment, add the HTTPS production hostname to
+Supabase **Authentication → URL Configuration** as the site URL and an allowed
+redirect URL. Add a preview hostname to the allow list only if you intend to
+test email confirmation from that preview.

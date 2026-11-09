@@ -20,6 +20,7 @@
     "@vitejs/plugin-react": "latest",
     "typescript": "latest",
     "vite": "latest",
-    "vite-plugin-pwa": "latest"
+    "vite-plugin-pwa": "latest",
+    "wrangler": "^4.159.0"
   }
 }
