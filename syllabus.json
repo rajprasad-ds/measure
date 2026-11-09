@@ -1,0 +1,2193 @@
+{
+  "exam": "JEE Main 2026 - Paper 1 (B.E./B.Tech.)",
+  "subjects": [
+    {
+      "id": "maths",
+      "name": "Maths",
+      "chapters": [
+        {
+          "id": "maths-u01",
+          "unit": 1,
+          "name": "Sets, Relations and Functions",
+          "topics": [
+            {
+              "id": "maths-u01-t01",
+              "name": "Sets and their representation"
+            },
+            {
+              "id": "maths-u01-t02",
+              "name": "Union, intersection and complement of sets"
+            },
+            {
+              "id": "maths-u01-t03",
+              "name": "Algebraic properties of sets"
+            },
+            {
+              "id": "maths-u01-t04",
+              "name": "Power set"
+            },
+            {
+              "id": "maths-u01-t05",
+              "name": "Relations and types of relations"
+            },
+            {
+              "id": "maths-u01-t06",
+              "name": "Equivalence relations"
+            },
+            {
+              "id": "maths-u01-t07",
+              "name": "Functions: one-one, into and onto"
+            },
+            {
+              "id": "maths-u01-t08",
+              "name": "Composition of functions"
+            }
+          ]
+        },
+        {
+          "id": "maths-u02",
+          "unit": 2,
+          "name": "Complex Numbers and Quadratic Equations",
+          "topics": [
+            {
+              "id": "maths-u02-t01",
+              "name": "Complex numbers as ordered pairs of reals"
+            },
+            {
+              "id": "maths-u02-t02",
+              "name": "a + ib form and plane representation (Argand diagram)"
+            },
+            {
+              "id": "maths-u02-t03",
+              "name": "Algebra of complex numbers"
+            },
+            {
+              "id": "maths-u02-t04",
+              "name": "Modulus and argument (amplitude)"
+            },
+            {
+              "id": "maths-u02-t05",
+              "name": "Quadratic equations in real and complex number systems"
+            },
+            {
+              "id": "maths-u02-t06",
+              "name": "Relations between roots and coefficients"
+            },
+            {
+              "id": "maths-u02-t07",
+              "name": "Nature of roots"
+            },
+            {
+              "id": "maths-u02-t08",
+              "name": "Forming quadratic equations with given roots"
+            }
+          ]
+        },
+        {
+          "id": "maths-u03",
+          "unit": 3,
+          "name": "Matrices and Determinants",
+          "topics": [
+            {
+              "id": "maths-u03-t01",
+              "name": "Matrices, algebra of matrices and types of matrices"
+            },
+            {
+              "id": "maths-u03-t02",
+              "name": "Determinants of order two and three"
+            },
+            {
+              "id": "maths-u03-t03",
+              "name": "Evaluation of determinants"
+            },
+            {
+              "id": "maths-u03-t04",
+              "name": "Area of triangles using determinants"
+            },
+            {
+              "id": "maths-u03-t05",
+              "name": "Adjoint and inverse of a square matrix"
+            },
+            {
+              "id": "maths-u03-t06",
+              "name": "Consistency and solution of simultaneous linear equations using matrices"
+            }
+          ]
+        },
+        {
+          "id": "maths-u04",
+          "unit": 4,
+          "name": "Permutations and Combinations",
+          "topics": [
+            {
+              "id": "maths-u04-t01",
+              "name": "Fundamental principle of counting"
+            },
+            {
+              "id": "maths-u04-t02",
+              "name": "Permutations and combinations"
+            },
+            {
+              "id": "maths-u04-t03",
+              "name": "Meaning of P(n, r) and C(n, r)"
+            },
+            {
+              "id": "maths-u04-t04",
+              "name": "Simple applications"
+            }
+          ]
+        },
+        {
+          "id": "maths-u05",
+          "unit": 5,
+          "name": "Binomial Theorem and Its Simple Applications",
+          "topics": [
+            {
+              "id": "maths-u05-t01",
+              "name": "Binomial theorem for a positive integral index"
+            },
+            {
+              "id": "maths-u05-t02",
+              "name": "General term"
+            },
+            {
+              "id": "maths-u05-t03",
+              "name": "Middle term"
+            },
+            {
+              "id": "maths-u05-t04",
+              "name": "Simple applications"
+            }
+          ]
+        },
+        {
+          "id": "maths-u06",
+          "unit": 6,
+          "name": "Sequence and Series",
+          "topics": [
+            {
+              "id": "maths-u06-t01",
+              "name": "Arithmetic and geometric progressions"
+            },
+            {
+              "id": "maths-u06-t02",
+              "name": "Insertion of arithmetic means between two numbers"
+            },
+            {
+              "id": "maths-u06-t03",
+              "name": "Insertion of geometric means between two numbers"
+            },
+            {
+              "id": "maths-u06-t04",
+              "name": "Relation between A.M. and G.M."
+            }
+          ]
+        },
+        {
+          "id": "maths-u07",
+          "unit": 7,
+          "name": "Limit, Continuity and Differentiability",
+          "topics": [
+            {
+              "id": "maths-u07-t01",
+              "name": "Real-valued functions and algebra of functions"
+            },
+            {
+              "id": "maths-u07-t02",
+              "name": "Polynomial, rational, trigonometric, logarithmic, exponential and inverse functions"
+            },
+            {
+              "id": "maths-u07-t03",
+              "name": "Graphs of simple functions"
+            },
+            {
+              "id": "maths-u07-t04",
+              "name": "Limits"
+            },
+            {
+              "id": "maths-u07-t05",
+              "name": "Continuity"
+            },
+            {
+              "id": "maths-u07-t06",
+              "name": "Differentiability"
+            },
+            {
+              "id": "maths-u07-t07",
+              "name": "Differentiation of sum, difference, product and quotient"
+            },
+            {
+              "id": "maths-u07-t08",
+              "name": "Differentiation of trigonometric, inverse trigonometric, logarithmic, exponential, composite and implicit functions"
+            },
+            {
+              "id": "maths-u07-t09",
+              "name": "Derivatives of order up to two"
+            },
+            {
+              "id": "maths-u07-t10",
+              "name": "Rate of change of quantities"
+            },
+            {
+              "id": "maths-u07-t11",
+              "name": "Monotonic increasing and decreasing functions"
+            },
+            {
+              "id": "maths-u07-t12",
+              "name": "Maxima and minima of functions of one variable"
+            }
+          ]
+        },
+        {
+          "id": "maths-u08",
+          "unit": 8,
+          "name": "Integral Calculus",
+          "topics": [
+            {
+              "id": "maths-u08-t01",
+              "name": "Integral as an anti-derivative"
+            },
+            {
+              "id": "maths-u08-t02",
+              "name": "Fundamental integrals (algebraic, trigonometric, exponential, logarithmic)"
+            },
+            {
+              "id": "maths-u08-t03",
+              "name": "Integration by substitution"
+            },
+            {
+              "id": "maths-u08-t04",
+              "name": "Integration by parts"
+            },
+            {
+              "id": "maths-u08-t05",
+              "name": "Integration by partial fractions"
+            },
+            {
+              "id": "maths-u08-t06",
+              "name": "Integration using trigonometric identities"
+            },
+            {
+              "id": "maths-u08-t07",
+              "name": "Standard integrals of the forms dx/(x²±a²), dx/√(x²±a²), dx/(a²−x²), dx/√(a²−x²), dx/(ax²+bx+c), dx/√(ax²+bx+c), (px+q)dx/(ax²+bx+c), (px+q)dx/√(ax²+bx+c), √(a²±x²), √(x²−a²)"
+            },
+            {
+              "id": "maths-u08-t08",
+              "name": "Fundamental theorem of calculus"
+            },
+            {
+              "id": "maths-u08-t09",
+              "name": "Properties of definite integrals"
+            },
+            {
+              "id": "maths-u08-t10",
+              "name": "Evaluation of definite integrals"
+            },
+            {
+              "id": "maths-u08-t11",
+              "name": "Areas of regions bounded by simple curves"
+            }
+          ]
+        },
+        {
+          "id": "maths-u09",
+          "unit": 9,
+          "name": "Differential Equations",
+          "topics": [
+            {
+              "id": "maths-u09-t01",
+              "name": "Order and degree of ordinary differential equations"
+            },
+            {
+              "id": "maths-u09-t02",
+              "name": "Separation of variables"
+            },
+            {
+              "id": "maths-u09-t03",
+              "name": "Homogeneous differential equations"
+            },
+            {
+              "id": "maths-u09-t04",
+              "name": "Linear differential equations dy/dx + p(x)y = q(x)"
+            }
+          ]
+        },
+        {
+          "id": "maths-u10",
+          "unit": 10,
+          "name": "Co-ordinate Geometry",
+          "topics": [
+            {
+              "id": "maths-u10-t01",
+              "name": "Cartesian coordinates, distance formula and section formula"
+            },
+            {
+              "id": "maths-u10-t02",
+              "name": "Locus and its equation"
+            },
+            {
+              "id": "maths-u10-t03",
+              "name": "Slope of a line, parallel and perpendicular lines, intercepts"
+            },
+            {
+              "id": "maths-u10-t04",
+              "name": "Straight line: various forms of equations"
+            },
+            {
+              "id": "maths-u10-t05",
+              "name": "Intersection of lines and angle between two lines"
+            },
+            {
+              "id": "maths-u10-t06",
+              "name": "Concurrence of three lines"
+            },
+            {
+              "id": "maths-u10-t07",
+              "name": "Distance of a point from a line"
+            },
+            {
+              "id": "maths-u10-t08",
+              "name": "Centroid, orthocentre and circumcentre of a triangle"
+            },
+            {
+              "id": "maths-u10-t09",
+              "name": "Circle: standard and general form, radius and centre"
+            },
+            {
+              "id": "maths-u10-t10",
+              "name": "Circle with given diameter endpoints"
+            },
+            {
+              "id": "maths-u10-t11",
+              "name": "Intersection of a line and a circle"
+            },
+            {
+              "id": "maths-u10-t12",
+              "name": "Conic sections: parabola, ellipse and hyperbola in standard forms"
+            }
+          ]
+        },
+        {
+          "id": "maths-u11",
+          "unit": 11,
+          "name": "Three Dimensional Geometry",
+          "topics": [
+            {
+              "id": "maths-u11-t01",
+              "name": "Coordinates of a point in space"
+            },
+            {
+              "id": "maths-u11-t02",
+              "name": "Distance between two points"
+            },
+            {
+              "id": "maths-u11-t03",
+              "name": "Section formula"
+            },
+            {
+              "id": "maths-u11-t04",
+              "name": "Direction ratios and direction cosines"
+            },
+            {
+              "id": "maths-u11-t05",
+              "name": "Angle between two intersecting lines"
+            },
+            {
+              "id": "maths-u11-t06",
+              "name": "Equation of a line"
+            },
+            {
+              "id": "maths-u11-t07",
+              "name": "Skew lines and shortest distance between them"
+            }
+          ]
+        },
+        {
+          "id": "maths-u12",
+          "unit": 12,
+          "name": "Vector Algebra",
+          "topics": [
+            {
+              "id": "maths-u12-t01",
+              "name": "Vectors and scalars"
+            },
+            {
+              "id": "maths-u12-t02",
+              "name": "Addition of vectors"
+            },
+            {
+              "id": "maths-u12-t03",
+              "name": "Components of a vector in two and three dimensions"
+            },
+            {
+              "id": "maths-u12-t04",
+              "name": "Scalar product"
+            },
+            {
+              "id": "maths-u12-t05",
+              "name": "Vector product"
+            }
+          ]
+        },
+        {
+          "id": "maths-u13",
+          "unit": 13,
+          "name": "Statistics and Probability",
+          "topics": [
+            {
+              "id": "maths-u13-t01",
+              "name": "Measures of dispersion"
+            },
+            {
+              "id": "maths-u13-t02",
+              "name": "Mean, median and mode of grouped and ungrouped data"
+            },
+            {
+              "id": "maths-u13-t03",
+              "name": "Standard deviation, variance and mean deviation"
+            },
+            {
+              "id": "maths-u13-t04",
+              "name": "Probability of an event"
+            },
+            {
+              "id": "maths-u13-t05",
+              "name": "Addition and multiplication theorems of probability"
+            },
+            {
+              "id": "maths-u13-t06",
+              "name": "Bayes' theorem"
+            },
+            {
+              "id": "maths-u13-t07",
+              "name": "Probability distribution of a random variable"
+            }
+          ]
+        },
+        {
+          "id": "maths-u14",
+          "unit": 14,
+          "name": "Trigonometry",
+          "topics": [
+            {
+              "id": "maths-u14-t01",
+              "name": "Trigonometrical identities"
+            },
+            {
+              "id": "maths-u14-t02",
+              "name": "Trigonometrical functions"
+            },
+            {
+              "id": "maths-u14-t03",
+              "name": "Inverse trigonometrical functions and their properties"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "physics",
+      "name": "Physics",
+      "chapters": [
+        {
+          "id": "physics-u01",
+          "unit": 1,
+          "name": "Units and Measurements",
+          "topics": [
+            {
+              "id": "physics-u01-t01",
+              "name": "Units and system of units (SI)"
+            },
+            {
+              "id": "physics-u01-t02",
+              "name": "Fundamental and derived units"
+            },
+            {
+              "id": "physics-u01-t03",
+              "name": "Least count and significant figures"
+            },
+            {
+              "id": "physics-u01-t04",
+              "name": "Errors in measurements"
+            },
+            {
+              "id": "physics-u01-t05",
+              "name": "Dimensions of physical quantities"
+            },
+            {
+              "id": "physics-u01-t06",
+              "name": "Dimensional analysis and its applications"
+            }
+          ]
+        },
+        {
+          "id": "physics-u02",
+          "unit": 2,
+          "name": "Kinematics",
+          "topics": [
+            {
+              "id": "physics-u02-t01",
+              "name": "Frame of reference"
+            },
+            {
+              "id": "physics-u02-t02",
+              "name": "Motion in a straight line"
+            },
+            {
+              "id": "physics-u02-t03",
+              "name": "Speed and velocity, average and instantaneous"
+            },
+            {
+              "id": "physics-u02-t04",
+              "name": "Uniform and non-uniform motion"
+            },
+            {
+              "id": "physics-u02-t05",
+              "name": "Uniformly accelerated motion and its relations"
+            },
+            {
+              "id": "physics-u02-t06",
+              "name": "Velocity-time and position-time graphs"
+            },
+            {
+              "id": "physics-u02-t07",
+              "name": "Relative velocity"
+            },
+            {
+              "id": "physics-u02-t08",
+              "name": "Motion in a plane"
+            },
+            {
+              "id": "physics-u02-t09",
+              "name": "Projectile motion"
+            },
+            {
+              "id": "physics-u02-t10",
+              "name": "Uniform circular motion"
+            }
+          ]
+        },
+        {
+          "id": "physics-u03",
+          "unit": 3,
+          "name": "Laws of Motion",
+          "topics": [
+            {
+              "id": "physics-u03-t01",
+              "name": "Force and inertia"
+            },
+            {
+              "id": "physics-u03-t02",
+              "name": "Newton's laws of motion"
+            },
+            {
+              "id": "physics-u03-t03",
+              "name": "Momentum and impulse"
+            },
+            {
+              "id": "physics-u03-t04",
+              "name": "Conservation of linear momentum"
+            },
+            {
+              "id": "physics-u03-t05",
+              "name": "Equilibrium of concurrent forces"
+            },
+            {
+              "id": "physics-u03-t06",
+              "name": "Static, kinetic and rolling friction"
+            },
+            {
+              "id": "physics-u03-t07",
+              "name": "Dynamics of uniform circular motion and centripetal force"
+            },
+            {
+              "id": "physics-u03-t08",
+              "name": "Vehicle on a level circular road and banked road"
+            }
+          ]
+        },
+        {
+          "id": "physics-u04",
+          "unit": 4,
+          "name": "Work, Energy and Power",
+          "topics": [
+            {
+              "id": "physics-u04-t01",
+              "name": "Work done by constant and variable force"
+            },
+            {
+              "id": "physics-u04-t02",
+              "name": "Kinetic and potential energy"
+            },
+            {
+              "id": "physics-u04-t03",
+              "name": "Work-energy theorem"
+            },
+            {
+              "id": "physics-u04-t04",
+              "name": "Power"
+            },
+            {
+              "id": "physics-u04-t05",
+              "name": "Potential energy of a spring"
+            },
+            {
+              "id": "physics-u04-t06",
+              "name": "Conservation of mechanical energy"
+            },
+            {
+              "id": "physics-u04-t07",
+              "name": "Conservative and non-conservative forces"
+            },
+            {
+              "id": "physics-u04-t08",
+              "name": "Motion in a vertical circle"
+            },
+            {
+              "id": "physics-u04-t09",
+              "name": "Elastic and inelastic collisions in one and two dimensions"
+            }
+          ]
+        },
+        {
+          "id": "physics-u05",
+          "unit": 5,
+          "name": "Rotational Motion",
+          "topics": [
+            {
+              "id": "physics-u05-t01",
+              "name": "Centre of mass of two-particle system and rigid body"
+            },
+            {
+              "id": "physics-u05-t02",
+              "name": "Moment of a force and torque"
+            },
+            {
+              "id": "physics-u05-t03",
+              "name": "Angular momentum and its conservation"
+            },
+            {
+              "id": "physics-u05-t04",
+              "name": "Moment of inertia and radius of gyration"
+            },
+            {
+              "id": "physics-u05-t05",
+              "name": "Parallel and perpendicular axes theorems"
+            },
+            {
+              "id": "physics-u05-t06",
+              "name": "Equilibrium of rigid bodies"
+            },
+            {
+              "id": "physics-u05-t07",
+              "name": "Rigid body rotation and equations of rotational motion"
+            },
+            {
+              "id": "physics-u05-t08",
+              "name": "Comparison of linear and rotational motion"
+            }
+          ]
+        },
+        {
+          "id": "physics-u06",
+          "unit": 6,
+          "name": "Gravitation",
+          "topics": [
+            {
+              "id": "physics-u06-t01",
+              "name": "Universal law of gravitation"
+            },
+            {
+              "id": "physics-u06-t02",
+              "name": "Acceleration due to gravity and its variation with altitude and depth"
+            },
+            {
+              "id": "physics-u06-t03",
+              "name": "Kepler's laws of planetary motion"
+            },
+            {
+              "id": "physics-u06-t04",
+              "name": "Gravitational potential energy and potential"
+            },
+            {
+              "id": "physics-u06-t05",
+              "name": "Escape velocity"
+            },
+            {
+              "id": "physics-u06-t06",
+              "name": "Satellite motion: orbital velocity, time period, energy"
+            }
+          ]
+        },
+        {
+          "id": "physics-u07",
+          "unit": 7,
+          "name": "Properties of Solids and Liquids",
+          "topics": [
+            {
+              "id": "physics-u07-t01",
+              "name": "Elastic behaviour, stress-strain and Hooke's law"
+            },
+            {
+              "id": "physics-u07-t02",
+              "name": "Young's, bulk and rigidity modulus"
+            },
+            {
+              "id": "physics-u07-t03",
+              "name": "Pressure due to a fluid column and Pascal's law"
+            },
+            {
+              "id": "physics-u07-t04",
+              "name": "Viscosity, Stokes' law and terminal velocity"
+            },
+            {
+              "id": "physics-u07-t05",
+              "name": "Streamline and turbulent flow, critical velocity"
+            },
+            {
+              "id": "physics-u07-t06",
+              "name": "Bernoulli's principle and applications"
+            },
+            {
+              "id": "physics-u07-t07",
+              "name": "Surface energy and surface tension"
+            },
+            {
+              "id": "physics-u07-t08",
+              "name": "Angle of contact, excess pressure, capillary rise, drops and bubbles"
+            },
+            {
+              "id": "physics-u07-t09",
+              "name": "Heat, temperature and thermal expansion"
+            },
+            {
+              "id": "physics-u07-t10",
+              "name": "Specific heat capacity and calorimetry"
+            },
+            {
+              "id": "physics-u07-t11",
+              "name": "Change of state and latent heat"
+            },
+            {
+              "id": "physics-u07-t12",
+              "name": "Heat transfer: conduction, convection, radiation"
+            }
+          ]
+        },
+        {
+          "id": "physics-u08",
+          "unit": 8,
+          "name": "Thermodynamics",
+          "topics": [
+            {
+              "id": "physics-u08-t01",
+              "name": "Thermal equilibrium and temperature"
+            },
+            {
+              "id": "physics-u08-t02",
+              "name": "Zeroth law of thermodynamics"
+            },
+            {
+              "id": "physics-u08-t03",
+              "name": "Heat, work and internal energy"
+            },
+            {
+              "id": "physics-u08-t04",
+              "name": "First law of thermodynamics"
+            },
+            {
+              "id": "physics-u08-t05",
+              "name": "Isothermal and adiabatic processes"
+            },
+            {
+              "id": "physics-u08-t06",
+              "name": "Second law of thermodynamics"
+            },
+            {
+              "id": "physics-u08-t07",
+              "name": "Reversible and irreversible processes"
+            }
+          ]
+        },
+        {
+          "id": "physics-u09",
+          "unit": 9,
+          "name": "Kinetic Theory of Gases",
+          "topics": [
+            {
+              "id": "physics-u09-t01",
+              "name": "Equation of state of a perfect gas"
+            },
+            {
+              "id": "physics-u09-t02",
+              "name": "Work done on compressing a gas"
+            },
+            {
+              "id": "physics-u09-t03",
+              "name": "Kinetic theory assumptions and concept of pressure"
+            },
+            {
+              "id": "physics-u09-t04",
+              "name": "Kinetic interpretation of temperature"
+            },
+            {
+              "id": "physics-u09-t05",
+              "name": "RMS speed of gas molecules"
+            },
+            {
+              "id": "physics-u09-t06",
+              "name": "Degrees of freedom and law of equipartition of energy"
+            },
+            {
+              "id": "physics-u09-t07",
+              "name": "Specific heat capacities of gases"
+            },
+            {
+              "id": "physics-u09-t08",
+              "name": "Mean free path"
+            },
+            {
+              "id": "physics-u09-t09",
+              "name": "Avogadro's number"
+            }
+          ]
+        },
+        {
+          "id": "physics-u10",
+          "unit": 10,
+          "name": "Oscillations and Waves",
+          "topics": [
+            {
+              "id": "physics-u10-t01",
+              "name": "Periodic motion: time period, frequency, displacement"
+            },
+            {
+              "id": "physics-u10-t02",
+              "name": "Simple harmonic motion and its equation, phase"
+            },
+            {
+              "id": "physics-u10-t03",
+              "name": "Oscillations of a spring"
+            },
+            {
+              "id": "physics-u10-t04",
+              "name": "Energy in S.H.M."
+            },
+            {
+              "id": "physics-u10-t05",
+              "name": "Simple pendulum"
+            },
+            {
+              "id": "physics-u10-t06",
+              "name": "Longitudinal and transverse waves"
+            },
+            {
+              "id": "physics-u10-t07",
+              "name": "Speed and displacement of a progressive wave"
+            },
+            {
+              "id": "physics-u10-t08",
+              "name": "Principle of superposition and reflection of waves"
+            },
+            {
+              "id": "physics-u10-t09",
+              "name": "Standing waves in strings and organ pipes, harmonics"
+            },
+            {
+              "id": "physics-u10-t10",
+              "name": "Beats"
+            }
+          ]
+        },
+        {
+          "id": "physics-u11",
+          "unit": 11,
+          "name": "Electrostatics",
+          "topics": [
+            {
+              "id": "physics-u11-t01",
+              "name": "Conservation of charge and Coulomb's law"
+            },
+            {
+              "id": "physics-u11-t02",
+              "name": "Forces between multiple charges and superposition"
+            },
+            {
+              "id": "physics-u11-t03",
+              "name": "Continuous charge distribution"
+            },
+            {
+              "id": "physics-u11-t04",
+              "name": "Electric field and field lines"
+            },
+            {
+              "id": "physics-u11-t05",
+              "name": "Electric dipole and torque on a dipole"
+            },
+            {
+              "id": "physics-u11-t06",
+              "name": "Electric flux and Gauss's law applications"
+            },
+            {
+              "id": "physics-u11-t07",
+              "name": "Electric potential and potential difference"
+            },
+            {
+              "id": "physics-u11-t08",
+              "name": "Equipotential surfaces"
+            },
+            {
+              "id": "physics-u11-t09",
+              "name": "Electrical potential energy of charge systems and dipole"
+            },
+            {
+              "id": "physics-u11-t10",
+              "name": "Conductors and insulators"
+            },
+            {
+              "id": "physics-u11-t11",
+              "name": "Dielectrics and electric polarization"
+            },
+            {
+              "id": "physics-u11-t12",
+              "name": "Capacitors and capacitance, series and parallel combinations"
+            },
+            {
+              "id": "physics-u11-t13",
+              "name": "Parallel plate capacitor with and without dielectric"
+            },
+            {
+              "id": "physics-u11-t14",
+              "name": "Energy stored in a capacitor"
+            }
+          ]
+        },
+        {
+          "id": "physics-u12",
+          "unit": 12,
+          "name": "Current Electricity",
+          "topics": [
+            {
+              "id": "physics-u12-t01",
+              "name": "Electric current, drift velocity and mobility"
+            },
+            {
+              "id": "physics-u12-t02",
+              "name": "Ohm's law and electrical resistance"
+            },
+            {
+              "id": "physics-u12-t03",
+              "name": "I-V characteristics of ohmic and non-ohmic conductors"
+            },
+            {
+              "id": "physics-u12-t04",
+              "name": "Electrical energy and power"
+            },
+            {
+              "id": "physics-u12-t05",
+              "name": "Resistivity and conductivity"
+            },
+            {
+              "id": "physics-u12-t06",
+              "name": "Series and parallel combinations of resistors"
+            },
+            {
+              "id": "physics-u12-t07",
+              "name": "Temperature dependence of resistance"
+            },
+            {
+              "id": "physics-u12-t08",
+              "name": "Internal resistance, potential difference and emf of a cell"
+            },
+            {
+              "id": "physics-u12-t09",
+              "name": "Combination of cells in series and parallel"
+            },
+            {
+              "id": "physics-u12-t10",
+              "name": "Kirchhoff's laws and applications"
+            },
+            {
+              "id": "physics-u12-t11",
+              "name": "Wheatstone bridge and metre bridge"
+            }
+          ]
+        },
+        {
+          "id": "physics-u13",
+          "unit": 13,
+          "name": "Magnetic Effects of Current and Magnetism",
+          "topics": [
+            {
+              "id": "physics-u13-t01",
+              "name": "Biot-Savart law and circular loop"
+            },
+            {
+              "id": "physics-u13-t02",
+              "name": "Ampere's law: straight wire and solenoid"
+            },
+            {
+              "id": "physics-u13-t03",
+              "name": "Force on a moving charge in magnetic and electric fields"
+            },
+            {
+              "id": "physics-u13-t04",
+              "name": "Force on a current-carrying conductor"
+            },
+            {
+              "id": "physics-u13-t05",
+              "name": "Force between parallel currents, definition of ampere"
+            },
+            {
+              "id": "physics-u13-t06",
+              "name": "Torque on a current loop, moving coil galvanometer"
+            },
+            {
+              "id": "physics-u13-t07",
+              "name": "Conversion to ammeter and voltmeter"
+            },
+            {
+              "id": "physics-u13-t08",
+              "name": "Current loop as a magnetic dipole"
+            },
+            {
+              "id": "physics-u13-t09",
+              "name": "Bar magnet as an equivalent solenoid, field lines"
+            },
+            {
+              "id": "physics-u13-t10",
+              "name": "Magnetic field of a dipole on axis and perpendicular to axis"
+            },
+            {
+              "id": "physics-u13-t11",
+              "name": "Torque on a magnetic dipole"
+            },
+            {
+              "id": "physics-u13-t12",
+              "name": "Para-, dia- and ferromagnetic substances, effect of temperature"
+            }
+          ]
+        },
+        {
+          "id": "physics-u14",
+          "unit": 14,
+          "name": "Electromagnetic Induction and Alternating Currents",
+          "topics": [
+            {
+              "id": "physics-u14-t01",
+              "name": "Faraday's law, induced emf and current"
+            },
+            {
+              "id": "physics-u14-t02",
+              "name": "Lenz's law"
+            },
+            {
+              "id": "physics-u14-t03",
+              "name": "Eddy currents"
+            },
+            {
+              "id": "physics-u14-t04",
+              "name": "Self and mutual inductance"
+            },
+            {
+              "id": "physics-u14-t05",
+              "name": "Peak and RMS value of alternating current/voltage"
+            },
+            {
+              "id": "physics-u14-t06",
+              "name": "Reactance and impedance"
+            },
+            {
+              "id": "physics-u14-t07",
+              "name": "LCR series circuit and resonance"
+            },
+            {
+              "id": "physics-u14-t08",
+              "name": "Power in AC circuits and wattless current"
+            },
+            {
+              "id": "physics-u14-t09",
+              "name": "AC generator and transformer"
+            }
+          ]
+        },
+        {
+          "id": "physics-u15",
+          "unit": 15,
+          "name": "Electromagnetic Waves",
+          "topics": [
+            {
+              "id": "physics-u15-t01",
+              "name": "Displacement current"
+            },
+            {
+              "id": "physics-u15-t02",
+              "name": "Electromagnetic waves and their characteristics"
+            },
+            {
+              "id": "physics-u15-t03",
+              "name": "Transverse nature of electromagnetic waves"
+            },
+            {
+              "id": "physics-u15-t04",
+              "name": "Electromagnetic spectrum"
+            },
+            {
+              "id": "physics-u15-t05",
+              "name": "Applications of electromagnetic waves"
+            }
+          ]
+        },
+        {
+          "id": "physics-u16",
+          "unit": 16,
+          "name": "Optics",
+          "topics": [
+            {
+              "id": "physics-u16-t01",
+              "name": "Reflection of light and spherical mirrors"
+            },
+            {
+              "id": "physics-u16-t02",
+              "name": "Refraction at plane and spherical surfaces"
+            },
+            {
+              "id": "physics-u16-t03",
+              "name": "Thin lens formula and lens maker formula"
+            },
+            {
+              "id": "physics-u16-t04",
+              "name": "Total internal reflection and applications"
+            },
+            {
+              "id": "physics-u16-t05",
+              "name": "Magnification, power of a lens, lenses in contact"
+            },
+            {
+              "id": "physics-u16-t06",
+              "name": "Refraction through a prism"
+            },
+            {
+              "id": "physics-u16-t07",
+              "name": "Microscope and astronomical telescope"
+            },
+            {
+              "id": "physics-u16-t08",
+              "name": "Wavefront and Huygens' principle"
+            },
+            {
+              "id": "physics-u16-t09",
+              "name": "Young's double-slit experiment and fringe width"
+            },
+            {
+              "id": "physics-u16-t10",
+              "name": "Coherent sources and sustained interference"
+            },
+            {
+              "id": "physics-u16-t11",
+              "name": "Diffraction due to a single slit"
+            },
+            {
+              "id": "physics-u16-t12",
+              "name": "Polarization, Brewster's law, Polaroid"
+            }
+          ]
+        },
+        {
+          "id": "physics-u17",
+          "unit": 17,
+          "name": "Dual Nature of Matter and Radiation",
+          "topics": [
+            {
+              "id": "physics-u17-t01",
+              "name": "Dual nature of radiation"
+            },
+            {
+              "id": "physics-u17-t02",
+              "name": "Photoelectric effect"
+            },
+            {
+              "id": "physics-u17-t03",
+              "name": "Hertz and Lenard's observations"
+            },
+            {
+              "id": "physics-u17-t04",
+              "name": "Einstein's photoelectric equation"
+            },
+            {
+              "id": "physics-u17-t05",
+              "name": "Particle nature of light"
+            },
+            {
+              "id": "physics-u17-t06",
+              "name": "Matter waves and de Broglie relation"
+            }
+          ]
+        },
+        {
+          "id": "physics-u18",
+          "unit": 18,
+          "name": "Atoms and Nuclei",
+          "topics": [
+            {
+              "id": "physics-u18-t01",
+              "name": "Alpha-particle scattering and Rutherford's model"
+            },
+            {
+              "id": "physics-u18-t02",
+              "name": "Bohr model and energy levels"
+            },
+            {
+              "id": "physics-u18-t03",
+              "name": "Hydrogen spectrum"
+            },
+            {
+              "id": "physics-u18-t04",
+              "name": "Composition and size of nucleus, atomic masses"
+            },
+            {
+              "id": "physics-u18-t05",
+              "name": "Mass-energy relation, mass defect"
+            },
+            {
+              "id": "physics-u18-t06",
+              "name": "Binding energy per nucleon and its variation"
+            },
+            {
+              "id": "physics-u18-t07",
+              "name": "Nuclear fission and fusion"
+            }
+          ]
+        },
+        {
+          "id": "physics-u19",
+          "unit": 19,
+          "name": "Electronic Devices",
+          "topics": [
+            {
+              "id": "physics-u19-t01",
+              "name": "Semiconductors"
+            },
+            {
+              "id": "physics-u19-t02",
+              "name": "Semiconductor diode I-V characteristics"
+            },
+            {
+              "id": "physics-u19-t03",
+              "name": "Diode as a rectifier"
+            },
+            {
+              "id": "physics-u19-t04",
+              "name": "LED, photodiode and solar cell"
+            },
+            {
+              "id": "physics-u19-t05",
+              "name": "Zener diode as a voltage regulator"
+            },
+            {
+              "id": "physics-u19-t06",
+              "name": "Logic gates (OR, AND, NOT, NAND, NOR)"
+            }
+          ]
+        },
+        {
+          "id": "physics-u20",
+          "unit": 20,
+          "name": "Experimental Skills",
+          "topics": [
+            {
+              "id": "physics-u20-t01",
+              "name": "Vernier calipers"
+            },
+            {
+              "id": "physics-u20-t02",
+              "name": "Screw gauge"
+            },
+            {
+              "id": "physics-u20-t03",
+              "name": "Simple pendulum (energy dissipation graph)"
+            },
+            {
+              "id": "physics-u20-t04",
+              "name": "Metre scale and principle of moments"
+            },
+            {
+              "id": "physics-u20-t05",
+              "name": "Young's modulus of a wire"
+            },
+            {
+              "id": "physics-u20-t06",
+              "name": "Surface tension by capillary rise"
+            },
+            {
+              "id": "physics-u20-t07",
+              "name": "Coefficient of viscosity by terminal velocity"
+            },
+            {
+              "id": "physics-u20-t08",
+              "name": "Speed of sound using resonance tube"
+            },
+            {
+              "id": "physics-u20-t09",
+              "name": "Specific heat capacity by method of mixtures"
+            },
+            {
+              "id": "physics-u20-t10",
+              "name": "Resistivity using metre bridge"
+            },
+            {
+              "id": "physics-u20-t11",
+              "name": "Resistance using Ohm's law"
+            },
+            {
+              "id": "physics-u20-t12",
+              "name": "Galvanometer resistance and figure of merit"
+            },
+            {
+              "id": "physics-u20-t13",
+              "name": "Focal length of mirrors and convex lens"
+            },
+            {
+              "id": "physics-u20-t14",
+              "name": "Angle of deviation vs angle of incidence for a prism"
+            },
+            {
+              "id": "physics-u20-t15",
+              "name": "Refractive index of a glass slab"
+            },
+            {
+              "id": "physics-u20-t16",
+              "name": "Characteristic curves of a p-n junction diode"
+            },
+            {
+              "id": "physics-u20-t17",
+              "name": "Characteristic curves of a Zener diode"
+            },
+            {
+              "id": "physics-u20-t18",
+              "name": "Identification of diode, LED, resistor, capacitor"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chemistry",
+      "name": "Chemistry",
+      "chapters": [
+        {
+          "id": "chemistry-u01",
+          "unit": 1,
+          "name": "Some Basic Concepts in Chemistry",
+          "topics": [
+            {
+              "id": "chemistry-u01-t01",
+              "name": "Matter and its nature"
+            },
+            {
+              "id": "chemistry-u01-t02",
+              "name": "Dalton's atomic theory"
+            },
+            {
+              "id": "chemistry-u01-t03",
+              "name": "Atom, molecule, element and compound"
+            },
+            {
+              "id": "chemistry-u01-t04",
+              "name": "Laws of chemical combination"
+            },
+            {
+              "id": "chemistry-u01-t05",
+              "name": "Atomic and molecular masses"
+            },
+            {
+              "id": "chemistry-u01-t06",
+              "name": "Mole concept and molar mass"
+            },
+            {
+              "id": "chemistry-u01-t07",
+              "name": "Percentage composition"
+            },
+            {
+              "id": "chemistry-u01-t08",
+              "name": "Empirical and molecular formulae"
+            },
+            {
+              "id": "chemistry-u01-t09",
+              "name": "Chemical equations and stoichiometry"
+            }
+          ],
+          "group": "Physical"
+        },
+        {
+          "id": "chemistry-u02",
+          "unit": 2,
+          "name": "Atomic Structure",
+          "topics": [
+            {
+              "id": "chemistry-u02-t01",
+              "name": "Electromagnetic radiation and photoelectric effect"
+            },
+            {
+              "id": "chemistry-u02-t02",
+              "name": "Spectrum of the hydrogen atom"
+            },
+            {
+              "id": "chemistry-u02-t03",
+              "name": "Bohr model and its limitations"
+            },
+            {
+              "id": "chemistry-u02-t04",
+              "name": "Dual nature of matter and de Broglie relationship"
+            },
+            {
+              "id": "chemistry-u02-t05",
+              "name": "Heisenberg uncertainty principle"
+            },
+            {
+              "id": "chemistry-u02-t06",
+              "name": "Quantum mechanical model of the atom"
+            },
+            {
+              "id": "chemistry-u02-t07",
+              "name": "Atomic orbitals, variation of ψ and ψ² with r for 1s and 2s"
+            },
+            {
+              "id": "chemistry-u02-t08",
+              "name": "Quantum numbers and their significance"
+            },
+            {
+              "id": "chemistry-u02-t09",
+              "name": "Shapes of s, p and d orbitals"
+            },
+            {
+              "id": "chemistry-u02-t10",
+              "name": "Electron spin"
+            },
+            {
+              "id": "chemistry-u02-t11",
+              "name": "Aufbau principle, Pauli's exclusion principle, Hund's rule"
+            },
+            {
+              "id": "chemistry-u02-t12",
+              "name": "Electronic configuration and stability of half-filled and filled orbitals"
+            }
+          ],
+          "group": "Physical"
+        },
+        {
+          "id": "chemistry-u03",
+          "unit": 3,
+          "name": "Chemical Bonding and Molecular Structure",
+          "topics": [
+            {
+              "id": "chemistry-u03-t01",
+              "name": "Kossel-Lewis approach, ionic and covalent bonds"
+            },
+            {
+              "id": "chemistry-u03-t02",
+              "name": "Ionic bonding and lattice enthalpy"
+            },
+            {
+              "id": "chemistry-u03-t03",
+              "name": "Electronegativity, Fajan's rule, dipole moment"
+            },
+            {
+              "id": "chemistry-u03-t04",
+              "name": "VSEPR theory and shapes of simple molecules"
+            },
+            {
+              "id": "chemistry-u03-t05",
+              "name": "Valence bond theory"
+            },
+            {
+              "id": "chemistry-u03-t06",
+              "name": "Hybridization involving s, p and d orbitals"
+            },
+            {
+              "id": "chemistry-u03-t07",
+              "name": "Resonance"
+            },
+            {
+              "id": "chemistry-u03-t08",
+              "name": "Molecular orbital theory (LCAO, bonding and antibonding)"
+            },
+            {
+              "id": "chemistry-u03-t09",
+              "name": "MO configurations of homonuclear diatomics, bond order, bond length, bond energy"
+            },
+            {
+              "id": "chemistry-u03-t10",
+              "name": "Metallic bonding"
+            },
+            {
+              "id": "chemistry-u03-t11",
+              "name": "Hydrogen bonding and its applications"
+            }
+          ],
+          "group": "Physical"
+        },
+        {
+          "id": "chemistry-u04",
+          "unit": 4,
+          "name": "Chemical Thermodynamics",
+          "topics": [
+            {
+              "id": "chemistry-u04-t01",
+              "name": "System, surroundings, extensive and intensive properties"
+            },
+            {
+              "id": "chemistry-u04-t02",
+              "name": "State functions, entropy, types of processes"
+            },
+            {
+              "id": "chemistry-u04-t03",
+              "name": "First law: work, heat, internal energy, enthalpy"
+            },
+            {
+              "id": "chemistry-u04-t04",
+              "name": "Heat capacity and molar heat capacity"
+            },
+            {
+              "id": "chemistry-u04-t05",
+              "name": "Hess's law of constant heat summation"
+            },
+            {
+              "id": "chemistry-u04-t06",
+              "name": "Enthalpies of bond dissociation, combustion, formation, atomization, sublimation, phase transition, hydration, ionization, solution"
+            },
+            {
+              "id": "chemistry-u04-t07",
+              "name": "Second law and spontaneity of processes"
+            },
+            {
+              "id": "chemistry-u04-t08",
+              "name": "ΔS of universe and ΔG of system as criteria"
+            },
+            {
+              "id": "chemistry-u04-t09",
+              "name": "ΔG° and equilibrium constant"
+            }
+          ],
+          "group": "Physical"
+        },
+        {
+          "id": "chemistry-u05",
+          "unit": 5,
+          "name": "Solutions",
+          "topics": [
+            {
+              "id": "chemistry-u05-t01",
+              "name": "Methods of expressing concentration"
+            },
+            {
+              "id": "chemistry-u05-t02",
+              "name": "Vapour pressure and Raoult's law"
+            },
+            {
+              "id": "chemistry-u05-t03",
+              "name": "Ideal and non-ideal solutions, vapour pressure-composition plots"
+            },
+            {
+              "id": "chemistry-u05-t04",
+              "name": "Colligative properties: relative lowering of vapour pressure, depression of freezing point, elevation of boiling point, osmotic pressure"
+            },
+            {
+              "id": "chemistry-u05-t05",
+              "name": "Molecular mass from colligative properties"
+            },
+            {
+              "id": "chemistry-u05-t06",
+              "name": "Abnormal molar mass and van't Hoff factor"
+            }
+          ],
+          "group": "Physical"
+        },
+        {
+          "id": "chemistry-u06",
+          "unit": 6,
+          "name": "Equilibrium",
+          "topics": [
+            {
+              "id": "chemistry-u06-t01",
+              "name": "Dynamic equilibrium"
+            },
+            {
+              "id": "chemistry-u06-t02",
+              "name": "Physical equilibria and Henry's law"
+            },
+            {
+              "id": "chemistry-u06-t03",
+              "name": "Law of chemical equilibrium, Kp and Kc"
+            },
+            {
+              "id": "chemistry-u06-t04",
+              "name": "Significance of ΔG and ΔG° in equilibrium"
+            },
+            {
+              "id": "chemistry-u06-t05",
+              "name": "Factors affecting equilibrium and Le Chatelier's principle"
+            },
+            {
+              "id": "chemistry-u06-t06",
+              "name": "Weak and strong electrolytes, ionization"
+            },
+            {
+              "id": "chemistry-u06-t07",
+              "name": "Acids and bases (Arrhenius, Bronsted-Lowry, Lewis)"
+            },
+            {
+              "id": "chemistry-u06-t08",
+              "name": "Acid-base equilibria and ionization constants"
+            },
+            {
+              "id": "chemistry-u06-t09",
+              "name": "Ionization of water and pH scale"
+            },
+            {
+              "id": "chemistry-u06-t10",
+              "name": "Common ion effect"
+            },
+            {
+              "id": "chemistry-u06-t11",
+              "name": "Hydrolysis of salts and pH of their solutions"
+            },
+            {
+              "id": "chemistry-u06-t12",
+              "name": "Solubility of sparingly soluble salts and solubility product"
+            },
+            {
+              "id": "chemistry-u06-t13",
+              "name": "Buffer solutions"
+            }
+          ],
+          "group": "Physical"
+        },
+        {
+          "id": "chemistry-u07",
+          "unit": 7,
+          "name": "Redox Reactions and Electrochemistry",
+          "topics": [
+            {
+              "id": "chemistry-u07-t01",
+              "name": "Oxidation and reduction, oxidation number"
+            },
+            {
+              "id": "chemistry-u07-t02",
+              "name": "Balancing of redox reactions"
+            },
+            {
+              "id": "chemistry-u07-t03",
+              "name": "Electrolytic and metallic conduction"
+            },
+            {
+              "id": "chemistry-u07-t04",
+              "name": "Conductance and molar conductivity"
+            },
+            {
+              "id": "chemistry-u07-t05",
+              "name": "Kohlrausch's law and applications"
+            },
+            {
+              "id": "chemistry-u07-t06",
+              "name": "Electrolytic and galvanic cells, types of electrodes"
+            },
+            {
+              "id": "chemistry-u07-t07",
+              "name": "Electrode potentials and half-cell reactions"
+            },
+            {
+              "id": "chemistry-u07-t08",
+              "name": "EMF of a galvanic cell"
+            },
+            {
+              "id": "chemistry-u07-t09",
+              "name": "Nernst equation and applications"
+            },
+            {
+              "id": "chemistry-u07-t10",
+              "name": "Cell potential and Gibbs energy change"
+            },
+            {
+              "id": "chemistry-u07-t11",
+              "name": "Dry cell, lead accumulator, fuel cells"
+            }
+          ],
+          "group": "Physical"
+        },
+        {
+          "id": "chemistry-u08",
+          "unit": 8,
+          "name": "Chemical Kinetics",
+          "topics": [
+            {
+              "id": "chemistry-u08-t01",
+              "name": "Rate of a reaction and factors affecting it"
+            },
+            {
+              "id": "chemistry-u08-t02",
+              "name": "Elementary and complex reactions"
+            },
+            {
+              "id": "chemistry-u08-t03",
+              "name": "Order and molecularity"
+            },
+            {
+              "id": "chemistry-u08-t04",
+              "name": "Rate law and rate constant"
+            },
+            {
+              "id": "chemistry-u08-t05",
+              "name": "Zero and first-order reactions, characteristics and half-lives"
+            },
+            {
+              "id": "chemistry-u08-t06",
+              "name": "Effect of temperature, Arrhenius theory, activation energy"
+            },
+            {
+              "id": "chemistry-u08-t07",
+              "name": "Collision theory of bimolecular gaseous reactions"
+            }
+          ],
+          "group": "Physical"
+        },
+        {
+          "id": "chemistry-u09",
+          "unit": 9,
+          "name": "Classification of Elements and Periodicity in Properties",
+          "topics": [
+            {
+              "id": "chemistry-u09-t01",
+              "name": "Modern periodic law and periodic table"
+            },
+            {
+              "id": "chemistry-u09-t02",
+              "name": "s, p, d and f block elements"
+            },
+            {
+              "id": "chemistry-u09-t03",
+              "name": "Atomic and ionic radii trends"
+            },
+            {
+              "id": "chemistry-u09-t04",
+              "name": "Ionization enthalpy and electron gain enthalpy"
+            },
+            {
+              "id": "chemistry-u09-t05",
+              "name": "Valence and oxidation states"
+            },
+            {
+              "id": "chemistry-u09-t06",
+              "name": "Chemical reactivity"
+            }
+          ],
+          "group": "Inorganic"
+        },
+        {
+          "id": "chemistry-u10",
+          "unit": 10,
+          "name": "p-Block Elements",
+          "topics": [
+            {
+              "id": "chemistry-u10-t01",
+              "name": "General introduction to Group 13 to 18"
+            },
+            {
+              "id": "chemistry-u10-t02",
+              "name": "Electronic configuration and general trends"
+            },
+            {
+              "id": "chemistry-u10-t03",
+              "name": "Trends in physical and chemical properties"
+            },
+            {
+              "id": "chemistry-u10-t04",
+              "name": "Unique behaviour of the first element in each group"
+            }
+          ],
+          "group": "Inorganic"
+        },
+        {
+          "id": "chemistry-u11",
+          "unit": 11,
+          "name": "d- and f-Block Elements",
+          "topics": [
+            {
+              "id": "chemistry-u11-t01",
+              "name": "Transition elements: introduction, configuration, occurrence"
+            },
+            {
+              "id": "chemistry-u11-t02",
+              "name": "Trends in first-row transition elements"
+            },
+            {
+              "id": "chemistry-u11-t03",
+              "name": "Colour and catalytic behaviour"
+            },
+            {
+              "id": "chemistry-u11-t04",
+              "name": "Magnetic properties"
+            },
+            {
+              "id": "chemistry-u11-t05",
+              "name": "Complex formation, interstitial compounds, alloys"
+            },
+            {
+              "id": "chemistry-u11-t06",
+              "name": "K2Cr2O7 and KMnO4"
+            },
+            {
+              "id": "chemistry-u11-t07",
+              "name": "Lanthanoids and lanthanoid contraction"
+            },
+            {
+              "id": "chemistry-u11-t08",
+              "name": "Actinoids"
+            }
+          ],
+          "group": "Inorganic"
+        },
+        {
+          "id": "chemistry-u12",
+          "unit": 12,
+          "name": "Coordination Compounds",
+          "topics": [
+            {
+              "id": "chemistry-u12-t01",
+              "name": "Werner's theory"
+            },
+            {
+              "id": "chemistry-u12-t02",
+              "name": "Ligands, coordination number, denticity, chelation"
+            },
+            {
+              "id": "chemistry-u12-t03",
+              "name": "IUPAC nomenclature of mononuclear compounds"
+            },
+            {
+              "id": "chemistry-u12-t04",
+              "name": "Isomerism"
+            },
+            {
+              "id": "chemistry-u12-t05",
+              "name": "Valence bond approach"
+            },
+            {
+              "id": "chemistry-u12-t06",
+              "name": "Crystal field theory basics"
+            },
+            {
+              "id": "chemistry-u12-t07",
+              "name": "Colour and magnetic properties"
+            },
+            {
+              "id": "chemistry-u12-t08",
+              "name": "Importance of coordination compounds"
+            }
+          ],
+          "group": "Inorganic"
+        },
+        {
+          "id": "chemistry-u13",
+          "unit": 13,
+          "name": "Purification and Characterisation of Organic Compounds",
+          "topics": [
+            {
+              "id": "chemistry-u13-t01",
+              "name": "Purification: crystallization, sublimation, distillation"
+            },
+            {
+              "id": "chemistry-u13-t02",
+              "name": "Differential extraction and chromatography"
+            },
+            {
+              "id": "chemistry-u13-t03",
+              "name": "Qualitative analysis: N, S, P and halogens"
+            },
+            {
+              "id": "chemistry-u13-t04",
+              "name": "Quantitative analysis: C, H, N, halogens, S, P"
+            },
+            {
+              "id": "chemistry-u13-t05",
+              "name": "Empirical and molecular formula calculations"
+            },
+            {
+              "id": "chemistry-u13-t06",
+              "name": "Numerical problems in organic quantitative analysis"
+            }
+          ],
+          "group": "Organic"
+        },
+        {
+          "id": "chemistry-u14",
+          "unit": 14,
+          "name": "Some Basic Principles of Organic Chemistry",
+          "topics": [
+            {
+              "id": "chemistry-u14-t01",
+              "name": "Tetravalency of carbon and hybridization"
+            },
+            {
+              "id": "chemistry-u14-t02",
+              "name": "Classification by functional groups"
+            },
+            {
+              "id": "chemistry-u14-t03",
+              "name": "Homologous series"
+            },
+            {
+              "id": "chemistry-u14-t04",
+              "name": "Isomerism: structural and stereoisomerism"
+            },
+            {
+              "id": "chemistry-u14-t05",
+              "name": "Nomenclature (trivial and IUPAC)"
+            },
+            {
+              "id": "chemistry-u14-t06",
+              "name": "Homolytic and heterolytic bond fission"
+            },
+            {
+              "id": "chemistry-u14-t07",
+              "name": "Free radicals, carbocations, carbanions and stability"
+            },
+            {
+              "id": "chemistry-u14-t08",
+              "name": "Electrophiles and nucleophiles"
+            },
+            {
+              "id": "chemistry-u14-t09",
+              "name": "Inductive and electromeric effects"
+            },
+            {
+              "id": "chemistry-u14-t10",
+              "name": "Resonance and hyperconjugation"
+            },
+            {
+              "id": "chemistry-u14-t11",
+              "name": "Types of organic reactions"
+            }
+          ],
+          "group": "Organic"
+        },
+        {
+          "id": "chemistry-u15",
+          "unit": 15,
+          "name": "Hydrocarbons",
+          "topics": [
+            {
+              "id": "chemistry-u15-t01",
+              "name": "Classification, isomerism, IUPAC nomenclature"
+            },
+            {
+              "id": "chemistry-u15-t02",
+              "name": "Alkanes: conformations (Sawhorse, Newman), halogenation"
+            },
+            {
+              "id": "chemistry-u15-t03",
+              "name": "Alkenes: geometrical isomerism, electrophilic addition, Markownikoff and peroxide effect"
+            },
+            {
+              "id": "chemistry-u15-t04",
+              "name": "Alkenes: ozonolysis and polymerization"
+            },
+            {
+              "id": "chemistry-u15-t05",
+              "name": "Alkynes: acidic character, addition reactions, polymerization"
+            },
+            {
+              "id": "chemistry-u15-t06",
+              "name": "Aromatic hydrocarbons: benzene structure and aromaticity"
+            },
+            {
+              "id": "chemistry-u15-t07",
+              "name": "Electrophilic substitution: halogenation, nitration, Friedel-Crafts"
+            },
+            {
+              "id": "chemistry-u15-t08",
+              "name": "Directive influence of functional groups"
+            }
+          ],
+          "group": "Organic"
+        },
+        {
+          "id": "chemistry-u16",
+          "unit": 16,
+          "name": "Organic Compounds Containing Halogens",
+          "topics": [
+            {
+              "id": "chemistry-u16-t01",
+              "name": "Preparation, properties and reactions"
+            },
+            {
+              "id": "chemistry-u16-t02",
+              "name": "Nature of C-X bond"
+            },
+            {
+              "id": "chemistry-u16-t03",
+              "name": "Mechanisms of substitution reactions"
+            },
+            {
+              "id": "chemistry-u16-t04",
+              "name": "Chloroform, iodoform, freons, DDT: uses and environmental effects"
+            }
+          ],
+          "group": "Organic"
+        },
+        {
+          "id": "chemistry-u17",
+          "unit": 17,
+          "name": "Organic Compounds Containing Oxygen",
+          "topics": [
+            {
+              "id": "chemistry-u17-t01",
+              "name": "Alcohols: identification of 1°, 2°, 3°, dehydration"
+            },
+            {
+              "id": "chemistry-u17-t02",
+              "name": "Phenols: acidic nature, electrophilic substitution, Reimer-Tiemann"
+            },
+            {
+              "id": "chemistry-u17-t03",
+              "name": "Ethers: structure"
+            },
+            {
+              "id": "chemistry-u17-t04",
+              "name": "Aldehydes and ketones: carbonyl group, relative reactivities"
+            },
+            {
+              "id": "chemistry-u17-t05",
+              "name": "Nucleophilic addition (HCN, NH3 derivatives), Grignard reagent"
+            },
+            {
+              "id": "chemistry-u17-t06",
+              "name": "Oxidation and reduction (Wolff-Kishner, Clemmensen)"
+            },
+            {
+              "id": "chemistry-u17-t07",
+              "name": "Acidity of α-hydrogen"
+            },
+            {
+              "id": "chemistry-u17-t08",
+              "name": "Aldol, Cannizzaro and Haloform reactions"
+            },
+            {
+              "id": "chemistry-u17-t09",
+              "name": "Tests to distinguish aldehydes and ketones"
+            },
+            {
+              "id": "chemistry-u17-t10",
+              "name": "Carboxylic acids: acidic strength"
+            }
+          ],
+          "group": "Organic"
+        },
+        {
+          "id": "chemistry-u18",
+          "unit": 18,
+          "name": "Organic Compounds Containing Nitrogen",
+          "topics": [
+            {
+              "id": "chemistry-u18-t01",
+              "name": "Amines: nomenclature, classification, structure"
+            },
+            {
+              "id": "chemistry-u18-t02",
+              "name": "Basic character of amines"
+            },
+            {
+              "id": "chemistry-u18-t03",
+              "name": "Identification of primary, secondary, tertiary amines"
+            },
+            {
+              "id": "chemistry-u18-t04",
+              "name": "Diazonium salts and their synthetic importance"
+            }
+          ],
+          "group": "Organic"
+        },
+        {
+          "id": "chemistry-u19",
+          "unit": 19,
+          "name": "Biomolecules",
+          "topics": [
+            {
+              "id": "chemistry-u19-t01",
+              "name": "Carbohydrates: classification, monosaccharides, oligosaccharides"
+            },
+            {
+              "id": "chemistry-u19-t02",
+              "name": "Proteins: amino acids, peptide bond, structure levels, denaturation, enzymes"
+            },
+            {
+              "id": "chemistry-u19-t03",
+              "name": "Vitamins: classification and functions"
+            },
+            {
+              "id": "chemistry-u19-t04",
+              "name": "Nucleic acids: DNA and RNA constitution and functions"
+            },
+            {
+              "id": "chemistry-u19-t05",
+              "name": "Hormones (general introduction)"
+            }
+          ],
+          "group": "Organic"
+        },
+        {
+          "id": "chemistry-u20",
+          "unit": 20,
+          "name": "Principles Related to Practical Chemistry",
+          "topics": [
+            {
+              "id": "chemistry-u20-t01",
+              "name": "Detection of N, S and halogens in organic compounds"
+            },
+            {
+              "id": "chemistry-u20-t02",
+              "name": "Detection of hydroxyl, carbonyl, carboxyl and amino groups"
+            },
+            {
+              "id": "chemistry-u20-t03",
+              "name": "Preparation of Mohr's salt and potash alum"
+            },
+            {
+              "id": "chemistry-u20-t04",
+              "name": "Preparation of acetanilide, p-nitroacetanilide, aniline yellow, iodoform"
+            },
+            {
+              "id": "chemistry-u20-t05",
+              "name": "Titrimetric exercises: oxalic acid vs KMnO4, Mohr's salt vs KMnO4"
+            },
+            {
+              "id": "chemistry-u20-t06",
+              "name": "Qualitative salt analysis: cations"
+            },
+            {
+              "id": "chemistry-u20-t07",
+              "name": "Qualitative salt analysis: anions"
+            },
+            {
+              "id": "chemistry-u20-t08",
+              "name": "Enthalpy of solution of CuSO4"
+            },
+            {
+              "id": "chemistry-u20-t09",
+              "name": "Enthalpy of neutralization of strong acid and strong base"
+            },
+            {
+              "id": "chemistry-u20-t10",
+              "name": "Preparation of lyophilic and lyophobic sols"
+            },
+            {
+              "id": "chemistry-u20-t11",
+              "name": "Kinetic study of iodide ions with hydrogen peroxide"
+            }
+          ],
+          "group": "Organic"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Practice session</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap">
+<style>
+:root{--bg:#EEF1EE;--grid:#D9DFDA;--ink:#13233B;--mute:#5B6B7F;--card:#FAFBFA;--line:#C9D1CB;--run:#B86A00;--right:#1E8A5A;--wrong:#C23B2B;--unk:#6B4FBF;--btn:#13233B;--btnt:#F3F5F2;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1620;--grid:#1A2431;--ink:#E6ECF2;--mute:#92A1B3;--card:#161F2C;--line:#2A3646;--run:#F0A340;--right:#4CC38A;--wrong:#F0766A;--unk:#A58CF0;--btn:#E6ECF2;--btnt:#0F1620;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F1620;--grid:#1A2431;--ink:#E6ECF2;--mute:#92A1B3;--card:#161F2C;--line:#2A3646;--run:#F0A340;--right:#4CC38A;--wrong:#F0766A;--unk:#A58CF0;--btn:#E6ECF2;--btnt:#0F1620;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;min-height:100vh;background-color:var(--bg);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:28px 28px;color:var(--ink);font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.45}
+#app{max-width:520px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:28px;font-weight:800;margin:8px 0 4px;letter-spacing:-.02em}
+h2{font-size:18px;font-weight:600;margin:0 0 10px}
+p.sub{margin:0 0 18px;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+label{display:block;font-weight:600;font-size:14px;margin:12px 0 6px}
+select,input[type=text],input[type=number]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:11px 12px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:8px 14px;cursor:pointer}
+.chip.on{background:var(--btn);color:var(--btnt);border-color:var(--btn)}
+button.main{width:100%;font:inherit;font-weight:600;font-size:18px;padding:15px;border:0;border-radius:10px;background:var(--btn);color:var(--btnt);cursor:pointer}
+button.main:disabled{opacity:.35;cursor:not-allowed}
+button.stop{background:var(--run);color:#fff}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--run);outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.big{font-size:64px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.mid{font-size:44px}
+.muted{color:var(--mute);font-size:14px}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:12px}
+.bar i{display:block;height:100%;background:var(--ink);width:0}
+.running .mid{color:var(--run)}
+.row{display:flex;align-items:center;gap:10px;margin-top:12px}
+.row input{flex:1}
+.log{list-style:none;margin:0;padding:0}
+.log li{display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.q{border-top:1px solid var(--line);padding:12px 0}
+.q:first-of-type{border-top:0}
+.seg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px}
+.seg button{font:inherit;font-size:14px;padding:10px 4px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;cursor:pointer}
+.seg button.r.on{background:var(--right);color:#fff;border-color:var(--right)}
+.seg button.w.on{background:var(--wrong);color:#fff;border-color:var(--wrong)}
+.seg button.u.on{background:var(--unk);color:#fff;border-color:var(--unk)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat b{display:block;font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
+.note{color:var(--wrong);font-size:14px;margin:8px 0 0}
+.modal{position:fixed;inset:0;background:rgba(10,15,22,.72);display:flex;align-items:center;justify-content:center;padding:20px;z-index:20}
+.modal[hidden]{display:none}
+.modal .card{max-width:360px;text-align:center}
+.link{background:none;border:0;color:var(--mute);font:inherit;text-decoration:underline;cursor:pointer;padding:8px 0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal" class="modal" hidden><div class="card"><h2>Still solving?</h2><p class="muted">This question has been running for 10 minutes. The session closes in <b id="cd">10</b> seconds.</p><button class="main" onclick="ack()">I’m here</button></div></div>
+<datalist id="tl"></datalist>
+<script>
+var CH={Maths:["Sets, Relations & Functions","Complex Numbers","Quadratic Equations","Sequences & Series","Permutations & Combinations","Binomial Theorem","Matrices & Determinants","Limits, Continuity & Differentiability","Application of Derivatives","Indefinite Integration","Definite Integration","Area Under Curves","Differential Equations","Straight Lines","Circles","Conic Sections","Vectors","3D Geometry","Probability","Statistics","Trigonometry"],Physics:[],Chemistry:[]};
+var TP={"Definite Integration":["Properties of definite integrals","Walli’s formula","Leibniz rule","Definite integral as a limit of a sum"],"Limits, Continuity & Differentiability":["Standard limits","L’Hôpital’s rule","Sandwich theorem","Differentiability at a point"]};
+var KEY="practice_tracker_v1",IDLE=600000,LONG=600000,ALERT=10000,TARGET=180;
+var S=load()||{phase:"setup",cfg:{subject:"Maths",chapter:"",mins:60,source:""},hist:[]};
+if(!S.hist)S.hist=[];
+function load(){try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function $(i){return document.getElementById(i)}
+function fmt(s){s=Math.max(0,Math.round(s));var m=Math.floor(s/60),r=s%60;return m+":"+(r<10?"0":"")+r}
+function esc(t){return String(t).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function active(){var t=0;(S.qs||[]).forEach(function(q){t+=q.sec});return t}
+
+function render(){
+ var a=$("app"),h="";
+ if(S.phase=="setup"){
+  var chs=CH[S.cfg.subject]||[];
+  h='<h1>Practice session</h1><p class="sub">Pick what you’re practicing, then the clock starts.</p><div class="card">'+
+  '<label for="sub">Subject</label><select id="sub" onchange="setSub(this.value)">'+Object.keys(CH).map(function(k){return'<option'+(k==S.cfg.subject?' selected':'')+'>'+k+'</option>'}).join("")+'</select>'+
+  '<label for="chp">Chapter</label><select id="chp" onchange="S.cfg.chapter=this.value;go()">'+(chs.length?'<option value="">Choose a chapter</option>'+chs.map(function(c){return'<option'+(c==S.cfg.chapter?' selected':'')+'>'+esc(c)+'</option>'}).join(""):'<option value="">Syllabus not loaded yet</option>')+'</select>'+
+  '<label>Duration</label><div class="chips">'+[30,45,60,90,120].map(function(m){return'<button class="chip'+(S.cfg.mins==m?' on':'')+'" onclick="S.cfg.mins='+m+';render()">'+m+' min</button>'}).join("")+'</div>'+
+  '<label for="src">Source (optional)</label><input type="text" id="src" placeholder="e.g. PYQ book name" value="'+esc(S.cfg.source)+'" oninput="S.cfg.source=this.value;save()"></div>'+
+  '<button class="main" id="go" onclick="start()" '+(S.cfg.chapter?'':'disabled')+'>Start session</button>';
+  if(S.hist.length){h+='<div class="card" style="margin-top:14px"><h2>Recent sessions</h2><ul class="log">'+S.hist.slice(-5).reverse().map(function(x){return'<li><span>'+esc(x.chapter)+'</span><span>'+x.right+'/'+x.qs.length+' right · '+fmt(x.active)+' active</span></li>'}).join("")+'</ul><button class="link" onclick="exp()">Copy all session data</button></div>'}
+ }else if(S.phase=="run"){
+  h='<div class="card"><div class="top"><span class="muted">'+esc(S.cfg.subject)+' · '+esc(S.cfg.chapter)+'</span></div><div class="big" id="gt">0:00</div><div class="muted">session time left · active <span id="ac">0:00</span></div><div class="bar"><i id="pb"></i></div></div>'+
+  '<div class="card" id="sw"><label for="qn" style="margin-top:0">Question number</label><div class="row"><input type="number" id="qn" inputmode="numeric" min="1" value="'+S.nextN+'" oninput="chk()"></div><div class="big mid" id="st" style="margin:14px 0">0:00</div><button class="main" id="bt" onclick="toggle()">Start</button></div>'+
+  '<div class="card"><h2>Timed so far</h2><ul class="log" id="lg"></ul></div>';
+ }else if(S.phase=="review"){
+  h='<h1>How did it go?</h1><p class="sub">'+(S.reason=="away"?'The session closed because you were away. ':'')+'Mark each question you timed.</p><div class="card">';
+  if(!S.qs.length)h+='<p class="muted">No questions were timed.</p>';
+  S.qs.forEach(function(q,i){var m=S.marks[i];h+='<div class="q"><b>Q'+q.n+'</b> <span class="muted">'+fmt(q.sec)+'</span><div class="seg"><button class="r'+(m=="r"?' on':'')+'" onclick="mark('+i+',\'r\')">Right</button><button class="w'+(m=="w"?' on':'')+'" onclick="mark('+i+',\'w\')">Wrong</button><button class="u'+(m=="u"?' on':'')+'" onclick="mark('+i+',\'u\')">Didn’t know topic</button></div>'+(m=="u"?'<label for="t'+i+'">Which topic?</label><input type="text" id="t'+i+'" list="tl" value="'+esc(S.topics[i]||"")+'" oninput="S.topics['+i+']=this.value;save();fin()">':'')+'</div>'});
+  h+='</div><div class="note" id="nt"></div><button class="main" id="sv" onclick="done()">Save session</button>';
+ }else{
+  var r=S.last,acc=r.qs.length?Math.round(100*r.right/r.qs.length):0,avg=r.qs.length?r.active/r.qs.length:0;
+  h='<h1>Session saved</h1><p class="sub">'+esc(r.chapter)+'</p><div class="card"><div class="stats">'+
+  '<div class="stat"><b>'+fmt(r.active)+'</b><span class="muted">active of '+fmt(r.total)+'</span></div>'+
+  '<div class="stat"><b>'+Math.round(100*r.active/r.total)+'%</b><span class="muted">time used</span></div>'+
+  '<div class="stat"><b>'+fmt(avg)+'</b><span class="muted">avg per question (target '+fmt(TARGET)+')</span></div>'+
+  '<div class="stat"><b>'+acc+'%</b><span class="muted">'+r.right+' right · '+r.wrong+' wrong · '+r.unk+' didn’t know</span></div></div></div>'+
+  '<button class="main" onclick="S.phase=\'setup\';go()">New session</button>';
+ }
+ a.innerHTML=h;save();
+ if(S.phase=="run"){lg();chk();tick()}
+ if(S.phase=="review")fin();
+}
+function go(){render()}
+function setSub(v){S.cfg.subject=v;S.cfg.chapter="";render()}
+function start(){
+ var n=Date.now();
+ S.phase="run";S.startedAt=n;S.endsAt=n+S.cfg.mins*60000;S.qs=[];S.running=null;S.nextN=1;S.last_act=n;S.alertAt=null;S.ackAt=null;S.marks={};S.topics={};render();
+}
+function chk(){
+ var b=$("bt"),q=$("qn");if(!b||!q)return;
+ if(S.running){q.disabled=true;return}
+ q.disabled=false;b.disabled=!(parseInt(q.value)>0);
+}
+function toggle(){
+ var n=Date.now();
+ if(!S.running){
+  var v=parseInt($("qn").value);if(!(v>0))return;
+  S.running={n:v,t0:n};S.ackAt=n;
+ }else{
+  var q=S.running;S.qs.push({n:q.n,sec:(n-q.t0)/1000});S.nextN=q.n+1;S.running=null;
+ }
+ S.last_act=n;save();
+ var sw=$("sw");if(sw)sw.className="card"+(S.running?" running":"");
+ var b=$("bt");b.textContent=S.running?"Stop":"Start";b.className="main"+(S.running?" stop":"");
+ var qn=$("qn");qn.value=S.running?S.running.n:S.nextN;chk();lg();
+}
+function lg(){
+ var l=$("lg");if(!l)return;
+ l.innerHTML=S.qs.length?S.qs.slice().reverse().map(function(q){return'<li><span>Q'+q.n+'</span><span>'+fmt(q.sec)+'</span></li>'}).join(""):'<li class="muted"><span>Nothing yet. Enter a number and press Start.</span></li>';
+}
+function tick(){
+ if(S.phase!="run")return;
+ var n=Date.now(),g=$("gt");if(!g)return;
+ if(n>=S.endsAt){close("time");return}
+ g.textContent=fmt((S.endsAt-n)/1000);
+ var tot=S.cfg.mins*60000;$("pb").style.width=(100*(n-S.startedAt)/tot)+"%";
+ var run=S.running?(n-S.running.t0)/1000:0;
+ $("st").textContent=fmt(run);$("ac").textContent=fmt(active()+run);
+ var sw=$("sw");if(sw&&S.running&&sw.className.indexOf("running")<0){sw.className="card running";var b=$("bt");b.textContent="Stop";b.className="main stop"}
+ if(S.running){
+  if(S.alertAt){var left=Math.ceil((ALERT-(n-S.alertAt))/1000);$("cd").textContent=Math.max(left,0);if(n-S.alertAt>=ALERT){close("away");return}}
+  else if(n-Math.max(S.running.t0,S.ackAt||0)>=LONG){S.alertAt=n;save();$("modal").hidden=false}
+ }else if(n-S.last_act>=IDLE){close("away")}
+}
+function ack(){S.alertAt=null;S.ackAt=Date.now();$("modal").hidden=true;save()}
+function close(why){
+ var n=Date.now();
+ if(S.running){var end=why=="away"&&S.alertAt?S.alertAt:Math.min(n,S.endsAt);S.qs.push({n:S.running.n,sec:Math.max(0,(end-S.running.t0)/1000)});S.running=null}
+ $("modal").hidden=true;S.alertAt=null;S.phase="review";S.reason=why;render();
+}
+function mark(i,m){S.marks[i]=m;var tp=TP[S.cfg.chapter]||[];$("tl").innerHTML=tp.map(function(t){return'<option value="'+esc(t)+'">'}).join("");render()}
+function fin(){
+ var ok=true;S.qs.forEach(function(q,i){var m=S.marks[i];if(!m||(m=="u"&&!(S.topics[i]||"").trim()))ok=false});
+ var b=$("sv");if(b)b.disabled=!ok;
+ var t=$("nt");if(t)t.textContent=ok?"":"Mark every question, and name the topic for any you didn’t know.";
+}
+function done(){
+ var r={chapter:S.cfg.chapter,subject:S.cfg.subject,source:S.cfg.source,date:new Date(S.startedAt).toISOString(),total:S.cfg.mins*60,active:active(),reason:S.reason,right:0,wrong:0,unk:0,qs:[]};
+ S.qs.forEach(function(q,i){var m=S.marks[i];if(m=="r")r.right++;else if(m=="w")r.wrong++;else r.unk++;r.qs.push({n:q.n,sec:Math.round(q.sec),result:m=="r"?"right":m=="w"?"wrong":"unknown_topic",topic:m=="u"?S.topics[i].trim():null})});
+ S.hist.push(r);S.last=r;S.phase="done";render();
+}
+function exp(){var t=JSON.stringify(S.hist,null,2);try{navigator.clipboard.writeText(t)}catch(e){}}
+setInterval(tick,250);
+render();
+</script>
+</body>
+</html>
