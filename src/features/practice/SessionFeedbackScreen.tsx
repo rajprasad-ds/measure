@@ -1,0 +1,1149 @@
+import { useMemo, useState } from "react";
+import SearchSelect from "../../SearchSelect";
+import { getChapter } from "../../syllabus";
+import {
+  CAUSE_OPTIONS,
+  SLIP_SUBTYPE_OPTIONS,
+  getCauseLabel,
+  validateAttempt,
+} from "../../lib/causes";
+import { formatStopwatch } from "./TimerDisplay";
+import {
+  canCompleteQuestionFeedback,
+  getInitialFeedbackStep,
+  getStepAfterCause,
+  getStepAfterResult,
+  isSlowRightAttempt,
+  type FeedbackStep,
+} from "./feedbackFlow";
+import type { ActiveSession, QuestionResult } from "./types";
+import type { Cause, SlipSubtype } from "../../lib/causes";
+import type {
+  FactCard,
+  FactCardInput,
+  QuestionCard,
+  QuestionCardInput,
+  QuestionFactLink,
+} from "../cards/types";
+
+import CardPicker from "../cards/CardPicker";
+import ImageInput from "../images/ImageInput";
+import CardImage from "../images/CardImage";
+
+type Props = {
+  session: ActiveSession;
+  persistenceError: string | null;
+  saveError: string | null;
+  isSaving: boolean;
+  onSetQuestionResult: (questionNumber: number, result: QuestionResult) => void;
+  onSetCause: (questionNumber: number, cause: Cause) => void;
+  onSetSlipSubtype: (
+    questionNumber: number,
+    subtype: SlipSubtype | null,
+  ) => void;
+  onSetSmarterApproach: (
+    questionNumber: number,
+    answer: "found" | "not_found",
+  ) => void;
+  onAddTopic: (questionNumber: number, topicId: string) => void;
+  onRemoveTopic: (questionNumber: number, topicId: string) => void;
+  questions: QuestionCard[];
+  facts: FactCard[];
+  links: QuestionFactLink[];
+  onCreateQuestionCard: (
+    questionNumber: number,
+    input: Pick<
+      QuestionCardInput,
+      | "promptText"
+      | "promptImageId"
+      | "solutionText"
+      | "solutionImageId"
+    >,
+  ) => Promise<QuestionCard>;
+  onUseQuestionCard: (
+    questionNumber: number,
+    card: QuestionCard,
+  ) => Promise<void>;
+  onSaveSmarterApproach: (
+    questionNumber: number,
+    input: Pick<QuestionCardInput, "solutionText" | "solutionImageId">,
+  ) => Promise<void>;
+  onSaveSolution: (
+    questionNumber: number,
+    input: Pick<QuestionCardInput, "solutionText" | "solutionImageId">,
+  ) => Promise<void>;
+  onCreateFactCard: (
+    questionNumber: number,
+    input: Pick<
+      FactCardInput,
+      | "kind"
+      | "promptText"
+      | "promptImageId"
+      | "contentText"
+      | "contentImageId"
+      | "wrongBelief"
+    >,
+  ) => Promise<FactCard>;
+  onUseFactCard: (questionNumber: number, card: FactCard) => Promise<void>;
+  onSave: () => void;
+};
+
+const emptyFeedback = {
+  result: null,
+  cause: null,
+  slipSubtype: null,
+  topics: [],
+} as const;
+
+function getFallbackPreviousStep(
+  step: FeedbackStep,
+  feedback: NonNullable<ActiveSession["feedback"][number]> | undefined,
+  slowRight: boolean,
+): FeedbackStep | undefined {
+  if (step === "reflection") return "result";
+  if (step === "question") {
+    return slowRight && feedback?.smarterApproach === "found"
+      ? "reflection"
+      : "result";
+  }
+  if (step === "topics") return "question";
+  if (step === "approach") return "topics";
+  if (step === "solution") return "topics";
+  if (step === "cause") {
+    return feedback?.result !== "right" ? "solution" : "topics";
+  }
+  if (step === "slip") return "cause";
+  if (step === "fact") return "cause";
+  if (step === "complete") {
+    if (slowRight) {
+      return feedback?.smarterApproach === "found" ? "approach" : "reflection";
+    }
+    if (feedback?.result === "right") return "result";
+    if (feedback?.cause === "slip") return "slip";
+    if (
+      feedback?.cause === "missing_fact" ||
+      feedback?.cause === "wrong_concept"
+    ) {
+      return "fact";
+    }
+    return "cause";
+  }
+  return undefined;
+}
+
+function getStepTitle(
+  step: FeedbackStep,
+  slowRight: boolean,
+  feedback?: NonNullable<ActiveSession["feedback"][number]>,
+): string {
+  if (step === "reflection") return "Reflect";
+  if (step === "question") {
+    return slowRight && feedback?.smarterApproach === "found"
+      ? "Step 1 of 3: Question photo"
+      : "Step 1: Question photo";
+  }
+  if (step === "topics") {
+    return slowRight && feedback?.smarterApproach === "found"
+      ? "Step 2 of 3: Attach topics"
+      : "Step 2: Attach topics";
+  }
+  if (step === "approach") return "Step 3 of 3: Smarter approach";
+  if (step === "solution") return "Step 3: Solution photo";
+  if (step === "cause") {
+    return feedback?.result !== "right" ? "Step 4: Root cause" : "Step 3: Root cause";
+  }
+  if (step === "slip") {
+    return feedback?.result !== "right" ? "Step 5: Slip details" : "Step 4: Slip details";
+  }
+  if (step === "fact") {
+    return feedback?.result !== "right" ? "Step 5: Memory cue" : "Step 4: Memory cue";
+  }
+  if (step === "complete") return "Feedback complete";
+  return "";
+}
+
+export default function SessionFeedbackScreen({
+  session,
+  persistenceError,
+  saveError,
+  isSaving,
+  onSetQuestionResult,
+  onSetCause,
+  onSetSlipSubtype,
+  onSetSmarterApproach,
+  onAddTopic,
+  onRemoveTopic,
+  questions,
+  facts,
+  links,
+  onCreateQuestionCard,
+  onSaveSmarterApproach,
+  onSaveSolution,
+  onCreateFactCard,
+  onUseFactCard,
+  onSave,
+}: Props) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [showFactForm, setShowFactForm] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [flowSteps, setFlowSteps] = useState<
+    Record<number, { current: FeedbackStep; previous: FeedbackStep[] }>
+  >({});
+  const [slideDirection, setSlideDirection] = useState<"forward" | "back">(
+    "forward",
+  );
+  const chapter = getChapter(session.subjectId, session.chapterId);
+  const questionNumbers = useMemo(
+    () =>
+      Object.keys(session.questionTimesMs)
+        .map(Number)
+        .sort((left, right) => left - right),
+    [session.questionTimesMs],
+  );
+  const questionNumber = questionNumbers[currentIndex];
+  const feedback = questionNumber
+    ? session.feedback[questionNumber] ?? emptyFeedback
+    : undefined;
+  const questionCard = feedback?.questionId
+    ? questions.find((card) => card.id === feedback.questionId)
+    : undefined;
+  const linkedFacts = links
+    .filter((link) => link.questionId === feedback?.questionId && !link.deletedAt)
+    .map((link) => facts.find((fact) => fact.id === link.factId))
+    .filter((fact): fact is FactCard => Boolean(fact && !fact.deletedAt));
+  const timeMs = questionNumber ? session.questionTimesMs[questionNumber] : 0;
+  const slowRight =
+    session.sessionKind === "practice" &&
+    isSlowRightAttempt(feedback?.result ?? null, timeMs);
+  const validationErrors = feedback
+    ? validateAttempt({
+        result: feedback.result,
+        cause: feedback.cause,
+        slipSubtype: feedback.slipSubtype,
+        topicIds: feedback.topics.map((topic) => topic.id),
+      })
+    : [];
+  const questionComplete =
+    !!feedback &&
+    canCompleteQuestionFeedback(
+      feedback,
+      validationErrors,
+      timeMs,
+      session.sessionKind,
+    );
+  const allComplete = questionNumbers.every((number) => {
+    const item = session.feedback[number] ?? emptyFeedback;
+    return canCompleteQuestionFeedback(
+      item,
+      validateAttempt({
+        result: item.result,
+        cause: item.cause,
+        slipSubtype: item.slipSubtype,
+        topicIds: item.topics.map((topic) => topic.id),
+      }),
+      session.questionTimesMs[number],
+      session.sessionKind,
+    );
+  });
+  const activeTimeMs = Object.values(session.questionTimesMs).reduce(
+    (total, duration) => total + duration,
+    0,
+  );
+  const questionTopicIds = feedback?.topics.map((topic) => topic.id) ?? [];
+  const relatedFacts = facts
+    .filter((fact) => !fact.deletedAt)
+    .filter(
+      (fact) =>
+        fact.chapterId === session.chapterId ||
+        fact.topicIds.some((topicId) => questionTopicIds.includes(topicId)),
+    )
+    .sort(
+      (left, right) =>
+        Number(right.chapterId === session.chapterId) -
+        Number(left.chapterId === session.chapterId) ||
+        Number(
+          right.topicIds.some((topicId) => questionTopicIds.includes(topicId)),
+        ) -
+          Number(
+            left.topicIds.some((topicId) => questionTopicIds.includes(topicId)),
+          ),
+    );
+  const step = questionNumber
+    ? flowSteps[questionNumber]?.current ??
+      getInitialFeedbackStep(
+        feedback,
+        slowRight,
+        session.sessionKind,
+        linkedFacts.length,
+      )
+    : "result";
+  const previousStep = questionNumber
+    ? flowSteps[questionNumber]?.previous.at(-1) ??
+      getFallbackPreviousStep(step, feedback, slowRight)
+    : undefined;
+
+  function moveToStep(next: FeedbackStep) {
+    if (!questionNumber) return;
+    setSlideDirection("forward");
+    setFlowSteps((current) => {
+      const state = current[questionNumber] ?? {
+        current: step,
+        previous: [],
+      };
+      return {
+        ...current,
+        [questionNumber]: {
+          current: next,
+          previous:
+            state.current === next
+              ? state.previous
+              : [...state.previous, state.current],
+        },
+      };
+    });
+  }
+
+  function goBackOneStep() {
+    if (!questionNumber || !previousStep) return;
+    setSlideDirection("back");
+    setFlowSteps((current) => {
+      const state = current[questionNumber];
+      if (!state?.previous.length) {
+        return {
+          ...current,
+          [questionNumber]: { current: previousStep, previous: [] },
+        };
+      }
+      return {
+        ...current,
+        [questionNumber]: {
+          current: state.previous[state.previous.length - 1],
+          previous: state.previous.slice(0, -1),
+        },
+      };
+    });
+    setActionError(null);
+  }
+
+  function showError(error: unknown, fallback: string) {
+    setActionError(error instanceof Error ? error.message : fallback);
+  }
+
+  async function submitQuestionCapture(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!questionNumber || session.sessionKind !== "practice") return;
+    const form = new FormData(event.currentTarget);
+    const promptImageId = String(form.get("promptImageId") ?? "") || undefined;
+    const promptText = String(form.get("promptText") ?? "").trim() || undefined;
+
+    if (!promptImageId) {
+      setActionError("Please upload a photo of the question.");
+      return;
+    }
+    if (!promptText) {
+      setActionError("Please add a short text label for the question.");
+      return;
+    }
+
+    setActionError(null);
+    try {
+      await onCreateQuestionCard(questionNumber, {
+        promptText,
+        promptImageId,
+      });
+      moveToStep("topics");
+    } catch (error) {
+      showError(error, "Could not save this question.");
+    }
+  }
+
+  async function submitApproach(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!questionNumber || !questionCard) return;
+    const form = new FormData(event.currentTarget);
+    const solutionImageId = String(form.get("solutionImageId") ?? "") || undefined;
+    const solutionText = String(form.get("solutionText") ?? "").trim() || undefined;
+
+    if (!solutionImageId) {
+      setActionError("Please upload a photo of the smarter solution.");
+      return;
+    }
+
+    setActionError(null);
+    try {
+      await onSaveSmarterApproach(questionNumber, {
+        solutionText,
+        solutionImageId,
+      });
+      moveToStep("complete");
+    } catch (error) {
+      showError(error, "Could not save this approach.");
+    }
+  }
+
+  async function submitSolution(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!questionNumber || !questionCard) return;
+    const form = new FormData(event.currentTarget);
+    const solutionImageId =
+      String(form.get("solutionImageId") ?? "") || questionCard.solutionImageId || undefined;
+    const solutionText = String(form.get("solutionText") ?? "").trim() || undefined;
+
+    if (!solutionImageId && !solutionText) {
+      setActionError("Please upload a photo of the correct solution or add a note.");
+      return;
+    }
+
+    setActionError(null);
+    try {
+      await onSaveSolution(questionNumber, {
+        solutionText,
+        solutionImageId,
+      });
+      moveToStep("cause");
+    } catch (error) {
+      showError(error, "Could not save the solution.");
+    }
+  }
+
+  async function submitFact(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!questionNumber) return;
+    const form = new FormData(event.currentTarget);
+    const promptImageId = String(form.get("promptImageId") ?? "") || undefined;
+    const contentImageId = String(form.get("contentImageId") ?? "") || undefined;
+    const promptText = String(form.get("promptText") ?? "").trim();
+    if (!promptText) {
+      setActionError("Please add a short text label for the fact card.");
+      return;
+    }
+    if (!promptImageId) {
+      setActionError("Please upload a prompt photo for the fact card.");
+      return;
+    }
+    if (!contentImageId) {
+      setActionError("Please upload an answer photo for the fact card.");
+      return;
+    }
+    setActionError(null);
+    try {
+      await onCreateFactCard(questionNumber, {
+        kind: String(form.get("kind")) as FactCardInput["kind"],
+        promptText: String(form.get("promptText") ?? ""),
+        promptImageId: String(form.get("promptImageId") ?? "") || undefined,
+        contentText: String(form.get("contentText") ?? ""),
+        contentImageId: String(form.get("contentImageId") ?? "") || undefined,
+        wrongBelief: String(form.get("wrongBelief") ?? ""),
+      });
+      setShowFactForm(false);
+      moveToStep("complete");
+    } catch (error) {
+      showError(error, "Could not save the fact card.");
+    }
+  }
+
+  async function useFact(card: FactCard) {
+    if (!questionNumber) return;
+    setActionError(null);
+    try {
+      await onUseFactCard(questionNumber, card);
+      moveToStep("complete");
+    } catch (error) {
+      showError(error, "Could not link the fact card.");
+    }
+  }
+
+  function renderTopicSelector(label: string) {
+    if (!feedback || !questionNumber) return null;
+    return (
+      <div className="topic-entry">
+        <SearchSelect
+          label={label}
+          value=""
+          options={(chapter?.topics ?? [])
+            .filter(
+              (topic) =>
+                !feedback.topics.some((selected) => selected.id === topic.id),
+            )
+            .map((topic) => ({ id: topic.id, label: topic.name }))}
+          placeholder="Search topics in this chapter"
+          emptyMessage="No topics match. Try another search."
+          onChange={(topicId) => onAddTopic(questionNumber, topicId)}
+        />
+        {feedback.topics.length > 0 && (
+          <ul className="topic-chips">
+            {feedback.topics.map((topic) => (
+              <li key={topic.id}>
+                {topic.name}
+                <button
+                  type="button"
+                  aria-label={`Remove ${topic.name}`}
+                  onClick={() => onRemoveTopic(questionNumber, topic.id)}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
+  const questionCaptureNeeded =
+    session.sessionKind === "practice" &&
+    !!feedback &&
+    ((feedback.result !== null && feedback.result !== "right" && !feedback.questionId) ||
+      (slowRight &&
+        feedback.smarterApproach === "found" &&
+        !feedback.questionId));
+
+  const approachCaptureNeeded =
+    slowRight &&
+    feedback?.smarterApproach === "found" &&
+    !!feedback.questionId;
+
+  return (
+    <main className="feedback-shell">
+      <section className="feedback-page" aria-labelledby="feedback-title">
+        {persistenceError && <p className="database-error" role="alert">{persistenceError}</p>}
+        <header className="feedback-header">
+          <div>
+            <p className="eyebrow">SESSION REVIEW</p>
+            <h1 id="feedback-title">{chapter?.name}</h1>
+            <p className="feedback-subtitle">
+              One question at a time. One task at a time.
+            </p>
+          </div>
+          <p className="feedback-active-time">
+            Active time <strong>{formatStopwatch(activeTimeMs)}</strong>
+          </p>
+        </header>
+
+        {questionNumbers.length === 0 || !feedback || !questionNumber ? (
+          <p className="empty-feedback">No questions were timed in this session.</p>
+        ) : (
+          <>
+            <div className="feedback-progress" aria-live="polite">
+              <span>Question {currentIndex + 1} of {questionNumbers.length}</span>
+              <span>{formatStopwatch(timeMs)} solving time</span>
+              <div
+                className="feedback-progress-track"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={questionNumbers.length}
+                aria-valuenow={currentIndex + 1}
+              >
+                <span style={{ width: `${((currentIndex + 1) / questionNumbers.length) * 100}%` }} />
+              </div>
+            </div>
+
+            <article className="feedback-question feedback-question-focused">
+              <div className="feedback-question-heading">
+                <h2>Q{questionNumber}</h2>
+                <span>{formatStopwatch(timeMs)}</span>
+              </div>
+
+              <section
+                className="feedback-step-panel"
+                key={`${questionNumber}-${step}`}
+                data-direction={slideDirection}
+                aria-live="polite"
+              >
+                {step !== "result" && (
+                  <div className="feedback-step-toolbar">
+                    <button
+                      className="feedback-back-button"
+                      type="button"
+                      onClick={goBackOneStep}
+                      disabled={!previousStep}
+                    >
+                      <span aria-hidden="true">←</span> Back
+                    </button>
+                    <span className="feedback-step-badge">
+                      {getStepTitle(step, slowRight, feedback)}
+                    </span>
+                  </div>
+                )}
+
+                {step === "result" && (
+                  <fieldset className="feedback-step">
+                    <legend>How did it go?</legend>
+                    <div className="result-options" role="group" aria-label={`Result for question ${questionNumber}`}>
+                      {(
+                        [
+                          ["right", "Got it right"],
+                          ["wrong", "Got it wrong"],
+                          ["couldnt_solve", "Couldn’t solve"],
+                        ] as const
+                      ).map(([result, label]) => (
+                        <button
+                          className={feedback.result === result ? "result-option selected" : "result-option"}
+                          key={result}
+                          type="button"
+                          aria-pressed={feedback.result === result}
+                          onClick={() => {
+                            setActionError(null);
+                            onSetQuestionResult(questionNumber, result);
+                            const nextStep = getStepAfterResult(
+                              result,
+                              result === "right" &&
+                                isSlowRightAttempt(result, timeMs),
+                              !!feedback.questionId,
+                              session.sessionKind,
+                            );
+                            setSlideDirection("forward");
+                            setFlowSteps((current) => ({
+                              ...current,
+                              [questionNumber]: {
+                                current: nextStep,
+                                previous: ["result"],
+                              },
+                            }));
+                          }}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+                )}
+
+                {step === "reflection" && slowRight && (
+                  <section className="feedback-step smarter-approach-prompt">
+                    <p className="eyebrow">A MOMENT TO REFLECT</p>
+                    <h3>You spent {formatStopwatch(timeMs)} on this question.</h3>
+                    <p>
+                      Try to find a smarter, shorter approach. Did you find one worth saving?
+                    </p>
+                    <div className="result-options" role="group" aria-label="Did you find a smarter approach?">
+                      <button
+                        className={feedback.smarterApproach === "found" ? "result-option selected" : "result-option"}
+                        type="button"
+                        aria-pressed={feedback.smarterApproach === "found"}
+                        onClick={() => {
+                          onSetSmarterApproach(questionNumber, "found");
+                          moveToStep(
+                            feedback.questionId
+                              ? (feedback.topics.length > 0 ? "approach" : "topics")
+                              : "question",
+                          );
+                        }}
+                      >
+                        Yes, save my approach
+                      </button>
+                      <button
+                        className={feedback.smarterApproach === "not_found" ? "result-option selected" : "result-option"}
+                        type="button"
+                        aria-pressed={feedback.smarterApproach === "not_found"}
+                        onClick={() => {
+                          onSetSmarterApproach(questionNumber, "not_found");
+                          moveToStep("complete");
+                        }}
+                      >
+                        Not this time
+                      </button>
+                    </div>
+                  </section>
+                )}
+
+                {step === "question" && questionCaptureNeeded && (
+                  <section className="feedback-step question-capture-step">
+                    <h3>Upload question photo</h3>
+                    <p>
+                      {slowRight && feedback.smarterApproach === "found"
+                        ? "Take or choose a clear photo of the question. Next, you'll attach topics and your smarter solution."
+                        : "Take or choose a clear photo of the question so you can review it later."}
+                    </p>
+                    <form className="inline-card-form" onSubmit={(event) => void submitQuestionCapture(event)}>
+                      <ImageInput label="Question photo" name="promptImageId" required />
+                      <label>
+                        Question label
+                        <textarea
+                          name="promptText"
+                          rows={2}
+                          placeholder="A short title for this question"
+                          required
+                        />
+                      </label>
+                      <button className="account-action-button" type="submit">
+                        Save question photo & continue →
+                      </button>
+                    </form>
+                    {session.sessionKind !== "practice" && (
+                      <p className="account-note">New question cards can only be created from practice feedback.</p>
+                    )}
+                  </section>
+                )}
+
+                {step === "question" && feedback.questionId && (
+                  <section className="feedback-step question-capture-step">
+                    <h3>Question photo saved</h3>
+                    {questionCard?.promptImageId && (
+                      <CardImage imageId={questionCard.promptImageId} alt="Saved question" />
+                    )}
+                    {questionCard?.promptText && <p className="saved-prompt-text">{questionCard.promptText}</p>}
+                    <button
+                      className="account-action-button"
+                      type="button"
+                      onClick={() => moveToStep("topics")}
+                    >
+                      Continue to topics →
+                    </button>
+                  </section>
+                )}
+
+                {step === "topics" && (
+                  <section className="feedback-step feedback-topics-step">
+                    <h3>Attach topics</h3>
+                    <p>
+                      Which topics in <strong>{chapter?.name}</strong> does this question cover?
+                    </p>
+
+                    {questionCard && (
+                      <div className="feedback-mini-preview">
+                        {questionCard.promptImageId && (
+                          <div className="mini-preview-thumb">
+                            <CardImage imageId={questionCard.promptImageId} alt="Question preview" />
+                          </div>
+                        )}
+                        <div className="mini-preview-info">
+                          <span className="mini-preview-tag">Question saved</span>
+                          {questionCard.promptText && (
+                            <span className="mini-preview-text">{questionCard.promptText}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {renderTopicSelector("Select topics")}
+
+                    <button
+                      className="account-action-button"
+                      type="button"
+                      onClick={() => {
+                        setActionError(null);
+                        if (slowRight && feedback.smarterApproach === "found") {
+                          moveToStep("approach");
+                        } else if (feedback.result !== "right") {
+                          moveToStep("solution");
+                        } else {
+                          moveToStep("cause");
+                        }
+                      }}
+                    >
+                      {slowRight && feedback.smarterApproach === "found"
+                        ? "Continue to smarter approach →"
+                        : feedback.result !== "right"
+                          ? "Continue to solution photo →"
+                          : "Continue to root cause →"}
+                    </button>
+                  </section>
+                )}
+
+                {step === "approach" && approachCaptureNeeded && (
+                  <section className="feedback-step approach-capture-step">
+                    <h3>Upload smarter solution</h3>
+                    <p>
+                      Capture the shorter method, trick, or shortcut you found.
+                    </p>
+                    <form className="inline-card-form" onSubmit={(event) => void submitApproach(event)}>
+                      <ImageInput label="Smarter solution photo" name="solutionImageId" required />
+                      <label>
+                        Key trick or approach note <span className="optional-label">optional</span>
+                        <textarea
+                          name="solutionText"
+                          rows={2}
+                          placeholder="What makes this method shorter or smarter?"
+                        />
+                      </label>
+                      <button className="account-action-button" type="submit">
+                        Save smarter approach & finish ✓
+                      </button>
+                    </form>
+                  </section>
+                )}
+
+                {step === "solution" && (
+                  <section className="feedback-step solution-capture-step">
+                    <h3>Upload correct solution</h3>
+                    <p>
+                      Capture the textbook, coaching, or handwritten solution so you can review how to solve it later.
+                    </p>
+
+                    {questionCard && (
+                      <div className="feedback-mini-preview">
+                        {questionCard.promptImageId && (
+                          <div className="mini-preview-thumb">
+                            <CardImage imageId={questionCard.promptImageId} alt="Question preview" />
+                          </div>
+                        )}
+                        <div className="mini-preview-info">
+                          <span className="mini-preview-tag">Question</span>
+                          {questionCard.promptText && (
+                            <span className="mini-preview-text">{questionCard.promptText}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {questionCard?.solutionImageId && (
+                      <div className="feedback-mini-preview" style={{ marginTop: "0.5rem" }}>
+                        <div className="mini-preview-thumb">
+                          <CardImage imageId={questionCard.solutionImageId} alt="Attached solution" />
+                        </div>
+                        <div className="mini-preview-info">
+                          <span className="mini-preview-tag">Current solution attached</span>
+                          {questionCard.solutionText && (
+                            <span className="mini-preview-text">{questionCard.solutionText}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <form className="inline-card-form" onSubmit={(event) => void submitSolution(event)}>
+                      <ImageInput
+                        label={questionCard?.solutionImageId ? "Replace solution photo" : "Solution photo"}
+                        name="solutionImageId"
+                      />
+                      <label>
+                        Solution note <span className="optional-label">optional</span>
+                        <textarea
+                          name="solutionText"
+                          rows={2}
+                          defaultValue={questionCard?.solutionText ?? ""}
+                          placeholder="Key formula, formula steps, or method notes (optional)"
+                        />
+                      </label>
+                      <button className="account-action-button" type="submit">
+                        Save solution photo & continue →
+                      </button>
+                    </form>
+
+                    <button
+                      className="account-secondary-button"
+                      type="button"
+                      style={{ marginTop: "0.75rem", width: "100%" }}
+                      onClick={() => {
+                        setActionError(null);
+                        moveToStep("cause");
+                      }}
+                    >
+                      Skip solution photo for now →
+                    </button>
+                  </section>
+                )}
+
+                {step === "cause" && (
+                  <section className="feedback-step feedback-cause-fields">
+                    <h3>What made it difficult?</h3>
+                    <p>Choose the main reason for this attempt.</p>
+                    <div className="cause-options" role="group" aria-label={`Cause for question ${questionNumber}`}>
+                      {CAUSE_OPTIONS.map(({ value, label }) => (
+                        <button
+                          className={feedback.cause === value ? "cause-option selected" : "cause-option"}
+                          key={value}
+                          type="button"
+                          aria-pressed={feedback.cause === value}
+                          onClick={() => {
+                            setActionError(null);
+                            onSetCause(questionNumber, value);
+                          }}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      className="account-action-button"
+                      type="button"
+                      disabled={!feedback.cause}
+                      onClick={() => {
+                        if (!feedback.cause) return;
+                        if (
+                          (feedback.cause === "missing_fact" || feedback.cause === "wrong_concept") &&
+                          feedback.topics.length === 0
+                        ) {
+                          setActionError("Please select at least one topic for a missing fact or wrong concept.");
+                          moveToStep("topics");
+                          return;
+                        }
+                        moveToStep(getStepAfterCause(feedback.cause, feedback.topics.length));
+                      }}
+                    >
+                      Continue →
+                    </button>
+                  </section>
+                )}
+
+                {step === "slip" && (
+                  <section className="feedback-step">
+                    <h3>What kind of slip happened?</h3>
+                    <p>This is optional; choose one if it helps explain the mistake.</p>
+                    <div className="cause-options slip-options" role="group" aria-label={`Slip type for question ${questionNumber}`}>
+                      {SLIP_SUBTYPE_OPTIONS.map(({ value, label }) => (
+                        <button
+                          className={feedback.slipSubtype === value ? "cause-option selected" : "cause-option"}
+                          key={value}
+                          type="button"
+                          aria-pressed={feedback.slipSubtype === value}
+                          onClick={() =>
+                            onSetSlipSubtype(
+                              questionNumber,
+                              feedback.slipSubtype === value ? null : value,
+                            )
+                          }
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      className="account-action-button"
+                      type="button"
+                      onClick={() => moveToStep("complete")}
+                    >
+                      Finish question feedback ✓
+                    </button>
+                  </section>
+                )}
+
+                {step === "fact" && (
+                  <section className="feedback-step feedback-fact-step">
+                    <h3>Would a fact card help next time?</h3>
+                    <p>Create or link a memory cue for this mistake, or skip if not needed.</p>
+
+                    {linkedFacts.length > 0 && (
+                      <div className="linked-facts-list">
+                        {linkedFacts.map((fact) => (
+                          <p className="attempt-card-status" key={fact.id}>
+                            Linked: <strong>{fact.promptText || fact.contentText || "Photo fact card"}</strong>
+                          </p>
+                        ))}
+                      </div>
+                    )}
+
+                    {!showFactForm ? (
+                      <div className="fact-step-options">
+                        <button
+                          className="account-action-button"
+                          type="button"
+                          onClick={() => setShowFactForm(true)}
+                        >
+                          Create new fact card
+                        </button>
+
+                        {relatedFacts.length > 0 && (
+                          <CardPicker
+                            label="Or link an existing fact card"
+                            options={relatedFacts.map((fact) => ({
+                              id: fact.id,
+                              label: fact.promptText || fact.contentText || "Photo fact card",
+                              detail: fact.chapterId === session.chapterId ? "This chapter" : fact.chapterId,
+                            }))}
+                            placeholder="Search fact cards"
+                            onSelect={(option) => {
+                              const fact = facts.find((item) => item.id === option.id);
+                              if (fact) void useFact(fact);
+                            }}
+                          />
+                        )}
+
+                        <button
+                          className="account-secondary-button"
+                          type="button"
+                          onClick={() => moveToStep("complete")}
+                        >
+                          Continue without a fact card
+                        </button>
+                      </div>
+                    ) : (
+                      <form className="inline-card-form" onSubmit={(event) => void submitFact(event)}>
+                        <label>
+                          Card type
+                          <select name="kind" defaultValue={feedback.cause === "wrong_concept" ? "misconception" : "fact"}>
+                            <option value="fact">Fact</option>
+                            <option value="formula">Formula</option>
+                            <option value="reaction">Reaction</option>
+                            <option value="misconception">Misconception</option>
+                            <option value="trap">Trap</option>
+                          </select>
+                        </label>
+                        <ImageInput label="Recall prompt photo" name="promptImageId" required />
+                        <label>
+                          Fact label
+                          <textarea name="promptText" rows={2} placeholder="Short label for searching this fact" required />
+                        </label>
+                        <ImageInput label="Answer / fact photo" name="contentImageId" required />
+                        <label>
+                          Answer / fact text <span className="optional-label">optional</span>
+                          <textarea name="contentText" rows={2} placeholder="The fact, formula, or correction" />
+                        </label>
+                        {feedback.cause === "wrong_concept" && (
+                          <label>
+                            What I wrongly believed <span className="optional-label">optional</span>
+                            <textarea name="wrongBelief" rows={2} />
+                          </label>
+                        )}
+                        <div className="form-button-row">
+                          <button className="account-action-button" type="submit">
+                            Save and link fact card
+                          </button>
+                          <button
+                            className="account-secondary-button"
+                            type="button"
+                            onClick={() => setShowFactForm(false)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </section>
+                )}
+
+                {step === "complete" && (
+                  <section className="feedback-step feedback-complete-step">
+                    <div className="feedback-complete-header">
+                      <span className="saved-step-check" aria-hidden="true">✓</span>
+                      <div>
+                        <h3>Question feedback complete</h3>
+                        <p>
+                          {feedback.result === "right"
+                            ? feedback.smarterApproach === "found"
+                              ? "Your question and smarter approach are saved."
+                              : "Your result is recorded."
+                            : "Your question, topics, and diagnosis are recorded."}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="feedback-summary-badges">
+                      <span className={`summary-result-badge result-${feedback.result}`}>
+                        {feedback.result === "right" && "Got it right"}
+                        {feedback.result === "wrong" && "Got it wrong"}
+                        {feedback.result === "couldnt_solve" && "Couldn’t solve"}
+                      </span>
+
+                      {feedback.cause && (
+                        <span className="summary-cause-badge">
+                          Cause: {getCauseLabel(feedback.cause)}
+                        </span>
+                      )}
+
+                      {feedback.slipSubtype && (
+                        <span className="summary-slip-badge">
+                          Slip: {feedback.slipSubtype}
+                        </span>
+                      )}
+
+                      {feedback.smarterApproachSaved && (
+                        <span className="summary-approach-badge">
+                          Smarter approach saved
+                        </span>
+                      )}
+
+                      {(feedback.solutionSaved || questionCard?.solutionImageId) && (
+                        <span className="summary-approach-badge">
+                          Solution saved
+                        </span>
+                      )}
+                    </div>
+
+                    {questionCard?.promptImageId && (
+                      <div className="feedback-complete-previews">
+                        <div className="complete-preview-item">
+                          <span className="preview-label">Question:</span>
+                          <CardImage imageId={questionCard.promptImageId} alt="Question" />
+                        </div>
+                        {questionCard.solutionImageId && (
+                          <div className="complete-preview-item">
+                            <span className="preview-label">Solution:</span>
+                            <CardImage imageId={questionCard.solutionImageId} alt="Solution" />
+                          </div>
+                        )}
+                        {questionCard.smarterApproachImageId && (
+                          <div className="complete-preview-item">
+                            <span className="preview-label">Smarter approach:</span>
+                            <CardImage imageId={questionCard.smarterApproachImageId} alt="Smarter approach" />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {feedback.topics.length > 0 && (
+                      <div className="feedback-complete-topics">
+                        <strong>Topics:</strong>
+                        <ul className="topic-chips">
+                          {feedback.topics.map((topic) => (
+                            <li key={topic.id}>{topic.name}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {linkedFacts.length > 0 && (
+                      <div className="feedback-complete-facts">
+                        <strong>Linked memory cue:</strong>
+                        {linkedFacts.map((fact) => (
+                          <p key={fact.id} className="attempt-card-status">
+                            {fact.promptText || fact.contentText || "Fact card"}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                )}
+
+                {actionError && <p className="database-error" role="alert">{actionError}</p>}
+                {validationErrors.length > 0 &&
+                  step === "complete" && (
+                    <p className="feedback-guidance">{validationErrors[0]}</p>
+                  )}
+              </section>
+            </article>
+
+            <footer className="feedback-footer feedback-sequential-footer">
+              <button
+                className="account-secondary-button"
+                type="button"
+                disabled={currentIndex === 0 || !questionComplete || step !== "complete"}
+                onClick={() => {
+                  setActionError(null);
+                  setShowFactForm(false);
+                  setCurrentIndex((index) => Math.max(0, index - 1));
+                }}
+              >
+                Previous
+              </button>
+              {currentIndex < questionNumbers.length - 1 ? (
+                <button
+                  className="start-button"
+                  type="button"
+                  disabled={!questionComplete || step !== "complete"}
+                  onClick={() => {
+                    setActionError(null);
+                    setShowFactForm(false);
+                    setCurrentIndex((index) => Math.min(questionNumbers.length - 1, index + 1));
+                  }}
+                >
+                  Next question
+                </button>
+              ) : (
+                <button
+                  className="start-button"
+                  type="button"
+                  onClick={onSave}
+                  disabled={!allComplete || step !== "complete" || isSaving}
+                >
+                  {isSaving ? "Saving session…" : "Save session"}
+                </button>
+              )}
+            </footer>
+          </>
+        )}
+        {saveError && <p className="database-error" role="alert">{saveError}</p>}
+      </section>
+    </main>
+  );
+}

@@ -1,6 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { database, type SessionRecord } from "./database";
+import {
+  database,
+  type AttemptRecord,
+  type SessionRecord,
+} from "./database";
+import type {
+  FactCard,
+  FactCardInput,
+  FactReviewRecord,
+  QuestionCard,
+  QuestionCardInput,
+  QuestionFactLink,
+} from "./features/cards/types";
+import {
+  createFactCard,
+  createFactCardAndLink,
+  createQuestionCard,
+  linkQuestionAndFact,
+  recordQuestionSeen,
+  softDeleteFactCard,
+  softDeleteQuestionCard,
+  unlinkQuestionAndFact,
+  updateFactCard,
+  updateQuestionCard,
+} from "./features/cards/cardRepository";
 import {
   assignLocalSessionsToUser,
   syncAccountSessions,
@@ -13,71 +37,41 @@ import {
   jeeSyllabus,
   type SyllabusSubjectId,
 } from "./syllabus";
+import {
+  finishSessionAt,
+  getInactivityPrompt,
+  INACTIVITY_LIMITS,
+  recoverSessionSnapshot,
+  stopQuestionAtInactivityPrompt,
+} from "./features/practice/sessionLifecycle";
+import type {
+  ActiveSession,
+  ActiveSessionSnapshot,
+  InactivityWarning,
+  QuestionResult,
+  SessionSetup,
+} from "./features/practice/types";
+import { SMARTER_APPROACH_THRESHOLD_MS } from "./features/practice/feedbackFlow";
+import {
+  formatStopwatch,
+} from "./features/practice/TimerDisplay";
+import { validateAttempt } from "./lib/causes";
+import type { Cause, SlipSubtype } from "./lib/causes";
+import SessionRecoveryScreen from "./features/practice/SessionRecoveryScreen";
+import PracticeSessionScreen from "./features/practice/PracticeSessionScreen";
+import SessionFeedbackScreen from "./features/practice/SessionFeedbackScreen";
+import SessionSummaryScreen from "./features/practice/SessionSummaryScreen";
+import AccountPanel, { type AuthMode } from "./features/account/AccountPanel";
+import CardsScreen from "./features/cards/CardsScreen";
+import MainNavigation from "./features/navigation/MainNavigation";
 
 const DURATIONS = [30, 45, 60, 90, 120];
-
-type SessionSetup = {
-  subjectId: SyllabusSubjectId;
-  chapterId: string;
-  duration: number;
-  startingQuestion: number;
-};
-
-type QuestionResult = "right" | "wrong" | "couldnt_solve";
-
-type QuestionFeedback = {
-  result: QuestionResult | null;
-  topics: Array<{ id: string; name: string }>;
-};
-
-type SessionPhase = "active" | "feedback" | "summary";
-
-type ActiveSession = SessionSetup & {
-  phase: SessionPhase;
-  startedAt: number;
-  endsAt: number;
-  endedAt: number | null;
-  questionNumber: number;
-  questionNumberText: string;
-  questionElapsedMs: number;
-  questionStartedAt: number | null;
-  questionTimesMs: Record<number, number>;
-  feedback: Record<number, QuestionFeedback>;
-  record: SessionRecord | null;
-};
-
-function formatStopwatch(milliseconds: number) {
-  const minutes = Math.floor(milliseconds / 60_000);
-  const seconds = Math.floor((milliseconds % 60_000) / 1_000);
-  const remainingMilliseconds = milliseconds % 1_000;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}:${String(remainingMilliseconds).padStart(3, "0")}`;
-}
-
-function TimerDigits({
-  values,
-  units,
-  className,
-}: {
-  values: string[];
-  units: string[];
-  className: string;
-}) {
-  return (
-    <span className={`timer-digits ${className}`}>
-      {values.map((value, index) => (
-        <span className="timer-group" key={units[index]}>
-          {index > 0 && <span className="timer-separator">:</span>}
-          <span className="timer-unit">
-            <span className="timer-value">{value}</span>
-            <span className="timer-unit-label">{units[index]}</span>
-          </span>
-        </span>
-      ))}
-    </span>
-  );
-}
+const ACTIVE_SESSION_SAVE_DEBOUNCE_MS = 300;
 
 function App() {
+  const [activeTab, setActiveTab] = useState<"practice" | "cards" | "history">(
+    "practice",
+  );
   const [setup, setSetup] = useState<SessionSetup>({
     subjectId: "maths",
     chapterId: "",
@@ -86,13 +80,24 @@ function App() {
   });
   const [session, setSession] = useState<ActiveSession | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [recoveryCandidate, setRecoveryCandidate] =
+    useState<ActiveSessionSnapshot | null>(null);
+  const [isLoadingActiveSession, setIsLoadingActiveSession] = useState(true);
+  const [pendingWarning, setPendingWarning] =
+    useState<InactivityWarning | null>(null);
+  const [persistenceError, setPersistenceError] = useState<string | null>(null);
   const [savedSessions, setSavedSessions] = useState<SessionRecord[]>([]);
+  const [questionCards, setQuestionCards] = useState<QuestionCard[]>([]);
+  const [factCards, setFactCards] = useState<FactCard[]>([]);
+  const [questionFactLinks, setQuestionFactLinks] = useState<QuestionFactLink[]>([]);
+  const [factReviews, setFactReviews] = useState<FactReviewRecord[]>([]);
+  const [attemptRecords, setAttemptRecords] = useState<AttemptRecord[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [isSavingSession, setIsSavingSession] = useState(false);
   const [databaseError, setDatabaseError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [authUser, setAuthUser] = useState<User | null>(null);
-  const [authMode, setAuthMode] = useState<"sign_in" | "sign_up">("sign_in");
+  const [authMode, setAuthMode] = useState<AuthMode>("sign_in");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authMessage, setAuthMessage] = useState<string | null>(null);
@@ -103,7 +108,200 @@ function App() {
   >("idle");
   const [syncError, setSyncError] = useState<string | null>(null);
   const [unassignedSessionCount, setUnassignedSessionCount] = useState(0);
+  const [unassignedCardCount, setUnassignedCardCount] = useState(0);
   const syncInProgress = useRef(false);
+  const sessionRef = useRef<ActiveSession | null>(null);
+  const recoveryCandidateRef = useRef<ActiveSessionSnapshot | null>(null);
+  const lastInteractionAtRef = useRef(Date.now());
+  const pendingWarningRef = useRef<InactivityWarning | null>(null);
+  const activeSessionWriteTimeout = useRef<number | null>(null);
+  const activeSessionWriteQueue = useRef<Promise<void>>(Promise.resolve());
+
+  async function refreshCardData() {
+    const [questions, facts, links, attempts, reviews] = await Promise.all([
+      database.questions.toArray(),
+      database.factCards.toArray(),
+      database.questionFactLinks.toArray(),
+      database.attempts.toArray(),
+      database.factReviews.toArray(),
+    ]);
+    setQuestionCards(
+      questions.filter(
+        (card) => !authUser || !card.ownerUserId || card.ownerUserId === authUser.id,
+      ),
+    );
+    setFactCards(
+      facts.filter(
+        (card) => !authUser || !card.ownerUserId || card.ownerUserId === authUser.id,
+      ),
+    );
+    setQuestionFactLinks(
+      links.filter(
+        (link) => !authUser || !link.ownerUserId || link.ownerUserId === authUser.id,
+      ),
+    );
+    setAttemptRecords(
+      attempts.filter(
+        (attempt) => !authUser || !attempt.ownerUserId || attempt.ownerUserId === authUser.id,
+      ),
+    );
+    setFactReviews(
+      reviews.filter(
+        (review) => !authUser || !review.ownerUserId || review.ownerUserId === authUser.id,
+      ),
+    );
+    setUnassignedCardCount(
+      questions.filter((card) => !card.ownerUserId).length +
+        facts.filter((card) => !card.ownerUserId).length +
+        links.filter((link) => !link.ownerUserId).length,
+    );
+  }
+
+  function navigate(tab: "practice" | "cards" | "history") {
+    setActiveTab(tab);
+  }
+
+  sessionRef.current = session;
+  recoveryCandidateRef.current = recoveryCandidate;
+  pendingWarningRef.current = pendingWarning;
+
+  function persistActiveSessionSnapshot() {
+    const currentSession = sessionRef.current;
+    if (!currentSession || currentSession.phase === "summary") {
+      return Promise.resolve();
+    }
+
+    const snapshot: ActiveSessionSnapshot = {
+      id: "current",
+      session: currentSession,
+      lastInteractionAt: lastInteractionAtRef.current,
+      pendingWarning: pendingWarningRef.current,
+      savedAt: Date.now(),
+    };
+    const write = activeSessionWriteQueue.current
+      .catch(() => undefined)
+      .then(() => database.activeSession.put(snapshot))
+      .then(() => {
+        setPersistenceError(null);
+      })
+      .catch((error: unknown) => {
+        setPersistenceError(
+          error instanceof Error
+            ? `Could not preserve the active session: ${error.message}`
+            : "Could not preserve the active session.",
+        );
+      });
+    activeSessionWriteQueue.current = write;
+    return write;
+  }
+
+  function scheduleActiveSessionSave() {
+    if (activeSessionWriteTimeout.current !== null) {
+      window.clearTimeout(activeSessionWriteTimeout.current);
+    }
+    activeSessionWriteTimeout.current = window.setTimeout(() => {
+      activeSessionWriteTimeout.current = null;
+      void persistActiveSessionSnapshot();
+    }, ACTIVE_SESSION_SAVE_DEBOUNCE_MS);
+  }
+
+  async function clearActiveSessionSnapshot() {
+    if (activeSessionWriteTimeout.current !== null) {
+      window.clearTimeout(activeSessionWriteTimeout.current);
+      activeSessionWriteTimeout.current = null;
+    }
+    await activeSessionWriteQueue.current;
+    await database.activeSession.delete("current");
+    setPersistenceError(null);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    database.activeSession
+      .get("current")
+      .then((snapshot) => {
+        if (cancelled || !snapshot) return;
+        const normalized: ActiveSessionSnapshot = {
+          ...snapshot,
+          session: {
+            ...snapshot.session,
+            feedback: Object.fromEntries(
+              Object.entries(snapshot.session.feedback ?? {}).map(
+                ([questionNumber, feedback]) => [
+                  questionNumber,
+                  {
+                    ...feedback,
+                    cause: feedback.cause ?? null,
+                    slipSubtype: feedback.slipSubtype ?? null,
+                  },
+                ],
+              ),
+            ),
+            longQuestionPromptedNumbers:
+              snapshot.session.longQuestionPromptedNumbers ?? [],
+          },
+        };
+        lastInteractionAtRef.current = normalized.lastInteractionAt;
+        setRecoveryCandidate(normalized);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setPersistenceError(
+            error instanceof Error
+              ? `Could not recover the active session: ${error.message}`
+              : "Could not recover the active session.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingActiveSession(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!session || session.phase === "summary") return;
+    scheduleActiveSessionSave();
+  }, [session, pendingWarning]);
+
+  useEffect(() => {
+    const flushSession = () => {
+      if (activeSessionWriteTimeout.current !== null) {
+        window.clearTimeout(activeSessionWriteTimeout.current);
+        activeSessionWriteTimeout.current = null;
+      }
+      void persistActiveSessionSnapshot();
+    };
+    const flushWhenHidden = () => {
+      if (document.visibilityState === "hidden") flushSession();
+    };
+
+    window.addEventListener("pagehide", flushSession);
+    document.addEventListener("visibilitychange", flushWhenHidden);
+    return () => {
+      window.removeEventListener("pagehide", flushSession);
+      document.removeEventListener("visibilitychange", flushWhenHidden);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!session || session.phase !== "active") return;
+
+    const markInteraction = () => {
+      if (pendingWarningRef.current) return;
+      lastInteractionAtRef.current = Date.now();
+      scheduleActiveSessionSave();
+    };
+    document.addEventListener("pointerdown", markInteraction);
+    document.addEventListener("keydown", markInteraction);
+    return () => {
+      document.removeEventListener("pointerdown", markInteraction);
+      document.removeEventListener("keydown", markInteraction);
+    };
+  }, [session?.phase]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -174,6 +372,16 @@ function App() {
     };
   }, [authUser]);
 
+  useEffect(() => {
+    void refreshCardData().catch((error: unknown) => {
+      setDatabaseError(
+        error instanceof Error
+          ? `Could not load cards: ${error.message}`
+          : "Could not load cards.",
+      );
+    });
+  }, [authUser]);
+
   async function performSync(user: User) {
     if (syncInProgress.current) return;
     if (!navigator.onLine) {
@@ -196,6 +404,7 @@ function App() {
       setUnassignedSessionCount(
         localRecords.filter((record) => !record.ownerUserId).length,
       );
+      await refreshCardData();
       setSyncStatus("synced");
     } catch (error) {
       setSyncStatus("error");
@@ -228,6 +437,45 @@ function App() {
     return () => window.clearInterval(timer);
   }, [session]);
 
+  useEffect(() => {
+    if (!session || session.phase !== "active") return;
+
+    if (pendingWarning) {
+      if (
+        now >=
+        pendingWarning.startedAt + INACTIVITY_LIMITS.warningResponseMs
+      ) {
+        endSession();
+      }
+      return;
+    }
+
+    const prompt = getInactivityPrompt(
+      session,
+      now,
+      lastInteractionAtRef.current,
+    );
+    if (!prompt) return;
+
+    if (
+      prompt.warning.kind === "running_question" &&
+      prompt.questionElapsedMs !== undefined
+    ) {
+      const questionElapsedMs = prompt.questionElapsedMs;
+      setSession((current) =>
+        current?.phase === "active" &&
+        current.questionStartedAt !== null &&
+        current.questionNumber === session.questionNumber
+          ? stopQuestionAtInactivityPrompt(
+              current,
+              questionElapsedMs,
+            )
+          : current,
+      );
+    }
+    setPendingWarning(prompt.warning);
+  }, [session, now, pendingWarning]);
+
   const remaining = session
     ? Math.max(0, Math.ceil((session.endsAt - now) / 1000))
     : 0;
@@ -236,9 +484,6 @@ function App() {
       (session.questionStartedAt === null ? 0 : now - session.questionStartedAt)
     : 0;
   const setupSubject = getSubject(setup.subjectId);
-  const activeChapter = session
-    ? getChapter(session.subjectId, session.chapterId)
-    : undefined;
   const savedQuestionCount = savedSessions.reduce(
     (total, record) =>
       total +
@@ -353,9 +598,13 @@ function App() {
   function startSession(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const startedAt = Date.now();
+    lastInteractionAtRef.current = startedAt;
+    pendingWarningRef.current = null;
+    setPendingWarning(null);
     setNow(startedAt);
     setSession({
       ...setup,
+      sessionKind: "practice",
       phase: "active",
       startedAt,
       endsAt: startedAt + setup.duration * 60_000,
@@ -365,6 +614,7 @@ function App() {
       questionElapsedMs: 0,
       questionStartedAt: null,
       questionTimesMs: {},
+      longQuestionPromptedNumbers: [],
       feedback: {},
       record: null,
     });
@@ -425,31 +675,49 @@ function App() {
     });
   }
 
+  function commitQuestionNumberText() {
+    if (!session || session.questionStartedAt !== null) return;
+    const parsed = Number(session.questionNumberText);
+    if (!Number.isSafeInteger(parsed) || parsed < 1) {
+        setSession({
+          ...session,
+          questionNumberText: String(session.questionNumber),
+        });
+    } else {
+        setSession({
+          ...session,
+          questionNumber: parsed,
+          questionNumberText: String(parsed),
+        });
+    }
+  }
+
   function endSession() {
     if (!session) return;
 
     const endedAt = Date.now();
-    const questionTimesMs = { ...session.questionTimesMs };
-    if (session.questionStartedAt !== null) {
-      questionTimesMs[session.questionNumber] =
-        session.questionElapsedMs + endedAt - session.questionStartedAt;
-    }
-
+    const finishedSession = finishSessionAt(session, endedAt);
+    pendingWarningRef.current = null;
+    setPendingWarning(null);
     setNow(endedAt);
-    setSession({
-      ...session,
-      phase: "feedback",
-      endedAt,
-      questionStartedAt: null,
-      questionTimesMs,
-      questionElapsedMs: questionTimesMs[session.questionNumber] ?? 0,
-    });
+    setSession(finishedSession);
+  }
+
+  function confirmStillHere() {
+    const confirmedAt = Date.now();
+    pendingWarningRef.current = null;
+    lastInteractionAtRef.current = confirmedAt;
+    setPendingWarning(null);
+    setNow(confirmedAt);
+    scheduleActiveSessionSave();
   }
 
   function setQuestionResult(questionNumber: number, result: QuestionResult) {
     if (!session) return;
     const current = session.feedback[questionNumber] ?? {
       result: null,
+      cause: null,
+      slipSubtype: null,
       topics: [],
     };
     setSession({
@@ -459,8 +727,67 @@ function App() {
         [questionNumber]: {
           ...current,
           result,
-          ...(result === "couldnt_solve" ? {} : { topics: [] }),
+          smarterApproach: undefined,
+          smarterApproachSaved: undefined,
+          ...(result !== "right" && !current.attemptId
+            ? { attemptId: globalThis.crypto.randomUUID() }
+            : {}),
+          ...(result === "right"
+            ? { cause: null, slipSubtype: null, topics: [] }
+            : {}),
         },
+      },
+    });
+  }
+
+  function setSmarterApproach(
+    questionNumber: number,
+    answer: "found" | "not_found",
+  ) {
+    updateFeedbackForQuestion(questionNumber, (current) => ({
+      ...current,
+      smarterApproach: answer,
+      smarterApproachSaved: undefined,
+    }));
+  }
+
+  function setQuestionCause(questionNumber: number, cause: Cause) {
+    if (!session) return;
+    const current = session.feedback[questionNumber] ?? {
+      result: null,
+      cause: null,
+      slipSubtype: null,
+      topics: [],
+    };
+    setSession({
+      ...session,
+      feedback: {
+        ...session.feedback,
+        [questionNumber]: {
+          ...current,
+          cause,
+          slipSubtype: cause === "slip" ? current.slipSubtype : null,
+        },
+      },
+    });
+  }
+
+  function setQuestionSlipSubtype(
+    questionNumber: number,
+    subtype: SlipSubtype | null,
+  ) {
+    if (!session) return;
+    const current = session.feedback[questionNumber] ?? {
+      result: null,
+      cause: null,
+      slipSubtype: null,
+      topics: [],
+    };
+    setSession({
+      ...session,
+      feedback: {
+        ...session.feedback,
+        [questionNumber]: { ...current, slipSubtype: subtype },
       },
     });
   }
@@ -469,6 +796,8 @@ function App() {
     if (!session) return;
     const current = session.feedback[questionNumber] ?? {
       result: null,
+      cause: null,
+      slipSubtype: null,
       topics: [],
     };
     const topic = getChapter(session.subjectId, session.chapterId)?.topics.find(
@@ -478,52 +807,372 @@ function App() {
       return;
     }
 
+    const updatedTopics = [...current.topics, { id: topic.id, name: topic.name }];
     setSession({
       ...session,
       feedback: {
         ...session.feedback,
         [questionNumber]: {
           ...current,
-          topics: [...current.topics, { id: topic.id, name: topic.name }],
+          topics: updatedTopics,
         },
       },
     });
+
+    if (current.questionId) {
+      const card = questionCards.find((c) => c.id === current.questionId);
+      if (card && !card.topicIds.includes(topic.id)) {
+        void updateQuestionCard(card, {
+          subjectId: card.subjectId,
+          chapterId: card.chapterId,
+          topicIds: [...card.topicIds, topic.id],
+          promptText: card.promptText,
+          promptImageId: card.promptImageId,
+          solutionText: card.solutionText,
+          solutionImageId: card.solutionImageId,
+          smarterApproachText: card.smarterApproachText,
+          smarterApproachImageId: card.smarterApproachImageId,
+          keyInsight: card.keyInsight,
+        }).then((updated) => {
+          setQuestionCards((cards) =>
+            cards.map((item) => (item.id === updated.id ? updated : item)),
+          );
+        });
+      }
+    }
   }
 
   function removeTopic(questionNumber: number, topicToRemove: string) {
     if (!session) return;
     const current = session.feedback[questionNumber];
     if (!current) return;
+    const updatedTopics = current.topics.filter((topic) => topic.id !== topicToRemove);
     setSession({
       ...session,
       feedback: {
         ...session.feedback,
         [questionNumber]: {
           ...current,
-          topics: current.topics.filter((topic) => topic.id !== topicToRemove),
+          topics: updatedTopics,
         },
       },
     });
+
+    if (current.questionId) {
+      const card = questionCards.find((c) => c.id === current.questionId);
+      if (card && card.topicIds.includes(topicToRemove)) {
+        void updateQuestionCard(card, {
+          subjectId: card.subjectId,
+          chapterId: card.chapterId,
+          topicIds: card.topicIds.filter((id) => id !== topicToRemove),
+          promptText: card.promptText,
+          promptImageId: card.promptImageId,
+          solutionText: card.solutionText,
+          solutionImageId: card.solutionImageId,
+          smarterApproachText: card.smarterApproachText,
+          smarterApproachImageId: card.smarterApproachImageId,
+          keyInsight: card.keyInsight,
+        }).then((updated) => {
+          setQuestionCards((cards) =>
+            cards.map((item) => (item.id === updated.id ? updated : item)),
+          );
+        });
+      }
+    }
+  }
+
+  function updateFeedbackForQuestion(
+    questionNumber: number,
+    update: (current: NonNullable<ActiveSession["feedback"][number]>) => ActiveSession["feedback"][number],
+  ) {
+    setSession((current) => {
+      if (!current) return current;
+      const feedback = current.feedback[questionNumber] ?? {
+        result: null,
+        cause: null,
+        slipSubtype: null,
+        topics: [],
+      };
+      return {
+        ...current,
+        feedback: {
+          ...current.feedback,
+          [questionNumber]: update(feedback),
+        },
+      };
+    });
+  }
+
+  async function saveFeedbackQuestionCard(
+    questionNumber: number,
+    input: Pick<
+      QuestionCardInput,
+      | "promptText"
+      | "promptImageId"
+      | "solutionText"
+      | "solutionImageId"
+    >,
+  ) {
+    if (!session) throw new Error("The session is no longer available.");
+    if (session.sessionKind !== "practice") {
+      throw new Error("New question cards can only be created from practice feedback.");
+    }
+    const feedback = session.feedback[questionNumber];
+    if (!feedback || feedback.result === null) {
+      throw new Error("Record the result before saving this question.");
+    }
+    if (
+      feedback.result === "right" &&
+      (!feedback.smarterApproach ||
+        session.questionTimesMs[questionNumber] <= SMARTER_APPROACH_THRESHOLD_MS)
+    ) {
+      throw new Error("Only a slow practice question can be saved from a right answer.");
+    }
+    if (feedback.questionId) {
+      const existing = questionCards.find((card) => card.id === feedback.questionId);
+      if (existing) return existing;
+    }
+    const attemptId = feedback.attemptId ?? globalThis.crypto.randomUUID();
+    const card = await createQuestionCard(
+      {
+        ...input,
+        subjectId: session.subjectId,
+        chapterId: session.chapterId,
+        topicIds: feedback.topics.map((topic) => topic.id),
+        createdFromAttemptId: attemptId,
+      },
+      { userId: authUser?.id },
+    );
+    updateFeedbackForQuestion(questionNumber, (current) => ({
+      ...current,
+      attemptId,
+      questionId: card.id,
+    }));
+    await refreshCardData();
+    if (authUser) void performSync(authUser);
+    return card;
+  }
+
+  async function saveSmarterApproach(
+    questionNumber: number,
+    input: Pick<QuestionCardInput, "solutionText" | "solutionImageId">,
+  ) {
+    if (!session || session.sessionKind !== "practice") {
+      throw new Error("Smarter approaches can only be saved from practice feedback.");
+    }
+    const feedback = session.feedback[questionNumber];
+    if (
+      !feedback?.questionId ||
+      feedback.smarterApproach !== "found" ||
+      session.questionTimesMs[questionNumber] <= SMARTER_APPROACH_THRESHOLD_MS
+    ) {
+      throw new Error("Save the slow question before adding its shorter approach.");
+    }
+    if (!input.solutionImageId) {
+      throw new Error("Add a photo of the smarter solution.");
+    }
+    const card = questionCards.find((item) => item.id === feedback.questionId);
+    if (!card) throw new Error("The saved question could not be found.");
+    await updateQuestionCard(card, {
+      subjectId: card.subjectId,
+      chapterId: card.chapterId,
+      topicIds: Array.from(
+        new Set([...card.topicIds, ...feedback.topics.map((t) => t.id)]),
+      ),
+      promptText: card.promptText,
+      promptImageId: card.promptImageId,
+      smarterApproachText: input.solutionText,
+      smarterApproachImageId: input.solutionImageId,
+      solutionText: card.solutionText,
+      solutionImageId: card.solutionImageId,
+      keyInsight: card.keyInsight,
+    });
+    updateFeedbackForQuestion(questionNumber, (current) => ({
+      ...current,
+      smarterApproachSaved: true,
+    }));
+    await refreshCardData();
+    if (authUser) void performSync(authUser);
+  }
+
+  async function saveSolution(
+    questionNumber: number,
+    input: Pick<QuestionCardInput, "solutionText" | "solutionImageId">,
+  ) {
+    if (!session || session.sessionKind !== "practice") {
+      throw new Error("Solutions can only be saved from practice feedback.");
+    }
+    const feedback = session.feedback[questionNumber];
+    if (!feedback?.questionId) {
+      throw new Error("Save the question before adding a solution.");
+    }
+    const card = questionCards.find((item) => item.id === feedback.questionId);
+    if (!card) throw new Error("The saved question could not be found.");
+    await updateQuestionCard(card, {
+      subjectId: card.subjectId,
+      chapterId: card.chapterId,
+      topicIds: Array.from(
+        new Set([...card.topicIds, ...feedback.topics.map((t) => t.id)]),
+      ),
+      promptText: card.promptText,
+      promptImageId: card.promptImageId,
+      solutionText: input.solutionText,
+      solutionImageId: input.solutionImageId,
+      smarterApproachText: card.smarterApproachText,
+      smarterApproachImageId: card.smarterApproachImageId,
+      keyInsight: card.keyInsight,
+    });
+    updateFeedbackForQuestion(questionNumber, (current) => ({
+      ...current,
+      solutionSaved: true,
+    }));
+    await refreshCardData();
+    if (authUser) void performSync(authUser);
+  }
+
+  async function useQuestionCardForAttempt(
+    questionNumber: number,
+    card: QuestionCard,
+  ) {
+    const feedback = session?.feedback[questionNumber];
+    if (!session || !feedback) throw new Error("The attempt is no longer available.");
+    await recordQuestionSeen(card.id, authUser?.id);
+    updateFeedbackForQuestion(questionNumber, (current) => ({
+      ...current,
+      attemptId: current.attemptId ?? globalThis.crypto.randomUUID(),
+      questionId: card.id,
+      topics: Array.from(
+        new Map(
+          [
+            ...current.topics,
+            ...(getChapter(session.subjectId, session.chapterId)?.topics ?? [])
+              .filter((topic) => card.topicIds.includes(topic.id))
+              .map(({ id, name }) => ({ id, name })),
+          ].map((topic) => [topic.id, topic]),
+        ).values(),
+      ),
+    }));
+    await refreshCardData();
+    if (authUser) void performSync(authUser);
+  }
+
+  async function saveFeedbackFactCard(
+    questionNumber: number,
+    input: Pick<
+      FactCardInput,
+      | "kind"
+      | "promptText"
+      | "promptImageId"
+      | "contentText"
+      | "contentImageId"
+      | "wrongBelief"
+    >,
+  ) {
+    if (!session) throw new Error("The session is no longer available.");
+    const feedback = session.feedback[questionNumber];
+    if (!feedback?.questionId) {
+      throw new Error("Save or link this attempt's question card first.");
+    }
+    const card = await createFactCardAndLink(
+      {
+        ...input,
+        subjectId: session.subjectId,
+        chapterId: session.chapterId,
+        topicIds: feedback.topics.map((topic) => topic.id),
+        createdFromAttemptId:
+          feedback.attemptId ?? globalThis.crypto.randomUUID(),
+      },
+      feedback.questionId,
+      { userId: authUser?.id },
+    );
+    await refreshCardData();
+    if (authUser) void performSync(authUser);
+    return card;
+  }
+
+  async function useFactCardForAttempt(questionNumber: number, card: FactCard) {
+    const questionId = session?.feedback[questionNumber]?.questionId;
+    if (!questionId) {
+      throw new Error("Save or link this attempt's question card first.");
+    }
+    await linkQuestionAndFact(questionId, card.id, { userId: authUser?.id });
+    await refreshCardData();
+    if (authUser) void performSync(authUser);
   }
 
   async function saveSession() {
     if (!session) return;
-    const feedbackEntries = Object.entries(session.feedback);
-    const rightCount = feedbackEntries.filter(
-      ([, feedback]) => feedback.result === "right",
+    const recordId = globalThis.crypto.randomUUID();
+    const timestamp = new Date().toISOString();
+    const timedQuestions = Object.entries(session.questionTimesMs)
+      .map(([questionNumber, timeMs]) => ({
+        questionNumber: Number(questionNumber),
+        timeMs,
+      }))
+      .sort((left, right) => left.questionNumber - right.questionNumber);
+    const attempts: AttemptRecord[] = [];
+    const attemptValidationErrors: string[] = [];
+    const topicsByQuestionId = new Map<string, Set<string>>();
+    timedQuestions.forEach(({ questionNumber, timeMs }) => {
+      const feedback = session.feedback[questionNumber] ?? {
+        result: null,
+        cause: null,
+        slipSubtype: null,
+        topics: [],
+      };
+      attemptValidationErrors.push(
+        ...validateAttempt({
+          result: feedback.result,
+          cause: feedback.cause,
+          slipSubtype: feedback.slipSubtype,
+          topicIds: feedback.topics.map((topic) => topic.id),
+        }).map((message) => `Q${questionNumber}: ${message}`),
+      );
+      if (feedback.result === null) return;
+      if (feedback.questionId && feedback.topics.length > 0) {
+        const linkedTopics =
+          topicsByQuestionId.get(feedback.questionId) ?? new Set<string>();
+        feedback.topics.forEach((topic) => linkedTopics.add(topic.id));
+        topicsByQuestionId.set(feedback.questionId, linkedTopics);
+      }
+      attempts.push({
+        id: feedback.attemptId ?? globalThis.crypto.randomUUID(),
+        ...(authUser ? { ownerUserId: authUser.id } : {}),
+        syncStatus: authUser ? "pending" : "local",
+        sessionId: recordId,
+        ...(feedback.questionId ? { questionId: feedback.questionId } : {}),
+        timeMs,
+        result: feedback.result,
+        ...(feedback.cause ? { cause: feedback.cause } : {}),
+        ...(feedback.slipSubtype
+          ? { slipSubtype: feedback.slipSubtype }
+          : {}),
+        topicIds: feedback.topics.map((topic) => topic.id),
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      });
+    });
+    if (attemptValidationErrors.length > 0) {
+      setSaveError(attemptValidationErrors.join(" "));
+      return;
+    }
+
+    const rightCount = attempts.filter(
+      (attempt) => attempt.result === "right",
     ).length;
-    const wrongCount = feedbackEntries.filter(
-      ([, feedback]) => feedback.result === "wrong",
+    const wrongCount = attempts.filter(
+      (attempt) => attempt.result === "wrong",
     ).length;
-    const couldntSolveCount = feedbackEntries.filter(
-      ([, feedback]) => feedback.result === "couldnt_solve",
+    const couldntSolveCount = attempts.filter(
+      (attempt) => attempt.result === "couldnt_solve",
     ).length;
     const topicCounts = new Map<
       string,
       { topic: string; questionCount: number }
     >();
-    feedbackEntries.forEach(([, feedback]) => {
-      if (feedback.result !== "couldnt_solve") return;
+    attempts.forEach((attempt, index) => {
+      if (attempt.result === "right") return;
+      const feedback = session.feedback[timedQuestions[index].questionNumber];
       feedback.topics.forEach((topic) => {
         const current = topicCounts.get(topic.id);
         topicCounts.set(topic.id, {
@@ -540,16 +1189,17 @@ function App() {
       return;
     }
 
-    const timedQuestionCount = rightCount + wrongCount + couldntSolveCount;
-    const activeTimeMs = Object.values(session.questionTimesMs).reduce(
-      (total, duration) => total + duration,
+    const timedQuestionCount = attempts.length;
+    const activeTimeMs = attempts.reduce(
+      (total, attempt) => total + attempt.timeMs,
       0,
     );
     const record: SessionRecord = {
-      id: globalThis.crypto.randomUUID(),
+      id: recordId,
       ...(authUser
         ? { ownerUserId: authUser.id, syncStatus: "pending" as const }
         : { syncStatus: "local" as const }),
+      sessionKind: "practice",
       subject: subject.name,
       subjectId: subject.id,
       chapter: chapter.name,
@@ -578,7 +1228,42 @@ function App() {
     setIsSavingSession(true);
     setSaveError(null);
     try {
-      await database.sessions.add(record);
+      if (activeSessionWriteTimeout.current !== null) {
+        window.clearTimeout(activeSessionWriteTimeout.current);
+        activeSessionWriteTimeout.current = null;
+      }
+      await activeSessionWriteQueue.current;
+      const updatedQuestionCards = new Map<string, QuestionCard>();
+      await database.transaction(
+        "rw",
+        database.sessions,
+        database.attempts,
+        database.activeSession,
+        database.questions,
+        async () => {
+          await database.sessions.add(record);
+          await database.attempts.bulkAdd(attempts);
+          for (const [questionId, topicIds] of topicsByQuestionId) {
+            const card = await database.questions.get(questionId);
+            if (!card) continue;
+            const updated: QuestionCard = {
+              ...card,
+              topicIds: Array.from(new Set([...card.topicIds, ...topicIds])),
+              updatedAt: timestamp,
+              syncStatus: card.ownerUserId ? "pending" : "local",
+            };
+            await database.questions.put(updated);
+            updatedQuestionCards.set(questionId, updated);
+          }
+          await database.activeSession.delete("current");
+        },
+      );
+      if (updatedQuestionCards.size > 0) {
+        setQuestionCards((cards) =>
+          cards.map((card) => updatedQuestionCards.get(card.id) ?? card),
+        );
+      }
+      setPersistenceError(null);
       setSavedSessions((current) =>
         [record, ...current].sort((left, right) =>
           right.endedAt.localeCompare(left.endedAt),
@@ -600,332 +1285,250 @@ function App() {
     }
   }
 
-  function startNewSession() {
-    setSession(null);
+  async function resumeRecoveredSession() {
+    if (!recoveryCandidate) return;
+    const resumedAt = Date.now();
+    const recovered = recoverSessionSnapshot(recoveryCandidate, resumedAt);
+    lastInteractionAtRef.current = recovered.lastInteractionAt;
+    pendingWarningRef.current = recovered.pendingWarning;
+    setPendingWarning(recovered.pendingWarning);
+    setNow(resumedAt);
+    setRecoveryCandidate(null);
+    setSession(recovered.session);
+    setPersistenceError(null);
+  }
+
+  async function discardRecoveredSession() {
+    try {
+      await clearActiveSessionSnapshot();
+      setRecoveryCandidate(null);
+      setPendingWarning(null);
+      pendingWarningRef.current = null;
+      lastInteractionAtRef.current = Date.now();
+    } catch (error) {
+      setPersistenceError(
+        error instanceof Error
+          ? `Could not discard the recovered session: ${error.message}`
+          : "Could not discard the recovered session.",
+      );
+    }
+  }
+
+  async function startNewSession() {
+    try {
+      await clearActiveSessionSnapshot();
+      setSession(null);
+      setActiveTab("practice");
+      setPendingWarning(null);
+      pendingWarningRef.current = null;
+      lastInteractionAtRef.current = Date.now();
+    } catch (error) {
+      setPersistenceError(
+        error instanceof Error
+          ? `Could not clear the previous session: ${error.message}`
+          : "Could not clear the previous session.",
+      );
+    }
+  }
+
+  if (isLoadingActiveSession) {
+    return (
+      <main className="setup-shell">
+        <section className="setup-card" aria-live="polite">
+          <p className="eyebrow">JEE PRACTICE</p>
+          <h1>Checking for an active session.</h1>
+        </section>
+      </main>
+    );
+  }
+
+  if (recoveryCandidate) {
+    return (
+      <SessionRecoveryScreen
+        snapshot={recoveryCandidate}
+        error={persistenceError}
+        onResume={() => void resumeRecoveredSession()}
+        onDiscard={() => void discardRecoveredSession()}
+      />
+    );
+  }
+
+  if (!session && activeTab === "cards") {
+    return (
+      <CardsScreen
+        questions={questionCards}
+        facts={factCards}
+        links={questionFactLinks}
+        reviews={factReviews}
+        attempts={attemptRecords}
+        userId={authUser?.id}
+        syncError={syncError}
+        onCreateFact={(input) =>
+          createFactCard(input, { userId: authUser?.id }).then(async (card) => {
+            await refreshCardData();
+            if (authUser) void performSync(authUser);
+            return card;
+          })
+        }
+        onCreateLinkedFact={(input, questionId) =>
+          createFactCardAndLink(input, questionId, {
+            userId: authUser?.id,
+          }).then(async (card) => {
+            await refreshCardData();
+            if (authUser) void performSync(authUser);
+            return card;
+          })
+        }
+        onUpdateQuestion={(card, input) =>
+          updateQuestionCard(card, input).then(async (updated) => {
+            await refreshCardData();
+            if (authUser) void performSync(authUser);
+            return updated;
+          })
+        }
+        onUpdateFact={(card, input) =>
+          updateFactCard(card, input).then(async (updated) => {
+            await refreshCardData();
+            if (authUser) void performSync(authUser);
+            return updated;
+          })
+        }
+        onDeleteQuestion={(id) =>
+          softDeleteQuestionCard(id).then(async () => {
+            await refreshCardData();
+            if (authUser) void performSync(authUser);
+          })
+        }
+        onDeleteFact={(id) =>
+          softDeleteFactCard(id).then(async () => {
+            await refreshCardData();
+            if (authUser) void performSync(authUser);
+          })
+        }
+        onLink={async (questionId, factId) => {
+          await linkQuestionAndFact(questionId, factId, {
+            userId: authUser?.id,
+          });
+          await refreshCardData();
+          if (authUser) void performSync(authUser);
+        }}
+        onUnlink={async (questionId, factId) => {
+          await unlinkQuestionAndFact(questionId, factId);
+          await refreshCardData();
+          if (authUser) void performSync(authUser);
+        }}
+        onRefresh={refreshCardData}
+        activeTab="cards"
+        onNavigate={navigate}
+      />
+    );
+  }
+
+  if (!session && activeTab === "history") {
+    return (
+      <main className="cards-shell">
+        <header className="cards-header">
+          <div>
+            <p className="eyebrow">YOUR PRACTICE</p>
+            <h1>History</h1>
+          </div>
+        </header>
+        <section className="saved-sessions history-page-list">
+          <h2>Saved sessions</h2>
+          {isLoadingSessions ? (
+            <p className="history-empty">Loading saved sessions…</p>
+          ) : savedSessions.length === 0 ? (
+            <p className="history-empty">Your saved sessions will appear here.</p>
+          ) : (
+            <ul>
+              {savedSessions.map((record) => (
+                <li key={record.id}>
+                  <div className="history-session-title">
+                    <strong>{record.chapter}</strong>
+                    <span>{record.subject} · {new Date(record.endedAt).toLocaleDateString()}</span>
+                  </div>
+                  <div className="history-session-stats">
+                    <span>{record.timedQuestionCount} timed</span>
+                    <span>{record.rightCount} right</span>
+                    <span>{record.wrongCount} wrong</span>
+                    <span>{formatStopwatch(record.activeTimeMs)} active</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        <MainNavigation activeTab={activeTab} onNavigate={navigate} />
+      </main>
+    );
   }
 
   if (session?.phase === "summary" && session.record) {
-    const { record } = session;
-    const totalQuestions =
-      record.timedQuestionCount ??
-      record.rightCount + record.wrongCount + record.couldntSolveCount;
-    const averageTime =
-      totalQuestions > 0
-        ? (record.avgTimePerQuestionMs ??
-          Math.round(record.activeTimeMs / totalQuestions))
-        : 0;
-    const accuracyDenominator = record.rightCount + record.wrongCount;
-    const accuracy =
-      accuracyDenominator > 0
-        ? Math.round((record.rightCount / accuracyDenominator) * 100)
-        : null;
-
     return (
-      <main className="setup-shell">
-        <section className="setup-card" aria-labelledby="summary-title">
-          <p className="eyebrow">SESSION SUMMARY</p>
-          <h1 id="summary-title">{record.chapter}</h1>
-          <p className="intro">
-            {record.subject} · {record.status === "completed" ? "Duration completed" : "Ended early"}
-          </p>
-          <div className="summary-grid">
-            <p><span>Questions timed</span><strong>{totalQuestions}</strong></p>
-            <p><span>Right</span><strong>{record.rightCount}</strong></p>
-            <p><span>Wrong</span><strong>{record.wrongCount}</strong></p>
-            <p><span>Couldn’t solve</span><strong>{record.couldntSolveCount}</strong></p>
-            <p><span>Active time</span><strong>{formatStopwatch(record.activeTimeMs)}</strong></p>
-            <p><span>Average / question</span><strong>{formatStopwatch(averageTime)}</strong></p>
-            <p><span>Accuracy</span><strong>{accuracy === null ? "—" : `${accuracy}%`}</strong></p>
-          </div>
-          <p className="storage-note">
-            {record.ownerUserId
-              ? syncStatus === "synced"
-                ? "Saved on this device and synced to your account."
-                : "Saved on this device. Cloud sync is pending."
-              : "Saved on this device only. Sign in to sync it to your account."}
-          </p>
-          {record.weakTopics.length > 0 && (
-            <div className="summary-topics">
-              <h2>Topics to revisit</h2>
-              <ul>
-                {record.weakTopics.map(({ topic, questionCount }) => (
-                  <li key={topic}>{topic}<span>{questionCount}</span></li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <button className="start-button" onClick={startNewSession}>
-            New session
-          </button>
-        </section>
-      </main>
+      <SessionSummaryScreen
+        record={session.record}
+        feedback={session.feedback}
+        syncStatus={syncStatus}
+        onNewSession={() => void startNewSession()}
+      />
     );
   }
 
   if (session?.phase === "feedback") {
-    const questionNumbers = Object.keys(session.questionTimesMs)
-      .map(Number)
-      .sort((left, right) => left - right);
-    const feedbackComplete = questionNumbers.every((questionNumber) => {
-      const feedback = session.feedback[questionNumber];
-      return (
-        feedback?.result !== undefined &&
-        feedback?.result !== null &&
-        (feedback.result !== "couldnt_solve" || feedback.topics.length > 0)
-      );
-    });
-    const activeTimeMs = Object.values(session.questionTimesMs).reduce(
-      (total, duration) => total + duration,
-      0,
-    );
-
     return (
-      <main className="feedback-shell">
-        <section className="feedback-page" aria-labelledby="feedback-title">
-          <header className="feedback-header">
-            <div>
-              <p className="eyebrow">SESSION FEEDBACK</p>
-              <h1 id="feedback-title">{activeChapter?.name}</h1>
-              <p className="feedback-subtitle">
-                Mark each timed question. You can add multiple weak topics.
-              </p>
-            </div>
-            <p className="feedback-active-time">
-              Active time <strong>{formatStopwatch(activeTimeMs)}</strong>
-            </p>
-          </header>
-
-          {questionNumbers.length === 0 ? (
-            <p className="empty-feedback">
-              No questions were timed in this session.
-            </p>
-          ) : (
-            <div className="feedback-list">
-              {questionNumbers.map((questionNumber) => {
-                const feedback = session.feedback[questionNumber] ?? {
-                  result: null,
-                  topics: [],
-                };
-                const chapterTopics = activeChapter?.topics ?? [];
-                return (
-                  <article className="feedback-question" key={questionNumber}>
-                    <div className="feedback-question-heading">
-                      <h2>Q{questionNumber}</h2>
-                      <span>
-                        {formatStopwatch(session.questionTimesMs[questionNumber])}
-                      </span>
-                    </div>
-                    <div className="result-options" role="group" aria-label={`Result for question ${questionNumber}`}>
-                      {([
-                        ["right", "Right"],
-                        ["wrong", "Wrong"],
-                        ["couldnt_solve", "Couldn’t solve"],
-                      ] as const).map(([result, label]) => (
-                        <button
-                          className={feedback.result === result ? "result-option selected" : "result-option"}
-                          key={result}
-                          type="button"
-                          aria-pressed={feedback.result === result}
-                          onClick={() => setQuestionResult(questionNumber, result)}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                    {feedback.result === "couldnt_solve" && (
-                      <div className="topic-entry">
-                        <SearchSelect
-                          label="Weak topics (add one or more)"
-                          value=""
-                          options={chapterTopics
-                            .filter(
-                              (topic) =>
-                                !feedback.topics.some(
-                                  (selected) => selected.id === topic.id,
-                                ),
-                            )
-                            .map((topic) => ({
-                              id: topic.id,
-                              label: topic.name,
-                            }))}
-                          placeholder="Search topics in this chapter"
-                          emptyMessage="No topics match. Try another search."
-                          onChange={(topicId) =>
-                            addTopic(questionNumber, topicId)
-                          }
-                        />
-                        {feedback.topics.length > 0 && (
-                          <ul className="topic-chips">
-                            {feedback.topics.map((topic) => (
-                              <li key={topic.id}>
-                                {topic.name}
-                                <button
-                                  type="button"
-                                  aria-label={`Remove ${topic.name}`}
-                                  onClick={() =>
-                                    removeTopic(questionNumber, topic.id)
-                                  }
-                                >
-                                  ×
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
-          )}
-
-          <footer className="feedback-footer">
-            <p>
-              Active time is the sum of all question-stopwatch durations.
-            </p>
-            <button
-              className="start-button"
-              onClick={saveSession}
-              disabled={!feedbackComplete || isSavingSession}
-            >
-              {isSavingSession ? "Saving session…" : "Save session"}
-            </button>
-          </footer>
-          {saveError && (
-            <p className="database-error" role="alert">
-              {saveError}
-            </p>
-          )}
-        </section>
-      </main>
+      <SessionFeedbackScreen
+        session={session}
+        persistenceError={persistenceError}
+        saveError={saveError}
+        isSaving={isSavingSession}
+        onSetQuestionResult={setQuestionResult}
+        onSetCause={setQuestionCause}
+        onSetSlipSubtype={setQuestionSlipSubtype}
+        onSetSmarterApproach={setSmarterApproach}
+        onAddTopic={addTopic}
+        onRemoveTopic={removeTopic}
+        questions={questionCards}
+        facts={factCards}
+        links={questionFactLinks}
+        onCreateQuestionCard={saveFeedbackQuestionCard}
+        onUseQuestionCard={useQuestionCardForAttempt}
+        onSaveSmarterApproach={saveSmarterApproach}
+        onSaveSolution={saveSolution}
+        onCreateFactCard={saveFeedbackFactCard}
+        onUseFactCard={useFactCardForAttempt}
+        onSave={() => void saveSession()}
+      />
     );
   }
 
   if (session) {
+    const warningSecondsRemaining = pendingWarning
+      ? Math.max(
+          0,
+          Math.ceil(
+            (pendingWarning.startedAt +
+              INACTIVITY_LIMITS.warningResponseMs -
+              now) /
+              1_000,
+          ),
+        )
+        : 0;
     return (
-      <main className="session-shell">
-        <section className="session-view" aria-label="Practice session controls">
-          <header className="session-header">
-            <p className="global-timer-label">SESSION TIME LEFT</p>
-            <p
-              className="global-timer"
-              aria-label={`${Math.floor(remaining / 60)} minutes ${remaining % 60} seconds remaining`}
-              aria-live="off"
-            >
-              <TimerDigits
-                className="global-timer-digits"
-                values={[
-                  String(Math.floor(remaining / 60)).padStart(2, "0"),
-                  String(remaining % 60).padStart(2, "0"),
-                ]}
-                units={["MIN", "SEC"]}
-              />
-            </p>
-            <button className="end-button" onClick={endSession}>
-              End session
-            </button>
-          </header>
-
-          <div className="practice-stage">
-            <label className="question-control">
-              <span className="question-display">
-                <span className="question-prefix" aria-hidden="true">
-                  Q
-                </span>
-                <input
-                  aria-label="Question number"
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  autoComplete="off"
-                  value={session.questionNumberText}
-                  style={{
-                    width: `${Math.max(1, session.questionNumberText.length)}ch`,
-                  }}
-                  disabled={session.questionStartedAt !== null}
-                  onFocus={(event) => event.currentTarget.select()}
-                  onChange={(event) =>
-                    updateQuestionNumberText(event.target.value)
-                  }
-                  onBlur={() => {
-                    const parsed = Number(session.questionNumberText);
-                    if (
-                      !Number.isSafeInteger(parsed) ||
-                      parsed < 1
-                    ) {
-                      setSession({
-                        ...session,
-                        questionNumberText: String(session.questionNumber),
-                      });
-                    } else {
-                      setSession({
-                        ...session,
-                        questionNumber: parsed,
-                        questionNumberText: String(parsed),
-                      });
-                    }
-                  }}
-                />
-              </span>
-            </label>
-
-            <div className="stopwatch-control">
-              <p className="control-label">QUESTION TIMER</p>
-              <p
-                className={isOverAverage ? "stopwatch over-average" : "stopwatch"}
-                aria-label={`${formatStopwatch(stopwatchElapsed)} elapsed`}
-                aria-live="off"
-              >
-                <TimerDigits
-                  className="stopwatch-digits"
-                  values={[
-                    String(Math.floor(stopwatchElapsed / 60_000)).padStart(
-                      2,
-                      "0",
-                    ),
-                    String(Math.floor((stopwatchElapsed % 60_000) / 1_000)).padStart(
-                      2,
-                      "0",
-                    ),
-                    String(Math.floor(stopwatchElapsed % 1_000)).padStart(3, "0"),
-                  ]}
-                  units={["MIN", "SEC", "MS"]}
-                />
-              </p>
-              <div className="stopwatch-actions">
-                <button
-                  className={
-                    session.questionStartedAt === null
-                      ? "stopwatch-button"
-                      : "stopwatch-button is-running"
-                  }
-                  disabled={
-                    session.questionStartedAt === null &&
-                    (!/^[1-9]\d*$/.test(session.questionNumberText) ||
-                      !Number.isSafeInteger(Number(session.questionNumberText)))
-                  }
-                  onClick={toggleStopwatch}
-                >
-                  {session.questionStartedAt === null ? "Start" : "Stop"}
-                </button>
-                {session.questionStartedAt === null && (
-                  <button
-                    className="skip-question-button"
-                    disabled={
-                      !/^[1-9]\d*$/.test(session.questionNumberText) ||
-                      !Number.isSafeInteger(Number(session.questionNumberText))
-                    }
-                    onClick={skipNextQuestion}
-                  >
-                    Skip Q{session.questionNumber}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
+        <PracticeSessionScreen
+          session={session}
+          remaining={remaining}
+          stopwatchElapsed={stopwatchElapsed}
+          isOverAverage={isOverAverage}
+          warning={pendingWarning}
+          warningSecondsRemaining={warningSecondsRemaining}
+          persistenceError={persistenceError}
+          onEnd={endSession}
+          onToggleStopwatch={toggleStopwatch}
+          onSkipQuestion={skipNextQuestion}
+          onUpdateQuestionNumber={updateQuestionNumberText}
+          onCommitQuestionNumber={commitQuestionNumberText}
+          onConfirmStillHere={confirmStillHere}
+        />
     );
   }
 
@@ -939,150 +1542,44 @@ function App() {
           view.
         </p>
 
-        <section className="account-card" aria-labelledby="account-title">
-          <div className="account-heading">
-            <div>
-              <p className="eyebrow">CLOUD SYNC</p>
-              <h2 id="account-title">
-                {authUser ? "Your account" : "Sync across devices"}
-              </h2>
-            </div>
-            {authUser && (
-              <button
-                className="account-secondary-button"
-                type="button"
-                onClick={signOut}
-              >
-                Sign out
-              </button>
-            )}
-          </div>
-          {!supabaseConfigured ? (
-            <p className="account-note">
-              Add your Supabase URL and publishable key to .env.local, then
-              restart the development server to enable cloud sync.
-            </p>
-          ) : authUser ? (
-            <>
-              <p className="account-email">{authUser.email}</p>
-              <p className="sync-status" role="status">
-                {syncStatus === "syncing" && "Syncing sessions…"}
-                {syncStatus === "synced" && "Your sessions are synced."}
-                {syncStatus === "offline" &&
-                  "You’re offline. Saved sessions will sync when reconnected."}
-                {syncStatus === "error" &&
-                  "Sync needs attention. Your sessions remain saved on this device."}
-                {syncStatus === "idle" && "Checking cloud sync…"}
-              </p>
-              {syncError && (
-                <p className="database-error" role="alert">
-                  {syncError}
-                </p>
-              )}
-              {unassignedSessionCount > 0 && (
-                <div className="account-note">
-                  <p>
-                    {unassignedSessionCount} existing device{" "}
-                    {unassignedSessionCount === 1 ? "session is" : "sessions are"}{" "}
-                    not linked to an account.
-                  </p>
-                  <button
-                    className="account-action-button"
-                    type="button"
-                    onClick={importLocalSessions}
-                    disabled={syncStatus === "syncing"}
-                  >
-                    Import local sessions to this account
-                  </button>
-                </div>
-              )}
-              <button
-                className="account-action-button"
-                type="button"
-                onClick={() => void performSync(authUser)}
-                disabled={syncStatus === "syncing"}
-              >
-                {syncStatus === "syncing" ? "Syncing…" : "Sync now"}
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="account-note">
-                Sign in to back up completed sessions and access them on your
-                other devices. You can still practice offline.
-              </p>
-              <form className="auth-form" onSubmit={submitAuth}>
-                <label>
-                  Email
-                  <input
-                    type="email"
-                    autoComplete="email"
-                    value={authEmail}
-                    onChange={(event) => setAuthEmail(event.target.value)}
-                    required
-                  />
-                </label>
-                <label>
-                  Password
-                  <input
-                    type="password"
-                    autoComplete={
-                      authMode === "sign_up"
-                        ? "new-password"
-                        : "current-password"
-                    }
-                    minLength={8}
-                    value={authPassword}
-                    onChange={(event) => setAuthPassword(event.target.value)}
-                    required
-                  />
-                </label>
-                <button
-                  className="account-action-button"
-                  type="submit"
-                  disabled={isSubmittingAuth}
-                >
-                  {isSubmittingAuth
-                    ? "Please wait…"
-                    : authMode === "sign_in"
-                      ? "Sign in"
-                      : "Create account"}
-                </button>
-                <button
-                  className="account-text-button"
-                  type="button"
-                  onClick={() => {
-                    setAuthMode((mode) =>
-                      mode === "sign_in" ? "sign_up" : "sign_in",
-                    );
-                    setAuthError(null);
-                    setAuthMessage(null);
-                  }}
-                >
-                  {authMode === "sign_in"
-                    ? "New here? Create an account"
-                    : "Already have an account? Sign in"}
-                </button>
-              </form>
-              {authMessage && (
-                <p className="account-message" role="status">
-                  {authMessage}
-                </p>
-              )}
-              {authError && (
-                <p className="database-error" role="alert">
-                  {authError}
-                </p>
-              )}
-            </>
-          )}
-        </section>
+        <AccountPanel
+          configured={supabaseConfigured}
+          email={authUser?.email}
+          authMode={authMode}
+          authEmail={authEmail}
+          authPassword={authPassword}
+          authMessage={authMessage}
+          authError={authError}
+          isSubmittingAuth={isSubmittingAuth}
+          syncStatus={syncStatus}
+          syncError={syncError}
+          unassignedSessionCount={unassignedSessionCount}
+          unassignedCardCount={unassignedCardCount}
+          onAuthEmailChange={setAuthEmail}
+          onAuthPasswordChange={setAuthPassword}
+          onSubmitAuth={(event) => void submitAuth(event)}
+          onToggleAuthMode={() => {
+            setAuthMode((mode) => (mode === "sign_in" ? "sign_up" : "sign_in"));
+            setAuthError(null);
+            setAuthMessage(null);
+          }}
+          onSignOut={() => void signOut()}
+          onImportLocalSessions={() => void importLocalSessions()}
+          onSyncNow={() => {
+            if (authUser) void performSync(authUser);
+          }}
+        />
 
         <p className="storage-note">
           {authUser
             ? "Sessions are stored locally first and synced securely when online."
             : "Sessions are saved on this device. Sign in to enable cloud backup and sync."}
         </p>
+        {persistenceError && (
+          <p className="database-error" role="alert">
+            {persistenceError}
+          </p>
+        )}
         {databaseError && (
           <p className="database-error" role="alert">
             {databaseError}
@@ -1204,6 +1701,7 @@ function App() {
             </ul>
           )}
         </section>
+        <MainNavigation activeTab={activeTab} onNavigate={navigate} />
       </section>
     </main>
   );
