@@ -1,5 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import { getLocalImageBlob, saveImageFile } from "./imageRepository";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  getImageRecord,
+  getLocalImageBlob,
+  markImageFailed,
+  saveImageFile,
+} from "./imageRepository";
+import {
+  driveImageStore,
+  isUploadQueueRunning,
+  processUploadQueue,
+} from "./driveImageStore";
 
 type Props = {
   label: string;
@@ -22,10 +32,41 @@ export default function ImageInput({
   const [previewUrl, setPreviewUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [record, setRecord] = useState<{
+    status: string;
+    remoteId?: string;
+    lastError?: string;
+    attempts?: number;
+  } | null>(null);
 
   useEffect(() => {
     setImageId(value ?? "");
   }, [value]);
+
+  const refreshRecord = useCallback(async () => {
+    if (!imageId) {
+      setRecord(null);
+      return;
+    }
+    const rec = await getImageRecord(imageId);
+    if (rec) {
+      setRecord({
+        status: rec.status,
+        remoteId: rec.remoteId,
+        lastError: rec.lastError,
+        attempts: rec.attempts,
+      });
+    } else {
+      setRecord(null);
+    }
+  }, [imageId]);
+
+  useEffect(() => {
+    refreshRecord();
+    // Re-check status every few seconds while an upload is in flight.
+    const timer = setInterval(refreshRecord, 3000);
+    return () => clearInterval(timer);
+  }, [imageId, refreshRecord]);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +81,10 @@ export default function ImageInput({
         if (blob) {
           objectUrl = URL.createObjectURL(blob);
           setPreviewUrl(objectUrl);
+        } else if (record?.remoteId) {
+          // Blob not local yet but uploaded to Drive: preview will load
+          // through CardImage's download path; show nothing here.
+          setPreviewUrl("");
         } else {
           setPreviewUrl("");
         }
@@ -57,7 +102,7 @@ export default function ImageInput({
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [imageId]);
+  }, [imageId, record?.remoteId]);
 
   async function chooseFile(file?: File) {
     if (!file) return;
@@ -67,6 +112,7 @@ export default function ImageInput({
       const nextId = await saveImageFile(file);
       setImageId(nextId);
       onChange?.(nextId);
+      void processUploadQueue();
     } catch (saveError) {
       setError(
         saveError instanceof Error
@@ -78,6 +124,49 @@ export default function ImageInput({
     }
   }
 
+  async function retryUpload() {
+    if (!imageId || !record) return;
+    setError(null);
+    try {
+      await processUploadQueue();
+    } catch (queueError) {
+      const message =
+        queueError instanceof Error
+          ? queueError.message
+          : "Retry failed.";
+      setError(message);
+      await markImageFailed(imageId, message);
+    }
+  }
+
+  async function reconnectDrive() {
+    try {
+      await driveImageStore.reconnect();
+      await processUploadQueue();
+    } catch (reconnectError) {
+      setError(
+        reconnectError instanceof Error
+          ? reconnectError.message
+          : "Could not reconnect Google Drive.",
+      );
+    }
+  }
+
+  const statusLabel = (() => {
+    switch (record?.status) {
+      case "pending":
+        return "Waiting to upload";
+      case "uploading":
+        return "Uploading photo…";
+      case "uploaded":
+        return record.remoteId ? "Uploaded" : "Uploaded";
+      case "failed":
+        return "Upload failed";
+      default:
+        return "Ready";
+    }
+  })();
+
   return (
     <div className="image-input">
       <span className="image-input-label">
@@ -88,11 +177,13 @@ export default function ImageInput({
       {previewUrl ? (
         <img className="image-input-preview" src={previewUrl} alt={`${label} preview`} />
       ) : imageId ? (
-        <p className="image-input-missing">Photo isn’t downloaded on this device yet.</p>
+        <p className="image-input-missing">
+          {record?.remoteId ? "Stored in Google Drive." : "Photo isn’t downloaded on this device yet."}
+        </p>
       ) : (
         <p className="image-input-hint">
           Take a photo or choose one. It’s stored offline on this device;
-          photo sync isn’t enabled yet.
+          uploads to Google Drive in the background.
         </p>
       )}
       <div className="image-input-actions">
@@ -109,6 +200,7 @@ export default function ImageInput({
               setImageId("");
               setPreviewUrl("");
               setError(null);
+              setRecord(null);
               onChange?.("");
             }}
           >
@@ -123,6 +215,7 @@ export default function ImageInput({
         accept="image/*"
         capture="environment"
         aria-label={`Take ${label.toLowerCase()}`}
+        style={{ display: "none" }}
         onChange={(event) => {
           void chooseFile(event.target.files?.[0]);
           event.target.value = "";
@@ -134,11 +227,38 @@ export default function ImageInput({
         type="file"
         accept="image/*"
         aria-label={`Choose ${label.toLowerCase()} from gallery`}
+        style={{ display: "none" }}
         onChange={(event) => {
           void chooseFile(event.target.files?.[0]);
           event.target.value = "";
         }}
       />
+      {record && record.status !== "uploaded" && (
+        <div className="image-status">
+          <span className={`image-status-badge status-${record.status}`}>
+            {statusLabel}
+          </span>
+          {record.status === "failed" && (
+            <>
+              <button className="image-status-button" type="button" onClick={retryUpload} disabled={isUploadQueueRunning()}>
+                Retry upload
+              </button>
+              {record.lastError && (
+                <span className="image-status-error">{record.lastError}</span>
+              )}
+            </>
+          )}
+          {record.status === "pending" || record.status === "uploading" ? null : (
+            <button
+              className="image-status-button"
+              type="button"
+              onClick={reconnectDrive}
+            >
+              Reconnect Google Drive
+            </button>
+          )}
+        </div>
+      )}
       {error && <p className="database-error" role="alert">{error}</p>}
     </div>
   );

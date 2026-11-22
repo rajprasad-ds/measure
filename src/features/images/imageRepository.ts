@@ -1,10 +1,14 @@
 import { database } from "../../database";
+import type { LocalImageRecord } from "../../database";
 
-const MAX_EDGE = 1_600;
-const MAX_BYTES = 250 * 1_024;
+const MAX_EDGE = 2_000;
+const MAX_BYTES = 600 * 1_024;
 const MAX_INPUT_BYTES = 20 * 1_024 * 1_024;
 
-export async function saveImageFile(file: File): Promise<string> {
+export async function saveImageFile(
+  file: File,
+  ownerUserId?: string,
+): Promise<string> {
   if (!file.type.startsWith("image/")) {
     throw new Error("Choose an image file.");
   }
@@ -51,6 +55,10 @@ export async function saveImageFile(file: File): Promise<string> {
           width: Math.max(1, Math.round(bitmap.width * scale)),
           height: Math.max(1, Math.round(bitmap.height * scale)),
           bytes: blob.size,
+          status: "pending",
+          syncStatus: "local",
+          ownerUserId,
+          attempts: 0,
           createdAt,
         });
         await database.localImageBlobs.add({ id, blob });
@@ -64,6 +72,46 @@ export async function saveImageFile(file: File): Promise<string> {
 
 export async function getLocalImageBlob(id: string): Promise<Blob | undefined> {
   return (await database.localImageBlobs.get(id))?.blob;
+}
+
+export async function getImageRecord(id: string): Promise<LocalImageRecord | undefined> {
+  return database.localImages.get(id);
+}
+
+export async function getPendingImages(): Promise<LocalImageRecord[]> {
+  return database.localImages
+    .where("status")
+    .anyOf(["pending", "failed"])
+    .toArray();
+}
+
+export async function markImageUploaded(
+  id: string,
+  remoteId: string,
+): Promise<void> {
+  await database.localImages.update(id, {
+    status: "uploaded",
+    remoteId,
+    syncStatus: "pending",
+    lastError: undefined,
+  });
+}
+
+export async function markImageFailed(
+  id: string,
+  error: string,
+): Promise<void> {
+  const record = await database.localImages.get(id);
+  if (!record) return;
+  await database.localImages.update(id, {
+    status: "failed",
+    attempts: (record.attempts ?? 0) + 1,
+    lastError: error,
+  });
+}
+
+export async function markImageUploading(id: string): Promise<void> {
+  await database.localImages.update(id, { status: "uploading" });
 }
 
 function canvasToJpeg(canvas: HTMLCanvasElement, quality: number) {

@@ -38,7 +38,9 @@ build. Use `npm run build` to verify the app before deployment.
    image-only question prompts and optional question solutions.
 5. Run `supabase/migrations/20261110220000_image_required_cards.sql` to require
    a photo on every question prompt and on both sides of every fact card.
-5. In **Authentication → URL Configuration**, add the local redirect URL
+6. Run `supabase/migrations/20261110230000_images_table.sql` to add the
+   `images` metadata table, image-level RLS, and card→image foreign keys.
+7. In **Authentication → URL Configuration**, add the local redirect URL
    `http://localhost:5173/**` (and `http://127.0.0.1:5173/**` if using that
    address) to the redirect allow list.
 6. Keep email/password authentication enabled. With email confirmation
@@ -128,3 +130,21 @@ After the first successful deployment, add the HTTPS production hostname to
 Supabase **Authentication → URL Configuration** as the site URL and an allowed
 redirect URL. Add a preview hostname to the allow list only if you intend to
 test email confirmation from that preview.
+
+## Google Drive setup (photo backup)
+
+Photos are uploaded to your own Google Drive account through the
+`drive.file` scope only (files the app creates; never public links).
+
+1. Create a Google Cloud project, enable the **Google Drive API**, and
+   configure the OAuth consent screen (publish it to production; testing-mode
+   consents expire after seven days).
+2. Create an **OAuth Web client ID**. Authorized JavaScript origins:
+   `http://localhost:5173` and your production hostname.
+3. Add `VITE_GOOGLE_CLIENT_ID` to `.env.local` (local) and as a Cloudflare
+   build variable (production). Never commit it.
+4. The app creates a folder named **JEE Practice** in your Drive on first
+   upload and reuses it on every device.
+
+Set up Supabase first (the app syncs card metadata there; Drive only holds the
+photo files).

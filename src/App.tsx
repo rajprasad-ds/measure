@@ -55,6 +55,7 @@ import { SMARTER_APPROACH_THRESHOLD_MS } from "./features/practice/feedbackFlow"
 import {
   formatStopwatch,
 } from "./features/practice/TimerDisplay";
+import { processUploadQueue } from "./features/images/driveImageStore";
 import { validateAttempt } from "./lib/causes";
 import type { Cause, SlipSubtype } from "./lib/causes";
 import SessionRecoveryScreen from "./features/practice/SessionRecoveryScreen";
@@ -395,6 +396,7 @@ function App() {
     setSyncError(null);
     try {
       await syncAccountSessions(user);
+      void processUploadQueue();
       const localRecords = await database.sessions.toArray();
       setSavedSessions(
         localRecords
@@ -1242,7 +1244,7 @@ function App() {
         database.questions,
         async () => {
           await database.sessions.add(record);
-          await database.attempts.bulkAdd(attempts);
+          await database.attempts.bulkPut(attempts);
           for (const [questionId, topicIds] of topicsByQuestionId) {
             const card = await database.questions.get(questionId);
             if (!card) continue;

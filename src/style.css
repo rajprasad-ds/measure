@@ -1704,6 +1704,57 @@ h1 {
   clip-path: inset(50%);
 }
 
+.image-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.7rem;
+  font-size: 0.82rem;
+}
+
+.image-status-badge {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.status-pending,
+.status-uploading {
+  background: #eef3ee;
+  color: #3e5c46;
+}
+
+.status-failed {
+  background: #fdecec;
+  color: #9b2c2c;
+}
+
+.image-status-button {
+  min-height: 2.3rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid #d5ddd3;
+  border-radius: 0.6rem;
+  background: white;
+  color: #2e4935;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.image-status-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.image-status-error {
+  font-size: 0.75rem;
+  color: #9b2c2c;
+}
+
 .card-form select[multiple] {
   min-height: 7rem;
 }

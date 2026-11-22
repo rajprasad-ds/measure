@@ -521,7 +521,31 @@ export default function SessionFeedbackScreen({
         </header>
 
         {questionNumbers.length === 0 || !feedback || !questionNumber ? (
-          <p className="empty-feedback">No questions were timed in this session.</p>
+          <>
+            <p className="empty-feedback">No questions were timed in this session.</p>
+            <section className="feedback-footer feedback-sequential-footer">
+              <button
+                className="account-secondary-button"
+                type="button"
+                onClick={() => void onSave()}
+                disabled={isSaving}
+              >
+                Finish session
+              </button>
+              <button
+                className="start-button"
+                type="button"
+                onClick={() => {
+                  setActionError(null);
+                  setShowFactForm(false);
+                  setCurrentIndex(0);
+                }}
+                disabled={isSaving}
+              >
+                Discard session
+              </button>
+            </section>
+          </>
         ) : (
           <>
             <div className="feedback-progress" aria-live="polite">

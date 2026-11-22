@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import { formatStopwatch } from "./TimerDisplay";
-import type { SessionRecord } from "../../database";
+import { database, type SessionRecord } from "../../database";
 import type { ActiveSession } from "./types";
 import { getCauseLabel, type Cause } from "../../lib/causes";
 
@@ -16,6 +17,15 @@ export default function SessionSummaryScreen({
   syncStatus,
   onNewSession,
 }: Props) {
+  const [pendingImageCount, setPendingImageCount] = useState(0);
+
+  useEffect(() => {
+    database.localImages
+      .where("status")
+      .anyOf(["pending", "uploading", "failed"])
+      .count()
+      .then(setPendingImageCount);
+  }, []);
   const totalQuestions =
     record.timedQuestionCount ??
     record.rightCount + record.wrongCount + record.couldntSolveCount;
@@ -85,6 +95,12 @@ export default function SessionSummaryScreen({
               : "Saved on this device. Cloud sync is pending."
             : "Saved on this device only. Sign in to sync it to your account."}
         </p>
+        {pendingImageCount > 0 && (
+          <p className="storage-note">
+            {pendingImageCount} photo{pendingImageCount === 1 ? "" : "s"}
+            awaiting upload to Google Drive.
+          </p>
+        )}
         {Object.keys(causeCounts).length > 0 && (
           <div className="summary-topics">
             <h2>Why questions were missed</h2>

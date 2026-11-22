@@ -61,6 +61,12 @@ export type LocalImageRecord = {
   width: number;
   height: number;
   bytes: number;
+  status: "pending" | "uploading" | "uploaded" | "failed";
+  remoteId?: string;
+  ownerUserId?: string;
+  syncStatus?: "local" | "pending" | "synced";
+  attempts?: number;
+  lastError?: string;
   createdAt: string;
 };
 
@@ -147,6 +153,66 @@ class PracticeDatabase extends Dexie {
       .upgrade(async (transaction) => {
         await transaction.table("activeSession").toCollection().modify((row) => {
           row.session.sessionKind ??= "practice";
+        });
+      });
+    this.version(8)
+      .stores({
+        sessions:
+          "&id, endedAt, subject, chapter, subjectId, chapterId, ownerUserId, syncStatus, sessionKind",
+        activeSession: "&id",
+        attempts:
+          "&id, sessionId, questionId, result, cause, ownerUserId, syncStatus, updatedAt, *topicIds",
+        questions:
+          "&id, ownerUserId, syncStatus, subjectId, chapterId, updatedAt, createdFromAttemptId, *topicIds",
+        factCards:
+          "&id, ownerUserId, syncStatus, subjectId, chapterId, kind, dueAt, updatedAt, createdFromAttemptId, *topicIds",
+        questionFactLinks:
+          "&[questionId+factId], questionId, factId, ownerUserId, syncStatus, updatedAt, deletedAt",
+        factReviews:
+          "&id, ownerUserId, syncStatus, factId, reviewedAt, updatedAt",
+        localImages:
+          "&id, status, syncStatus, ownerUserId, remoteId, createdAt",
+        localImageBlobs: "&id",
+        meta: "&id",
+      })
+      .upgrade(async (transaction) => {
+        await transaction.table("localImages").toCollection().modify((row) => {
+          row.status = (row as LocalImageRecord).status ?? "uploaded";
+          row.ownerUserId = (row as LocalImageRecord).ownerUserId ?? undefined;
+          row.syncStatus = (row as LocalImageRecord).syncStatus ?? "synced";
+          row.remoteId = (row as LocalImageRecord).remoteId ?? undefined;
+          row.attempts = (row as LocalImageRecord).attempts ?? 0;
+          row.lastError = (row as LocalImageRecord).lastError ?? undefined;
+        });
+      });
+    this.version(9)
+      .stores({
+        sessions:
+          "&id, endedAt, subject, chapter, subjectId, chapterId, ownerUserId, syncStatus, sessionKind",
+        activeSession: "&id",
+        attempts:
+          "&id, sessionId, questionId, result, cause, ownerUserId, syncStatus, updatedAt, *topicIds",
+        questions:
+          "&id, ownerUserId, syncStatus, subjectId, chapterId, updatedAt, createdFromAttemptId, *topicIds",
+        factCards:
+          "&id, ownerUserId, syncStatus, subjectId, chapterId, kind, dueAt, updatedAt, createdFromAttemptId, *topicIds",
+        questionFactLinks:
+          "&[questionId+factId], questionId, factId, ownerUserId, syncStatus, updatedAt, deletedAt",
+        factReviews:
+          "&id, ownerUserId, syncStatus, factId, reviewedAt, updatedAt",
+        localImages:
+          "&id, status, syncStatus, ownerUserId, remoteId, createdAt",
+        localImageBlobs: "&id",
+        meta: "&id",
+      })
+      .upgrade(async (transaction) => {
+        await transaction.table("localImages").toCollection().modify((row) => {
+          row.status = (row as LocalImageRecord).status ?? "uploaded";
+          row.ownerUserId = (row as LocalImageRecord).ownerUserId ?? undefined;
+          row.syncStatus = (row as LocalImageRecord).syncStatus ?? "synced";
+          row.remoteId = (row as LocalImageRecord).remoteId ?? undefined;
+          row.attempts = (row as LocalImageRecord).attempts ?? 0;
+          row.lastError = (row as LocalImageRecord).lastError ?? undefined;
         });
       });
   }

@@ -2,6 +2,7 @@ import type { User } from "@supabase/supabase-js";
 import {
   database,
   type AttemptRecord,
+  type LocalImageRecord,
   type SessionRecord,
 } from "./database";
 import type {
@@ -125,12 +126,62 @@ type CloudFactReview = {
   updated_at: string;
 };
 
+type CloudImage = {
+  id: string;
+  user_id: string;
+  provider: string;
+  remote_id: string;
+  mime: string;
+  width: number;
+  height: number;
+  bytes: number;
+  status: string;
+  last_error: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+function toCloudImage(record: LocalImageRecord) {
+  return {
+    id: record.id,
+    user_id: record.ownerUserId ?? null,
+    provider: "drive",
+    remote_id: record.remoteId ?? null,
+    mime: record.mime,
+    width: record.width,
+    height: record.height,
+    bytes: record.bytes,
+    status: record.status,
+    last_error: record.lastError ?? null,
+    created_at: record.createdAt,
+    updated_at: record.createdAt,
+  };
+}
+
+function fromCloudImage(row: CloudImage): LocalImageRecord {
+  return {
+    id: row.id,
+    ownerUserId: row.user_id,
+    syncStatus: "synced",
+    status: row.status as LocalImageRecord["status"],
+    remoteId: row.remote_id ?? undefined,
+    mime: row.mime,
+    width: row.width,
+    height: row.height,
+    bytes: row.bytes,
+    attempts: 0,
+    lastError: row.last_error ?? undefined,
+    createdAt: row.created_at,
+  };
+}
+
 type CloudCardTable =
   | "attempts"
   | "questions"
   | "fact_cards"
   | "question_fact_links"
-  | "fact_reviews";
+  | "fact_reviews"
+  | "images";
 
 function requireSupabase() {
   if (!supabase) {
@@ -516,8 +567,34 @@ async function syncPendingCards(userId: string) {
   }
 }
 
+async function syncPendingImages(userId: string) {
+  const pending = await database.localImages
+    .where("ownerUserId")
+    .equals(userId)
+    .filter((row) => row.syncStatus !== "synced")
+    .toArray();
+  const client = requireSupabase();
+  for (let offset = 0; offset < pending.length; offset += 100) {
+    const batch = pending.slice(offset, offset + 100);
+    const { error } = await client
+      .from("images")
+      .upsert(batch.map((row) => ({ ...toCloudImage(row), user_id: userId })), {
+        onConflict: "id",
+      });
+    if (error) throw new Error(`Could not sync images: ${error.message}`);
+    await Promise.all(
+      batch.map((row) =>
+        database.localImages.where("id").equals(row.id).modify((current) => {
+          if (current.createdAt === row.createdAt) current.syncStatus = "synced";
+        }),
+      ),
+    );
+  }
+}
+
 export async function syncAccountSessions(user: User): Promise<SessionRecord[]> {
   const client = requireSupabase();
+  await syncPendingImages(user.id);
   await syncPendingCards(user.id);
   const localRecords = await database.sessions.toArray();
   const pendingRecords = localRecords.filter(
@@ -702,6 +779,22 @@ export async function syncAccountSessions(user: User): Promise<SessionRecord[]> 
     }),
   ]);
 
+  const cloudImages = await pullCardRows<CloudImage>("images", user.id);
+  if (cloudImages.length > 0) {
+    const pulledImages = cloudImages.map(fromCloudImage);
+    await database.transaction("rw", database.localImages, async () => {
+      const localRows = await database.localImages.bulkGet(
+        pulledImages.map((row) => row.id),
+      );
+      await database.localImages.bulkPut(
+        pulledImages.filter(
+          (_, index) =>
+            !localRows[index] || localRows[index].syncStatus === "synced",
+        ),
+      );
+    });
+  }
+
   const retainedIds = new Set(records.map((record) => record.id));
   const expiredSessions = await database.sessions
     .where("ownerUserId")
@@ -713,7 +806,10 @@ export async function syncAccountSessions(user: User): Promise<SessionRecord[]> 
     .toArray();
   if (expiredSessions.length > 0) {
     const expiredIds = expiredSessions.map((record) => record.id);
-    await database.sessions.bulkDelete(expiredIds);
+    await database.transaction("rw", database.sessions, database.attempts, async () => {
+      await database.sessions.bulkDelete(expiredIds);
+      await database.attempts.where("sessionId").anyOf(expiredIds).delete();
+    });
   }
   return records;
 }
@@ -728,6 +824,7 @@ export async function assignLocalSessionsToUser(userId: string) {
       database.factCards,
       database.questionFactLinks,
       database.factReviews,
+      database.localImages,
     ],
     async () => {
       await database.sessions.toCollection().modify((record) => {
@@ -764,6 +861,12 @@ export async function assignLocalSessionsToUser(userId: string) {
         if (!review.ownerUserId) {
           review.ownerUserId = userId;
           review.syncStatus = "pending";
+        }
+      });
+      await database.localImages.toCollection().modify((image) => {
+        if (!image.ownerUserId) {
+          image.ownerUserId = userId;
+          image.syncStatus = "pending";
         }
       });
     },
