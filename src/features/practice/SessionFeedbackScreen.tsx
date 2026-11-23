@@ -291,7 +291,7 @@ export default function SessionFeedbackScreen({
         feedback,
         slowRight,
         session.sessionKind,
-        linkedFacts.length + (feedback?.linkedFactIds?.length ?? 0),
+        linkedFacts.length + (feedback?.linkedFactIds?.length ?? 0) + (feedback?.factDraft ? 1 : 0),
       )
     : "result";
   const previousStep = questionNumber
