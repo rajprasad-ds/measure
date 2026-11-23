@@ -35,7 +35,7 @@ export default function SessionSummaryScreen({
       .anyOf(["pending", "uploading", "failed"])
       .count()
       .then(setPendingImageCount);
-  }, []);
+  }, [syncStatus]);
 
   const timedEntries = Object.entries(questionTimesMs)
     .map(([questionNumber, timeMs]) => ({
