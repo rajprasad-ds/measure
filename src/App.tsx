@@ -965,7 +965,6 @@ function App() {
       questionId: card.id,
     }));
     await refreshCardData();
-    if (authUser) void performSync(authUser);
     return card;
   }
 
@@ -1009,7 +1008,6 @@ function App() {
       smarterApproachSaved: true,
     }));
     await refreshCardData();
-    if (authUser) void performSync(authUser);
   }
 
   async function saveSolution(
@@ -1045,7 +1043,6 @@ function App() {
       solutionSaved: true,
     }));
     await refreshCardData();
-    if (authUser) void performSync(authUser);
   }
 
   async function saveQuestionDifficulty(questionNumber: number, difficulty: QuestionDifficulty) {
@@ -1071,7 +1068,6 @@ function App() {
     });
     updateFeedbackForQuestion(questionNumber, (current) => ({ ...current, difficulty }));
     await refreshCardData();
-    if (authUser) void performSync(authUser);
   }
 
   async function useQuestionCardForAttempt(
@@ -1097,7 +1093,6 @@ function App() {
       ),
     }));
     await refreshCardData();
-    if (authUser) void performSync(authUser);
   }
 
   async function saveFeedbackFactCard(
@@ -1130,7 +1125,6 @@ function App() {
       { userId: authUser?.id },
     );
     await refreshCardData();
-    if (authUser) void performSync(authUser);
     return card;
   }
 
@@ -1141,7 +1135,6 @@ function App() {
     }
     await linkQuestionAndFact(questionId, card.id, { userId: authUser?.id });
     await refreshCardData();
-    if (authUser) void performSync(authUser);
   }
 
   async function saveSession() {
