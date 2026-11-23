@@ -10,6 +10,7 @@ import {
   driveImageStore,
   isUploadQueueRunning,
   processUploadQueue,
+  prepareDriveConnection,
 } from "./driveImageStore";
 
 type Props = {
@@ -65,6 +66,10 @@ export default function ImageInput({
       setRecord(null);
     }
   }, [imageId]);
+
+  useEffect(() => {
+    void prepareDriveConnection().catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     refreshRecord();
@@ -258,14 +263,9 @@ export default function ImageInput({
               )}
             </>
           )}
-          {record.status === "pending" && (
+          {!record.remoteId && (
             <button className="image-status-button" type="button" onClick={reconnectDrive}>
-              Connect Google Drive
-            </button>
-          )}
-          {record.status === "failed" && (
-            <button className="image-status-button" type="button" onClick={reconnectDrive}>
-              Reconnect Google Drive
+              {record.status === "failed" ? "Reconnect Google Drive" : "Connect Google Drive"}
             </button>
           )}
         </div>
