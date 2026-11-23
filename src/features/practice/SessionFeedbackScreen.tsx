@@ -406,6 +406,14 @@ export default function SessionFeedbackScreen({
 
   async function saveDifficulty(difficulty: QuestionDifficulty) {
     if (!questionNumber) return;
+    if (feedback?.difficulty) {
+      if (feedback.difficulty !== difficulty) {
+        setActionError("Intrinsic difficulty is fixed once selected.");
+        return;
+      }
+      moveToStep(slowRight ? "complete" : "topics");
+      return;
+    }
     setActionError(null);
     try {
       await onSaveDifficulty(questionNumber, difficulty);
