@@ -733,7 +733,9 @@ export default function SessionFeedbackScreen({
                       type="button"
                       onClick={() => {
                         setActionError(null);
-                        if (feedback.result !== "right" && feedback.cause === "missing_fact") {
+                        if (slowRight && feedback.smarterApproach === "found") {
+                          moveToStep("approach");
+                        } else if (feedback.result !== "right" && feedback.cause === "missing_fact") {
                           moveToStep("fact");
                         } else {
                           moveToStep("complete");
