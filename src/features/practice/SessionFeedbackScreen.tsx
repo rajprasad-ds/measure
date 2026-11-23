@@ -364,7 +364,7 @@ export default function SessionFeedbackScreen({
         solutionText,
         solutionImageId,
       });
-      moveToStep("topics");
+      moveToStep("complete");
     } catch (error) {
       showError(error, "Could not save this approach.");
     }
