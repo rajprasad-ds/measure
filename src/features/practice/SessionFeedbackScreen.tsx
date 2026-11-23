@@ -132,19 +132,19 @@ function getStepTitle(
   if (step === "reflection") return "Reflect";
   if (step === "question") {
     return slowRight && feedback?.smarterApproach === "found"
-      ? "Step 1 of 3: Question photo"
-      : "Step 1: Question photo";
+      ? "Step 1 of 4: Question photo"
+      : feedback?.result === "right" ? "Step 1 of 4: Question photo" : "Step 2 of 6: Question photo";
   }
   if (step === "topics") {
     return slowRight && feedback?.smarterApproach === "found"
-      ? "Step 2 of 3: Attach topics"
-      : "Step 2: Attach topics";
+      ? "Step 2 of 4: Attach topics"
+      : feedback?.result === "right" ? "Step 2 of 4: Attach topics" : "Step 5 of 6: Attach topics";
   }
-  if (step === "approach") return "Step 3 of 3: Smarter approach";
-  if (step === "solution") return "Step 3: Solution";
-  if (step === "difficulty") return slowRight ? "Step 3 of 3: Difficulty" : "Step 4: Difficulty";
+  if (step === "approach") return "Step 3 of 4: Smarter approach";
+  if (step === "solution") return "Step 3 of 6: Solution";
+  if (step === "difficulty") return slowRight ? "Step 4 of 4: Difficulty" : "Step 4 of 6: Difficulty";
   if (step === "cause") {
-    return "Step 1: Primary cause";
+    return "Step 1 of 6: Primary cause";
   }
   if (step === "slip") {
     return "Step 2: Slip details";
