@@ -7,6 +7,7 @@ import type { FactCard, FactCardInput, FactCardKind } from "./types";
 
 type Props = {
   userId?: string;
+  onImageUploadComplete: () => void;
   initialSubjectId?: string;
   initialChapterId?: string;
   activeQuestions: Array<{ id: string; promptText: string; chapterId: string }>;
@@ -33,6 +34,7 @@ type Step =
 
 export default function FactCardCreator({
   userId,
+  onImageUploadComplete,
   initialSubjectId,
   initialChapterId,
   activeQuestions,
@@ -296,6 +298,7 @@ export default function FactCardCreator({
             name="promptImageId"
             value={promptImageId}
             ownerUserId={userId}
+            onUploadComplete={onImageUploadComplete}
             onChange={(id) => setPromptImageId(id)}
             required
           />
