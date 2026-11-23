@@ -706,7 +706,7 @@ function App() {
     const resultChanged = current.result !== result;
     if (resultChanged && current.questionId) {
       const previousQuestion = questionCards.find((card) => card.id === current.questionId);
-      if (previousQuestion?.createdFromAttemptId === current.attemptId) {
+      if (previousQuestion && previousQuestion.createdFromAttemptId === current.attemptId) {
         const previousQuestionId = previousQuestion.id;
         const createdFactIds = questionFactLinks
           .filter((link) => link.questionId === previousQuestionId && !link.deletedAt)
@@ -787,8 +787,8 @@ function App() {
             (candidate) => candidate.factId === link.factId &&
               candidate.questionId !== current.questionId && !candidate.deletedAt,
           );
-          await unlinkQuestionAndFact(current.questionId!, link.factId, { userId: authUser?.id });
-          if (fact?.createdFromAttemptId === current.attemptId && !linkedElsewhere) {
+          await unlinkQuestionAndFact(current.questionId!, link.factId);
+          if (fact && fact.createdFromAttemptId === current.attemptId && !linkedElsewhere) {
             await softDeleteFactCard(fact.id);
           }
         }
