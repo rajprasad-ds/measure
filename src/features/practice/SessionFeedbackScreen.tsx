@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SearchSelect from "../../SearchSelect";
 import { getChapter } from "../../syllabus";
 import {
@@ -67,7 +67,7 @@ type Props = {
   ) => Promise<void>;
   onSaveSmarterApproach: (
     questionNumber: number,
-    input: Pick<QuestionCardInput, "solutionText" | "solutionImageId">,
+    input: Pick<QuestionCardInput, "solutionText" | "solutionImageId" | "solutionImageIds">,
   ) => Promise<void>;
   onSaveSolution: (
     questionNumber: number,
@@ -180,6 +180,7 @@ export default function SessionFeedbackScreen({
 }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showFactForm, setShowFactForm] = useState(false);
+  const [solutionImageCount, setSolutionImageCount] = useState(1);
   const [actionError, setActionError] = useState<string | null>(null);
   const [flowSteps, setFlowSteps] = useState<
     Record<number, { current: FeedbackStep; previous: FeedbackStep[] }>
@@ -202,6 +203,10 @@ export default function SessionFeedbackScreen({
   const questionCard = feedback?.questionId
     ? questions.find((card) => card.id === feedback.questionId)
     : undefined;
+  useEffect(() => {
+    const existingCount = questionCard?.solutionImageIds?.length ?? (questionCard?.solutionImageId ? 1 : 0);
+    setSolutionImageCount(Math.max(1, existingCount));
+  }, [questionNumber, questionCard?.id, questionCard?.solutionImageIds?.length]);
   const linkedFacts = links
     .filter((link) => link.questionId === feedback?.questionId && !link.deletedAt)
     .map((link) => facts.find((fact) => fact.id === link.factId))
@@ -353,10 +358,10 @@ export default function SessionFeedbackScreen({
     event.preventDefault();
     if (!questionNumber || !questionCard) return;
     const form = new FormData(event.currentTarget);
-    const solutionImageId = String(form.get("solutionImageId") ?? "") || undefined;
+    const solutionImageIds = form.getAll("solutionImageIds").map(String).filter(Boolean);
     const solutionText = String(form.get("solutionText") ?? "").trim() || undefined;
 
-    if (!solutionImageId && !solutionText) {
+    if (solutionImageIds.length === 0 && !solutionText) {
       setActionError("Add the smarter method as text or an image.");
       return;
     }
@@ -365,7 +370,8 @@ export default function SessionFeedbackScreen({
     try {
       await onSaveSmarterApproach(questionNumber, {
         solutionText,
-        solutionImageId,
+        solutionImageId: solutionImageIds[0],
+        solutionImageIds,
       });
       moveToStep("difficulty");
     } catch (error) {
@@ -377,11 +383,10 @@ export default function SessionFeedbackScreen({
     event.preventDefault();
     if (!questionNumber || !questionCard) return;
     const form = new FormData(event.currentTarget);
-    const solutionImageId =
-      String(form.get("solutionImageId") ?? "") || questionCard.solutionImageId || undefined;
+    const solutionImageIds = form.getAll("solutionImageIds").map(String).filter(Boolean);
     const solutionText = String(form.get("solutionText") ?? "").trim() || undefined;
 
-    if (!solutionImageId && !solutionText) {
+    if (solutionImageIds.length === 0 && !solutionText) {
       setActionError("Please upload a photo of the correct solution or add a note.");
       return;
     }
