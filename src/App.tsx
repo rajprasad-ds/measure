@@ -1139,7 +1139,7 @@ function App() {
         if (!feedback.questionId) attemptValidationErrors.push("Q" + questionNumber + ": Save the question card.");
         if (!feedback.solutionSaved) attemptValidationErrors.push("Q" + questionNumber + ": Save a text or image solution.");
         if (!feedback.difficulty) attemptValidationErrors.push("Q" + questionNumber + ": Choose intrinsic question difficulty.");
-        if (feedback.cause === "missing_fact" && !links.some((link) => link.questionId === feedback.questionId && !link.deletedAt)) {
+        if (feedback.cause === "missing_fact" && !questionFactLinks.some((link) => link.questionId === feedback.questionId && !link.deletedAt)) {
           attemptValidationErrors.push("Q" + questionNumber + ": Link or create the forgotten fact card.");
         }
       }
