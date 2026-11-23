@@ -696,14 +696,17 @@ function App() {
   }
 
   function setQuestionResult(questionNumber: number, result: QuestionResult) {
-    if (!session) return;
-    const current = session.feedback[questionNumber] ?? {
+    const current = session?.feedback[questionNumber] ?? {
       result: null,
       cause: null,
       slipSubtype: null,
       topics: [],
     };
     const resultChanged = current.result !== result;
+
+    // A result change invalidates every result-dependent capture. Clear the
+    // attempt's card reference synchronously so a later session save cannot
+    // attach a card from the previous outcome.
     if (resultChanged && current.questionId) {
       const previousQuestion = questionCards.find((card) => card.id === current.questionId);
       if (previousQuestion && previousQuestion.createdFromAttemptId === current.attemptId) {
@@ -727,34 +730,29 @@ function App() {
         });
       }
     }
-    setSession({
-      ...session,
-      feedback: {
-        ...session.feedback,
-        [questionNumber]: {
-          ...current,
-          result,
-          ...(resultChanged
-            ? {
-                cause: null,
-                slipSubtype: null,
-                topics: [],
-                questionId: undefined,
-                solutionSaved: undefined,
-                difficulty: undefined,
-              }
-            : {}),
-          smarterApproach: undefined,
-          smarterApproachSaved: undefined,
-          ...(result !== "right" && !current.attemptId
-            ? { attemptId: globalThis.crypto.randomUUID() }
-            : {}),
-          ...(result === "right" || result === "wrong_question"
-            ? { cause: null, slipSubtype: null, topics: [] }
-            : {}),
-        },
-      },
-    });
+
+    updateFeedbackForQuestion(questionNumber, (latest) => ({
+      ...latest,
+      result,
+      ...(resultChanged
+        ? {
+            cause: null,
+            slipSubtype: null,
+            topics: [],
+            questionId: undefined,
+            solutionSaved: undefined,
+            smarterApproach: undefined,
+            smarterApproachSaved: undefined,
+            difficulty: undefined,
+          }
+        : {}),
+      ...(result === "right" || result === "wrong_question"
+        ? { cause: null, slipSubtype: null, topics: [] }
+        : {}),
+      ...(result !== "right" && !latest.attemptId
+        ? { attemptId: globalThis.crypto.randomUUID() }
+        : {}),
+    }));
   }
 
   function setSmarterApproach(
