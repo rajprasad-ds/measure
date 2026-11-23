@@ -142,7 +142,7 @@ export default function CardsScreen(props: Props) {
       topicIds,
       promptText: String(form.get("promptText") ?? ""),
       promptImageId: String(form.get("promptImageId") ?? "") || undefined,
-      difficulty: String(form.get("difficulty") ?? "") as QuestionCardInput["difficulty"],
+      difficulty: String(form.get("difficulty") ?? editorQuestion?.difficulty ?? "") as QuestionCardInput["difficulty"],
       solutionText: String(form.get("solutionText") ?? ""),
       solutionImageId: solutionImageIds[0],
       solutionImageIds,
@@ -426,7 +426,7 @@ export default function CardsScreen(props: Props) {
                 <label>Subject<select name="subjectId" value={editorSubjectId} onChange={(e) => { setEditorSubjectId(e.target.value); setEditorChapterId(""); setEditorTopicIds([]); }} required>{jeeSyllabus.subjects.map((s) => <option value={s.id} key={s.id}>{s.name}</option>)}</select></label>
                 <label>Chapter<select name="chapterId" value={editorChapterId} onChange={(e) => { setEditorChapterId(e.target.value); setEditorTopicIds([]); }} required><option value="" disabled>Choose chapter</option>{jeeSyllabus.subjects.find((s) => s.id === editorSubjectId)?.chapters.map((c) => <option value={c.id} key={c.id}>{c.name}</option>)}</select></label>
                 <ImageInput label="Question photo" name="promptImageId" value={editorQuestion?.promptImageId} required />
-                <label>Question label (optional)<textarea name="promptText" rows={3} defaultValue={editorQuestion?.promptText} /></label><label>Intrinsic difficulty<select name="difficulty" defaultValue={editorQuestion?.difficulty ?? ""} required><option value="" disabled>Choose difficulty</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
+                <label>Question label (optional)<textarea name="promptText" rows={3} defaultValue={editorQuestion?.promptText} /></label>{editorQuestion?.difficulty ? <p className="card-context"><strong>Intrinsic difficulty:</strong> {editorQuestion.difficulty[0].toUpperCase() + editorQuestion.difficulty.slice(1)} · fixed</p> : <label>Intrinsic difficulty<select name="difficulty" defaultValue="" required><option value="" disabled>Choose difficulty</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>}
                 {Array.from({ length: solutionImageCount }, (_, index) => <ImageInput key={`editor-solution-${index}`} label={`Solution image ${index + 1}`} name="solutionImageIds" value={editorQuestion?.solutionImageIds?.[index] ?? (index === 0 ? editorQuestion?.solutionImageId : undefined)} />)}<button className="account-secondary-button" type="button" onClick={() => setSolutionImageCount((count) => count + 1)}>Add another solution image</button>
                 <label>Solution or approach <span className="optional-label">optional</span><textarea name="solutionText" rows={4} defaultValue={editorQuestion?.solutionText} /></label>
                 <ImageInput label="Smarter approach photo" name="smarterApproachImageId" value={editorQuestion?.smarterApproachImageId} />
