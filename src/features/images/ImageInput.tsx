@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { driveImageStore, isUploadQueueRunning, processUploadQueue } from "./driveImageStore";
 import {
   getImageRecord,
   getLocalImageBlob,
