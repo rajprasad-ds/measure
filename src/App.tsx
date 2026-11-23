@@ -56,6 +56,7 @@ import {
   formatStopwatch,
 } from "./features/practice/TimerDisplay";
 import { processUploadQueue } from "./features/images/driveImageStore";
+import { queueImagesForUpload } from "./features/images/imageRepository";
 import { validateAttempt } from "./lib/causes";
 import type { Cause, SlipSubtype } from "./lib/causes";
 import SessionRecoveryScreen from "./features/practice/SessionRecoveryScreen";
@@ -1177,6 +1178,31 @@ function App() {
       return;
     }
 
+    const finalizedQuestionIds = new Set(
+      attempts.map((attempt) => attempt.questionId).filter((id): id is string => Boolean(id)),
+    );
+    const finalizedFactIds = new Set(
+      questionFactLinks
+        .filter((link) => finalizedQuestionIds.has(link.questionId) && !link.deletedAt)
+        .map((link) => link.factId),
+    );
+    const finalizedImageIds = new Set<string>();
+    questionCards
+      .filter((card) => finalizedQuestionIds.has(card.id))
+      .forEach((card) => {
+        [card.promptImageId, card.solutionImageId, card.smarterApproachImageId,
+          ...(card.solutionImageIds ?? [])].forEach((id) => {
+          if (id) finalizedImageIds.add(id);
+        });
+      });
+    factCards
+      .filter((card) => finalizedFactIds.has(card.id))
+      .forEach((card) => {
+        [card.promptImageId, card.contentImageId].forEach((id) => {
+          if (id) finalizedImageIds.add(id);
+        });
+      });
+
     const rightCount = attempts.filter(
       (attempt) => attempt.result === "right",
     ).length;
@@ -1292,6 +1318,7 @@ function App() {
       if (!authUser) {
         setUnassignedSessionCount((count) => count + 1);
       }
+      await queueImagesForUpload(Array.from(finalizedImageIds));
       setSession({ ...session, phase: "summary", record });
       if (authUser) void performSync(authUser);
     } catch (error) {
