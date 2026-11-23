@@ -739,12 +739,10 @@ export default function SessionFeedbackScreen({
                       type="button"
                       onClick={() => {
                         setActionError(null);
-                        if (slowRight && feedback.smarterApproach === "found") {
-                          moveToStep("approach");
-                        } else if (feedback.result !== "right") {
-                          moveToStep("solution");
+                        if (feedback.result !== "right" && feedback.cause === "missing_fact") {
+                          moveToStep("fact");
                         } else {
-                          moveToStep("cause");
+                          moveToStep("complete");
                         }
                       }}
                     >
@@ -832,21 +830,11 @@ export default function SessionFeedbackScreen({
                         />
                       </label>
                       <button className="account-action-button" type="submit">
-                        Save solution photo & continue →
+                        Save solution & continue →
                       </button>
                     </form>
 
-                    <button
-                      className="account-secondary-button"
-                      type="button"
-                      style={{ marginTop: "0.75rem", width: "100%" }}
-                      onClick={() => {
-                        setActionError(null);
-                        moveToStep("cause");
-                      }}
-                    >
-                      Skip solution photo for now →
-                    </button>
+                    
                   </section>
                 )}
 
@@ -876,14 +864,6 @@ export default function SessionFeedbackScreen({
                       disabled={!feedback.cause}
                       onClick={() => {
                         if (!feedback.cause) return;
-                        if (
-                          (feedback.cause === "missing_fact" || feedback.cause === "wrong_concept") &&
-                          feedback.topics.length === 0
-                        ) {
-                          setActionError("Please select at least one topic for a missing fact or wrong concept.");
-                          moveToStep("topics");
-                          return;
-                        }
                         moveToStep(getStepAfterCause(feedback.cause, feedback.topics.length));
                       }}
                     >
@@ -927,7 +907,7 @@ export default function SessionFeedbackScreen({
                 {step === "fact" && (
                   <section className="feedback-step feedback-fact-step">
                     <h3>Would a fact card help next time?</h3>
-                    <p>Create or link a memory cue for this mistake, or skip if not needed.</p>
+                    <p>This was caused by a forgotten fact or formula. Link an existing fact card or create one before finishing.</p>
 
                     {linkedFacts.length > 0 && (
                       <div className="linked-facts-list">
@@ -965,13 +945,7 @@ export default function SessionFeedbackScreen({
                           />
                         )}
 
-                        <button
-                          className="account-secondary-button"
-                          type="button"
-                          onClick={() => moveToStep("complete")}
-                        >
-                          Continue without a fact card
-                        </button>
+                        
                       </div>
                     ) : (
                       <form className="inline-card-form" onSubmit={(event) => void submitFact(event)}>
