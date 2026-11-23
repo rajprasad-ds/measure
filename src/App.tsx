@@ -1512,17 +1512,6 @@ function App() {
   }
 
   if (session) {
-    const warningSecondsRemaining = pendingWarning
-      ? Math.max(
-          0,
-          Math.ceil(
-            (pendingWarning.startedAt +
-              INACTIVITY_LIMITS.warningResponseMs -
-              now) /
-              1_000,
-          ),
-        )
-        : 0;
     return (
         <PracticeSessionScreen
           session={session}
