@@ -340,11 +340,6 @@ export default function SessionFeedbackScreen({
       setActionError("Please upload a photo of the question.");
       return;
     }
-    if (!promptText) {
-      setActionError("Please add a short text label for the question.");
-      return;
-    }
-
     setActionError(null);
     try {
       await onCreateQuestionCard(questionNumber, {
@@ -413,16 +408,13 @@ export default function SessionFeedbackScreen({
     const promptImageId = String(form.get("promptImageId") ?? "") || undefined;
     const contentImageId = String(form.get("contentImageId") ?? "") || undefined;
     const promptText = String(form.get("promptText") ?? "").trim();
-    if (!promptText) {
-      setActionError("Please add a short text label for the fact card.");
+    const contentText = String(form.get("contentText") ?? "").trim();
+    if (!promptText && !promptImageId) {
+      setActionError("Add text or an image for the fact-card front.");
       return;
     }
-    if (!promptImageId) {
-      setActionError("Please upload a prompt photo for the fact card.");
-      return;
-    }
-    if (!contentImageId) {
-      setActionError("Please upload an answer photo for the fact card.");
+    if (!contentText && !contentImageId) {
+      setActionError("Add text or an image for the fact-card back.");
       return;
     }
     setActionError(null);
@@ -686,8 +678,7 @@ export default function SessionFeedbackScreen({
                         <textarea
                           name="promptText"
                           rows={2}
-                          placeholder="A short title for this question"
-                          required
+                          placeholder="Optional short label to help identify this question"
                         />
                       </label>
                       <button className="account-action-button" type="submit">
@@ -996,7 +987,7 @@ export default function SessionFeedbackScreen({
                         <ImageInput label="Recall prompt photo" name="promptImageId" required />
                         <label>
                           Fact label
-                          <textarea name="promptText" rows={2} placeholder="Short label for searching this fact" required />
+                          <textarea name="promptText" rows={2} placeholder="Optional text on the recall prompt" />
                         </label>
                         <ImageInput label="Answer / fact photo" name="contentImageId" required />
                         <label>
