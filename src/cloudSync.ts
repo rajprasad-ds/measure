@@ -216,10 +216,21 @@ async function pullCardRows<T>(
   }
 }
 
-function toCloudSession(record: SessionRecord) {
+function toCloudSession(
+  record: SessionRecord,
+  attempts: AttemptRecord[] = [],
+) {
+  // Keep invalid-question attempts in the attempt history, but never include
+  // them in the valid timed-question count or average-time calculation.
+  const validAttempts = attempts.filter(
+    (attempt) => attempt.result !== "wrong_question",
+  );
+  const hasAttemptDetails = attempts.length > 0;
   const timedQuestionCount =
-    record.timedQuestionCount ??
     record.rightCount + record.wrongCount + record.couldntSolveCount;
+  const activeTimeMs = hasAttemptDetails
+    ? validAttempts.reduce((total, attempt) => total + attempt.timeMs, 0)
+    : record.activeTimeMs;
   return {
     id: record.id,
     subject_id: record.subjectId ?? null,
@@ -236,12 +247,11 @@ function toCloudSession(record: SessionRecord) {
     wrong_count: record.wrongCount,
     couldnt_solve_count: record.couldntSolveCount,
     timed_question_count: timedQuestionCount,
-    active_time_ms: record.activeTimeMs,
+    active_time_ms: activeTimeMs,
     avg_time_per_question_ms:
-      record.avgTimePerQuestionMs ??
-      (timedQuestionCount > 0
-        ? Math.round(record.activeTimeMs / timedQuestionCount)
-        : null),
+      timedQuestionCount > 0
+        ? Math.round(activeTimeMs / timedQuestionCount)
+        : null,
   };
 }
 
@@ -663,11 +673,11 @@ export async function syncAccountSessions(user: User): Promise<SessionRecord[]> 
     const { error } =
       attempts.length === 0
         ? await client.rpc("upsert_session_with_topics", {
-            p_session: toCloudSession(record),
+            p_session: toCloudSession(record, attempts),
             p_weak_topics: weakTopics,
           })
         : await client.rpc("upsert_session_with_attempts", {
-            p_session: toCloudSession(record),
+            p_session: toCloudSession(record, attempts),
             p_attempts: attempts.map(toCloudAttempt),
             p_weak_topics: weakTopics,
           });
