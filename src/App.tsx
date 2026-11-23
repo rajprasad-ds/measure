@@ -1528,6 +1528,7 @@ function App() {
         onUseQuestionCard={useQuestionCardForAttempt}
         onSaveSmarterApproach={saveSmarterApproach}
         onSaveSolution={saveSolution}
+        onSaveDifficulty={saveQuestionDifficulty}
         onCreateFactCard={saveFeedbackFactCard}
         onUseFactCard={useFactCardForAttempt}
         onSave={() => void saveSession()}
