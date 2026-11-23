@@ -1366,7 +1366,20 @@ function App() {
         setUnassignedSessionCount((count) => count + 1);
       }
       await queueImagesForUpload(Array.from(finalizedImageIds));
-      if (authUser) await performSync(authUser, true);
+      // The local transaction is the durable commit. Attempt Drive/cloud sync
+      // before showing the summary, but never strand the user in feedback if
+      // the network or Google authorization is unavailable.
+      if (authUser) {
+        try {
+          await performSync(authUser, true);
+        } catch (syncError) {
+          setSyncError(
+            syncError instanceof Error
+              ? syncError.message
+              : "Cloud sync is pending. Your session and photos are saved on this device.",
+          );
+        }
+      }
       setSession({ ...session, phase: "summary", record });
     } catch (error) {
       setSaveError(
