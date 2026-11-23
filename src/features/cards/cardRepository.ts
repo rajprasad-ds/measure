@@ -34,10 +34,10 @@ function syncFields({ userId }: UserOptions, timestamp: string) {
   };
 }
 
-export async function createQuestionCard(
+export function buildQuestionCardRecord(
   input: QuestionCardInput,
   options: UserOptions = {},
-): Promise<QuestionCard> {
+): QuestionCard {
   const promptText = input.promptText?.trim() ?? "";
   const solutionText = input.solutionText?.trim() ?? "";
   const solutionImageIds = input.solutionImageIds ?? (input.solutionImageId ? [input.solutionImageId] : []);
@@ -46,9 +46,8 @@ export async function createQuestionCard(
     throw new Error("Add a photo of the question to the question bank.");
   }
   validateLocation(input.subjectId, input.chapterId, input.topicIds);
-
   const now = new Date().toISOString();
-  const card: QuestionCard = {
+  return {
     id: globalThis.crypto.randomUUID(),
     ...syncFields(options, now),
     subjectId: input.subjectId,
@@ -63,10 +62,15 @@ export async function createQuestionCard(
     timesSeen: 1,
     lastSeenAt: now,
     priorityBoost: 0,
-    ...(input.createdFromAttemptId
-      ? { createdFromAttemptId: input.createdFromAttemptId }
-      : {}),
+    ...(input.createdFromAttemptId ? { createdFromAttemptId: input.createdFromAttemptId } : {}),
   };
+}
+
+export async function createQuestionCard(
+  input: QuestionCardInput,
+  options: UserOptions = {},
+): Promise<QuestionCard> {
+  const card = buildQuestionCardRecord(input, options);
   await database.questions.add(card);
   return card;
 }
@@ -75,12 +79,12 @@ export async function createFactCard(
   input: FactCardInput,
   options: UserOptions = {},
 ): Promise<FactCard> {
-  const card = buildFactCard(input, options);
+  const card = buildFactCardRecord(input, options);
   await database.factCards.add(card);
   return card;
 }
 
-function buildFactCard(input: FactCardInput, options: UserOptions): FactCard {
+export function buildFactCardRecord(input: FactCardInput, options: UserOptions = {}): FactCard {
   const promptText = input.promptText?.trim() ?? "";
   const contentText = input.contentText?.trim() ?? "";
   if (!promptText && !input.promptImageId) {
@@ -174,7 +178,7 @@ export async function createFactCardAndLink(
   options: UserOptions = {},
 ): Promise<FactCard> {
   if (!questionId) throw new Error("Choose a question card to link.");
-  const card = buildFactCard(input, options);
+  const card = buildFactCardRecord(input, options);
   await database.transaction(
     "rw",
     database.questions,
