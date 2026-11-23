@@ -40,7 +40,6 @@ export function getInitialFeedbackStep(
   }
 
   if (!feedback.cause) return "cause";
-  if (feedback.cause === "slip" && !feedback.slipSubtype) return "slip";
   if (sessionKind === "practice" && !feedback.questionId) return "question";
   if (!feedback.solutionSaved) return "solution";
   if (feedback.topics.length === 0) return "topics";
@@ -63,7 +62,6 @@ export function getStepAfterCause(
   cause: Cause,
   _topicCount: number,
 ): FeedbackStep {
-  if (cause === "slip") return "slip";
   return "question";
 }
 
@@ -72,9 +70,15 @@ export function canCompleteQuestionFeedback(
   validationMessages: string[],
   timeMs: number,
   sessionKind: "practice" | "question_revision" = "practice",
+  linkedFactCount = 0,
 ) {
   if (!feedback?.result || validationMessages.length > 0) return false;
   if (feedback.result !== "right" && feedback.result !== "wrong_question" && !feedback.questionId) return false;
+  if (sessionKind === "practice" && feedback.result !== "right" && feedback.result !== "wrong_question") {
+    if (!feedback.cause || !feedback.solutionSaved) return false;
+    if ((feedback.cause === "missing_fact" || feedback.cause === "wrong_concept") && feedback.topics.length === 0) return false;
+    if (feedback.cause === "missing_fact" && linkedFactCount === 0) return false;
+  }
   if (
     sessionKind === "practice" &&
     isSlowRightAttempt(feedback.result, timeMs)
