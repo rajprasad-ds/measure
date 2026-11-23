@@ -941,51 +941,19 @@ function App() {
 
   async function saveFeedbackQuestionCard(
     questionNumber: number,
-    input: Pick<
-      QuestionCardInput,
-      | "promptText"
-      | "promptImageId"
-      | "solutionText"
-      | "solutionImageId"
-    >,
+    input: Pick<QuestionCardInput, "promptText" | "promptImageId">,
   ) {
-    if (!session) throw new Error("The session is no longer available.");
-    if (session.sessionKind !== "practice") {
-      throw new Error("New question cards can only be created from practice feedback.");
+    if (!session || session.sessionKind !== "practice") {
+      throw new Error("New question cards can only be drafted from practice feedback.");
     }
-    const feedback = session.feedback[questionNumber];
-    if (!feedback || feedback.result === null) {
-      throw new Error("Record the result before saving this question.");
-    }
-    if (
-      feedback.result === "right" &&
-      (!feedback.smarterApproach ||
-        session.questionTimesMs[questionNumber] <= SMARTER_APPROACH_THRESHOLD_MS)
-    ) {
-      throw new Error("Only a slow practice question can be saved from a right answer.");
-    }
-    if (feedback.questionId) {
-      const existing = questionCards.find((card) => card.id === feedback.questionId);
-      if (existing) return existing;
-    }
-    const attemptId = feedback.attemptId ?? globalThis.crypto.randomUUID();
-    const card = await createQuestionCard(
-      {
-        ...input,
-        subjectId: session.subjectId,
-        chapterId: session.chapterId,
-        topicIds: feedback.topics.map((topic) => topic.id),
-        createdFromAttemptId: attemptId,
-      },
-      { userId: authUser?.id },
-    );
+    if (!input.promptImageId) throw new Error("Add a photo of the question.");
     updateFeedbackForQuestion(questionNumber, (current) => ({
       ...current,
-      attemptId,
-      questionId: card.id,
+      questionDraft: {
+        ...current.questionDraft,
+        ...input,
+      },
     }));
-    await refreshCardData();
-    return card;
   }
 
   async function saveSmarterApproach(
@@ -993,41 +961,17 @@ function App() {
     input: Pick<QuestionCardInput, "solutionText" | "solutionImageId" | "solutionImageIds">,
   ) {
     if (!session || session.sessionKind !== "practice") {
-      throw new Error("Smarter approaches can only be saved from practice feedback.");
-    }
-    const feedback = session.feedback[questionNumber];
-    if (
-      !feedback?.questionId ||
-      feedback.smarterApproach !== "found" ||
-      session.questionTimesMs[questionNumber] <= SMARTER_APPROACH_THRESHOLD_MS
-    ) {
-      throw new Error("Save the slow question before adding its shorter approach.");
+      throw new Error("Smarter approaches can only be drafted from practice feedback.");
     }
     if (!(input.solutionImageIds?.length || input.solutionImageId) && !input.solutionText) {
       throw new Error("Add the smarter method as text or an image.");
     }
-    const card = questionCards.find((item) => item.id === feedback.questionId);
-    if (!card) throw new Error("The saved question could not be found.");
-    await updateQuestionCard(card, {
-      subjectId: card.subjectId,
-      chapterId: card.chapterId,
-      topicIds: Array.from(
-        new Set([...card.topicIds, ...feedback.topics.map((t) => t.id)]),
-      ),
-      promptText: card.promptText,
-      promptImageId: card.promptImageId,
-      solutionText: input.solutionText,
-      solutionImageId: input.solutionImageId,
-      solutionImageIds: input.solutionImageIds,
-      smarterApproachText: card.smarterApproachText,
-      smarterApproachImageId: card.smarterApproachImageId,
-      keyInsight: card.keyInsight,
-    });
     updateFeedbackForQuestion(questionNumber, (current) => ({
       ...current,
+      smarterApproachDraft: input,
       smarterApproachSaved: true,
+      questionDraft: { ...current.questionDraft, ...input },
     }));
-    await refreshCardData();
   }
 
   async function saveSolution(
@@ -1035,59 +979,27 @@ function App() {
     input: Pick<QuestionCardInput, "solutionText" | "solutionImageId" | "solutionImageIds">,
   ) {
     if (!session || session.sessionKind !== "practice") {
-      throw new Error("Solutions can only be saved from practice feedback.");
+      throw new Error("Solutions can only be drafted during practice feedback.");
     }
-    const feedback = session.feedback[questionNumber];
-    if (!feedback?.questionId) {
-      throw new Error("Save the question before adding a solution.");
+    if (!(input.solutionImageIds?.length || input.solutionImageId) && !input.solutionText) {
+      throw new Error("Add the solution as text or an image.");
     }
-    const card = questionCards.find((item) => item.id === feedback.questionId);
-    if (!card) throw new Error("The saved question could not be found.");
-    await updateQuestionCard(card, {
-      subjectId: card.subjectId,
-      chapterId: card.chapterId,
-      topicIds: Array.from(
-        new Set([...card.topicIds, ...feedback.topics.map((t) => t.id)]),
-      ),
-      promptText: card.promptText,
-      promptImageId: card.promptImageId,
-      solutionText: input.solutionText,
-      solutionImageId: input.solutionImageId,
-      solutionImageIds: input.solutionImageIds,
-      smarterApproachText: card.smarterApproachText,
-      smarterApproachImageId: card.smarterApproachImageId,
-      keyInsight: card.keyInsight,
-    });
     updateFeedbackForQuestion(questionNumber, (current) => ({
       ...current,
       solutionSaved: true,
+      questionDraft: { ...current.questionDraft, ...input },
     }));
-    await refreshCardData();
   }
 
   async function saveQuestionDifficulty(questionNumber: number, difficulty: QuestionDifficulty) {
-    if (!session || session.sessionKind !== "practice") throw new Error("Question difficulty can only be set during practice feedback.");
-    const feedback = session.feedback[questionNumber];
-    if (!feedback?.questionId) throw new Error("Save the question before assigning its difficulty.");
-    const card = questionCards.find((item) => item.id === feedback.questionId);
-    if (!card) throw new Error("The saved question could not be found.");
-    if (card.difficulty && card.difficulty !== difficulty) throw new Error("Intrinsic question difficulty cannot be changed after it is set.");
-    await updateQuestionCard(card, {
-      subjectId: card.subjectId,
-      chapterId: card.chapterId,
-      topicIds: Array.from(new Set([...card.topicIds, ...feedback.topics.map((topic) => topic.id)])),
-      promptText: card.promptText,
-      promptImageId: card.promptImageId,
+    if (!session || session.sessionKind !== "practice") {
+      throw new Error("Question difficulty can only be set during practice feedback.");
+    }
+    updateFeedbackForQuestion(questionNumber, (current) => ({
+      ...current,
       difficulty,
-      solutionText: card.solutionText,
-      solutionImageId: card.solutionImageId,
-      solutionImageIds: card.solutionImageIds,
-      smarterApproachText: card.smarterApproachText,
-      smarterApproachImageId: card.smarterApproachImageId,
-      keyInsight: card.keyInsight,
-    });
-    updateFeedbackForQuestion(questionNumber, (current) => ({ ...current, difficulty }));
-    await refreshCardData();
+      questionDraft: { ...current.questionDraft, difficulty },
+    }));
   }
 
   async function useQuestionCardForAttempt(
@@ -1096,6 +1008,7 @@ function App() {
   ) {
     const feedback = session?.feedback[questionNumber];
     if (!session || !feedback) throw new Error("The attempt is no longer available.");
+    // Existing-card use remains a reference to an already-persisted card.
     await recordQuestionSeen(card.id, authUser?.id);
     updateFeedbackForQuestion(questionNumber, (current) => ({
       ...current,
@@ -1117,44 +1030,27 @@ function App() {
 
   async function saveFeedbackFactCard(
     questionNumber: number,
-    input: Pick<
-      FactCardInput,
-      | "kind"
-      | "promptText"
-      | "promptImageId"
-      | "contentText"
-      | "contentImageId"
-      | "wrongBelief"
-    >,
+    input: Pick<FactCardInput, "kind" | "promptText" | "promptImageId" | "contentText" | "contentImageId" | "wrongBelief">,
   ) {
     if (!session) throw new Error("The session is no longer available.");
-    const feedback = session.feedback[questionNumber];
-    if (!feedback?.questionId) {
-      throw new Error("Save or link this attempt's question card first.");
+    const frontPresent = Boolean(input.promptText?.trim() || input.promptImageId);
+    const backPresent = Boolean(input.contentText?.trim() || input.contentImageId);
+    if (!frontPresent || !backPresent) {
+      throw new Error("Add text or an image to both sides of the fact card.");
     }
-    const card = await createFactCardAndLink(
-      {
-        ...input,
-        subjectId: session.subjectId,
-        chapterId: session.chapterId,
-        topicIds: feedback.topics.map((topic) => topic.id),
-        createdFromAttemptId:
-          feedback.attemptId ?? globalThis.crypto.randomUUID(),
-      },
-      feedback.questionId,
-      { userId: authUser?.id },
-    );
-    await refreshCardData();
-    return card;
+    updateFeedbackForQuestion(questionNumber, (current) => ({
+      ...current,
+      factDraft: input,
+    }));
   }
 
   async function useFactCardForAttempt(questionNumber: number, card: FactCard) {
-    const questionId = session?.feedback[questionNumber]?.questionId;
-    if (!questionId) {
-      throw new Error("Save or link this attempt's question card first.");
-    }
-    await linkQuestionAndFact(questionId, card.id, { userId: authUser?.id });
-    await refreshCardData();
+    const feedback = session?.feedback[questionNumber];
+    if (!session || !feedback) throw new Error("The attempt is no longer available.");
+    updateFeedbackForQuestion(questionNumber, (current) => ({
+      ...current,
+      linkedFactIds: Array.from(new Set([...(current.linkedFactIds ?? []), card.id])),
+    }));
   }
 
   async function saveSession() {
