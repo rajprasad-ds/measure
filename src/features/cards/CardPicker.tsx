@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FocusEvent } from "react";
 
 export type CardPickerOption = {
   id: string;
@@ -45,8 +45,15 @@ export default function CardPicker({
     onSelect?.(option);
   }
 
+  function handleBlur(event: FocusEvent<HTMLDivElement>) {
+    const nextTarget = event.relatedTarget;
+    if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
+      setIsOpen(false);
+    }
+  }
+
   return (
-    <div className="card-picker">
+    <div className="card-picker" onBlur={handleBlur}>
       <span className="card-picker-label">{label}</span>
       {name && <input type="hidden" name={name} value={selectedId} />}
       {selected ? (
