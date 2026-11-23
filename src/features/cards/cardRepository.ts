@@ -236,6 +236,10 @@ export async function updateQuestionCard(
   const solutionText = updates.solutionText?.trim() ?? "";
   const solutionImageIds = updates.solutionImageIds ?? (updates.solutionImageId ? [updates.solutionImageId] : card.solutionImageIds ?? (card.solutionImageId ? [card.solutionImageId] : []));
   const keyInsight = updates.keyInsight?.trim() ?? "";
+  const difficulty = card.difficulty ?? updates.difficulty;
+  if (card.difficulty && updates.difficulty && updates.difficulty !== card.difficulty) {
+    throw new Error("Intrinsic question difficulty cannot be changed after it is set.");
+  }
   if (!updates.promptImageId) {
     throw new Error("Add a photo of the question.");
   }
@@ -244,7 +248,7 @@ export async function updateQuestionCard(
     ...card,
     ...updates,
     promptText,
-    ...(updates.difficulty ? { difficulty: updates.difficulty } : { difficulty: undefined }),
+    ...(difficulty ? { difficulty } : { difficulty: undefined }),
     topicIds: [...new Set(updates.topicIds)],
     ...(solutionText ? { solutionText } : { solutionText: undefined }),
     ...(keyInsight ? { keyInsight } : { keyInsight: undefined }),
