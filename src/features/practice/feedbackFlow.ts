@@ -9,6 +9,7 @@ export type FeedbackStep =
   | "question"
   | "topics"
   | "solution"
+  | "difficulty"
   | "approach"
   | "cause"
   | "slip"
@@ -33,6 +34,7 @@ export function getInitialFeedbackStep(
     if (!feedback.questionId) return "question";
     if (feedback.topics.length === 0) return "topics";
     if (!feedback.smarterApproachSaved) return "approach";
+    if (!feedback.difficulty) return "difficulty";
     return "complete";
   }
 
@@ -43,6 +45,7 @@ export function getInitialFeedbackStep(
   if (!feedback.cause) return "cause";
   if (sessionKind === "practice" && !feedback.questionId) return "question";
   if (!feedback.solutionSaved) return "solution";
+  if (!feedback.difficulty) return "difficulty";
   if (feedback.topics.length === 0) return "topics";
   if (feedback.cause === "missing_fact" && linkedFactCount === 0) return "fact";
   return "complete";
@@ -76,7 +79,7 @@ export function canCompleteQuestionFeedback(
   if (!feedback?.result || validationMessages.length > 0) return false;
   if (feedback.result !== "right" && feedback.result !== "wrong_question" && !feedback.questionId) return false;
   if (sessionKind === "practice" && feedback.result !== "right" && feedback.result !== "wrong_question") {
-    if (!feedback.cause || !feedback.solutionSaved) return false;
+    if (!feedback.cause || !feedback.solutionSaved || !feedback.difficulty) return false;
     if ((feedback.cause === "missing_fact" || feedback.cause === "wrong_concept") && feedback.topics.length === 0) return false;
     if (feedback.cause === "missing_fact" && linkedFactCount === 0) return false;
   }
@@ -87,7 +90,7 @@ export function canCompleteQuestionFeedback(
     if (!feedback.smarterApproach) return false;
     if (
       feedback.smarterApproach === "found" &&
-      (!feedback.questionId || !feedback.smarterApproachSaved)
+      (!feedback.questionId || !feedback.smarterApproachSaved || !feedback.difficulty)
     ) {
       return false;
     }
