@@ -574,6 +574,30 @@ async function syncPendingCards(userId: string) {
 }
 
 async function syncPendingImages(userId: string) {
+  const [questions, facts] = await Promise.all([
+    database.questions.where("ownerUserId").equals(userId).toArray(),
+    database.factCards.where("ownerUserId").equals(userId).toArray(),
+  ]);
+  const referencedImageIds = new Set<string>();
+  questions.forEach((card) => {
+    if (card.promptImageId) referencedImageIds.add(card.promptImageId);
+    if (card.solutionImageId) referencedImageIds.add(card.solutionImageId);
+    card.solutionImageIds?.forEach((id) => referencedImageIds.add(id));
+    if (card.smarterApproachImageId) referencedImageIds.add(card.smarterApproachImageId);
+  });
+  facts.forEach((card) => {
+    if (card.promptImageId) referencedImageIds.add(card.promptImageId);
+    if (card.contentImageId) referencedImageIds.add(card.contentImageId);
+  });
+  if (referencedImageIds.size > 0) {
+    const imageRows = await database.localImages.bulkGet(Array.from(referencedImageIds));
+    const newlyOwned = imageRows.filter((row): row is LocalImageRecord => Boolean(row && !row.ownerUserId)).map((row) => ({
+      ...row,
+      ownerUserId: userId,
+      syncStatus: "pending" as const,
+    }));
+    if (newlyOwned.length > 0) await database.localImages.bulkPut(newlyOwned);
+  }
   const pending = await database.localImages
     .where("ownerUserId")
     .equals(userId)
