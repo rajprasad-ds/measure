@@ -702,6 +702,7 @@ function App() {
       slipSubtype: null,
       topics: [],
     };
+    const resultChanged = current.result !== result;
     setSession({
       ...session,
       feedback: {
@@ -709,6 +710,16 @@ function App() {
         [questionNumber]: {
           ...current,
           result,
+          ...(resultChanged
+            ? {
+                cause: null,
+                slipSubtype: null,
+                topics: [],
+                questionId: undefined,
+                solutionSaved: undefined,
+                difficulty: undefined,
+              }
+            : {}),
           smarterApproach: undefined,
           smarterApproachSaved: undefined,
           ...(result !== "right" && !current.attemptId
