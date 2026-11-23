@@ -395,7 +395,8 @@ export default function SessionFeedbackScreen({
     try {
       await onSaveSolution(questionNumber, {
         solutionText,
-        solutionImageId,
+        solutionImageId: solutionImageIds[0],
+        solutionImageIds,
       });
       moveToStep("difficulty");
     } catch (error) {
@@ -495,6 +496,23 @@ export default function SessionFeedbackScreen({
     );
   }
 
+  function renderSolutionImageInputs(label: string) {
+    return (
+      <div className="solution-image-list">
+        {Array.from({ length: solutionImageCount }, (_, index) => (
+          <ImageInput
+            key={`${questionNumber}-${label}-${index}`}
+            label={`${label} ${index + 1}`}
+            name="solutionImageIds"
+            value={questionCard?.solutionImageIds?.[index] ?? (index === 0 ? questionCard?.solutionImageId : undefined)}
+          />
+        ))}
+        <button className="account-secondary-button" type="button" onClick={() => setSolutionImageCount((count) => count + 1)}>
+          Add another solution image
+        </button>
+      </div>
+    );
+  }
   const questionCaptureNeeded =
     session.sessionKind === "practice" &&
     !!feedback &&
@@ -777,7 +795,7 @@ export default function SessionFeedbackScreen({
                       Capture the shorter method, trick, or shortcut you found.
                     </p>
                     <form className="inline-card-form" onSubmit={(event) => void submitApproach(event)}>
-                      <ImageInput label="Smarter solution photo" name="solutionImageId" />
+                      {renderSolutionImageInputs("Smarter method image")}
                       <label>
                         Key trick or approach note <span className="optional-label">optional</span>
                         <textarea
@@ -831,10 +849,7 @@ export default function SessionFeedbackScreen({
                     )}
 
                     <form className="inline-card-form" onSubmit={(event) => void submitSolution(event)}>
-                      <ImageInput
-                        label={questionCard?.solutionImageId ? "Replace solution photo" : "Solution photo"}
-                        name="solutionImageId"
-                      />
+                      {renderSolutionImageInputs("Solution image")}
                       <label>
                         Solution note <span className="optional-label">optional</span>
                         <textarea
