@@ -61,7 +61,7 @@ export type LocalImageRecord = {
   width: number;
   height: number;
   bytes: number;
-  status: "pending" | "uploading" | "uploaded" | "failed";
+  status: "local" | "pending" | "uploading" | "uploaded" | "failed";
   remoteId?: string;
   ownerUserId?: string;
   syncStatus?: "local" | "pending" | "synced";
