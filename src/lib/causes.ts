@@ -36,7 +36,7 @@ export function validateAttempt(attempt: AttemptValidationInput): string[] {
 
   if (attempt.result === "right" || attempt.result === "wrong_question") {
     if (attempt.cause || attempt.slipSubtype) {
-      errors.push("This result cannot have a cause or slip subtype.");
+      errors.push("Right answers cannot have a cause or slip subtype.");
     }
     return errors;
   }
