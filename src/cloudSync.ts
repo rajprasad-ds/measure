@@ -601,7 +601,7 @@ async function syncPendingImages(userId: string) {
   const pending = await database.localImages
     .where("ownerUserId")
     .equals(userId)
-    .filter((row) => row.syncStatus !== "synced")
+    .filter((row) => row.syncStatus !== "synced" && Boolean(row.remoteId))
     .toArray();
   const client = requireSupabase();
   for (let offset = 0; offset < pending.length; offset += 100) {
