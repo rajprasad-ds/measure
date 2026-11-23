@@ -834,16 +834,16 @@ export default function SessionFeedbackScreen({
                       </div>
                     )}
 
-                    {questionCard?.solutionImageId && (
+                    {(questionCard?.solutionImageIds?.length || questionCard?.solutionImageId) && (
                       <div className="feedback-mini-preview" style={{ marginTop: "0.5rem" }}>
-                        <div className="mini-preview-thumb">
-                          <CardImage imageId={questionCard.solutionImageId} alt="Attached solution" />
-                        </div>
+                        {(questionCard.solutionImageIds ?? [questionCard.solutionImageId!]).map((imageId, index) => (
+                          <div className="mini-preview-thumb" key={imageId}>
+                            <CardImage imageId={imageId} alt={`Attached solution ${index + 1}`} />
+                          </div>
+                        ))}
                         <div className="mini-preview-info">
-                          <span className="mini-preview-tag">Current solution attached</span>
-                          {questionCard.solutionText && (
-                            <span className="mini-preview-text">{questionCard.solutionText}</span>
-                          )}
+                          <span className="mini-preview-tag">Current solution images</span>
+                          {questionCard.solutionText && <span className="mini-preview-text">{questionCard.solutionText}</span>}
                         </div>
                       </div>
                     )}
