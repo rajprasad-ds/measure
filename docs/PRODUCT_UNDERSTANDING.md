@@ -543,3 +543,50 @@ The detailed UI/UX design should still proceed layer by layer, but it must respe
 ### Practical rule for future development
 
 Before implementing any Step 2 feature, ask: **Does Step 1 already capture the raw, trustworthy data this feature will need?** If not, close that data-capture/persistence gap first. The revision planner should not be blocked later by missing historical data that could have been captured during normal practice.
+
+
+---
+
+## 14. Normal-practice feedback corrections from live testing (23 November 2026)
+
+The owner tested one session containing all four outcome paths and identified three issues that must be resolved before Step 1 is considered complete.
+
+### 14.1 Fact dependency screen
+
+When the primary cause is Forgotten fact/formula, the user must be able to:
+1. Search and link an existing fact card from the user's full fact library.
+2. Or deliberately choose to create a new fact card.
+
+The existing-fact search must be visible and usable before the new-card form is opened. Do not force the user into a large creation form. The screenshot from testing did not expose the existing-card option, even though a CardPicker exists in the current source; verify the rendered UI and ensure the search is clearly visible above/beside a collapsed create-new action.
+
+### 14.2 Images remain local until final session submission
+
+Selecting an image is not consent to upload it to Google Drive. During feedback the user may replace a photo, remove it, or navigate backward and change the answer. Therefore:
+- Image selection saves the image locally in IndexedDB and displays a preview.
+- Do not request Drive authorization or upload the image when it is selected.
+- Replacing/removing a photo must only update the local draft.
+- After the user submits the complete session, upload only the images referenced by the final committed question/fact cards.
+- Complete image uploads before presenting the final session summary as fully synchronized. If upload or sync fails, preserve the committed local session and image blobs, clearly show which items remain pending, and offer retry. Never lose local work because Drive is unavailable.
+
+### 14.3 Feedback must be draft-first and reversible
+
+Live testing exposed a data-integrity bug: submitting a question photo creates a QuestionCard immediately and assigns its ID to the attempt. If the user navigates backward and changes the outcome, that old question ID can remain attached to the new outcome.
+
+Required behavior:
+- Feedback steps collect a draft; they must not create or sync permanent question/fact cards or relationships while the user is still navigating the form.
+- Changing an outcome invalidates dependent draft fields (cause, slip subtype, topics, question/solution/difficulty draft, and fact dependency as applicable) without leaving a card or link behind.
+- The final session submission validates all drafts and commits sessions, attempts, question cards, fact cards, and question-fact links transactionally in local storage.
+- Only after the local transaction succeeds should referenced images become eligible for Drive upload and records become eligible for cloud sync.
+- A failed local commit must not partially create cards, links, or attempts. A later Drive/cloud failure must not roll back or destroy the locally committed session.
+- The attempt's questionId must always refer to the card created/selected for its final outcome, never a card from a previously selected outcome.
+
+### 14.4 Presentation quality
+
+The current feedback UI feels cluttered despite the palette being acceptable. Redesign the feedback steps around one primary task per screen:
+- Strong hierarchy and concise instructions.
+- Progressive disclosure: keep fact creation, optional details, and secondary actions collapsed until requested.
+- Clear existing-fact search vs create-new choice.
+- Consistent spacing, card density, button hierarchy, and step labels.
+- Preserve the five outcomes and agreed capture order; do not change product behavior merely to simplify the interface.
+
+These corrections remain part of Step 1. Do not begin Step 2 revision workflows while they are unresolved.
