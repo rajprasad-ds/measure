@@ -71,7 +71,7 @@ type Props = {
   ) => Promise<void>;
   onSaveSolution: (
     questionNumber: number,
-    input: Pick<QuestionCardInput, "solutionText" | "solutionImageId">,
+    input: Pick<QuestionCardInput, "solutionText" | "solutionImageId" | "solutionImageIds">,
   ) => Promise<void>;
   onSaveDifficulty: (questionNumber: number, difficulty: QuestionDifficulty) => Promise<void>;
   onCreateFactCard: (
