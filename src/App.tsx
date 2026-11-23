@@ -947,7 +947,7 @@ function App() {
     ) {
       throw new Error("Save the slow question before adding its shorter approach.");
     }
-    if (!input.solutionImageId && !input.solutionText) {
+    if (!(input.solutionImageIds?.length || input.solutionImageId) && !input.solutionText) {
       throw new Error("Add the smarter method as text or an image.");
     }
     const card = questionCards.find((item) => item.id === feedback.questionId);
@@ -977,7 +977,7 @@ function App() {
 
   async function saveSolution(
     questionNumber: number,
-    input: Pick<QuestionCardInput, "solutionText" | "solutionImageId">,
+    input: Pick<QuestionCardInput, "solutionText" | "solutionImageId" | "solutionImageIds">,
   ) {
     if (!session || session.sessionKind !== "practice") {
       throw new Error("Solutions can only be saved from practice feedback.");
