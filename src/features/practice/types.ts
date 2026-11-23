@@ -18,6 +18,7 @@ export type QuestionFeedback = {
   topics: Array<{ id: string; name: string }>;
   smarterApproach?: "found" | "not_found";
   smarterApproachSaved?: boolean;
+  difficulty?: "easy" | "medium" | "hard";
   solutionSaved?: boolean;
   attemptId?: string;
   questionId?: string;
