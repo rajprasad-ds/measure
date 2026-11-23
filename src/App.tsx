@@ -934,7 +934,7 @@ function App() {
 
   async function saveSmarterApproach(
     questionNumber: number,
-    input: Pick<QuestionCardInput, "solutionText" | "solutionImageId">,
+    input: Pick<QuestionCardInput, "solutionText" | "solutionImageId" | "solutionImageIds">,
   ) {
     if (!session || session.sessionKind !== "practice") {
       throw new Error("Smarter approaches can only be saved from practice feedback.");
@@ -962,6 +962,7 @@ function App() {
       promptImageId: card.promptImageId,
       solutionText: input.solutionText,
       solutionImageId: input.solutionImageId,
+      solutionImageIds: input.solutionImageIds,
       smarterApproachText: card.smarterApproachText,
       smarterApproachImageId: card.smarterApproachImageId,
       keyInsight: card.keyInsight,
@@ -997,6 +998,7 @@ function App() {
       promptImageId: card.promptImageId,
       solutionText: input.solutionText,
       solutionImageId: input.solutionImageId,
+      solutionImageIds: input.solutionImageIds,
       smarterApproachText: card.smarterApproachText,
       smarterApproachImageId: card.smarterApproachImageId,
       keyInsight: card.keyInsight,
@@ -1024,6 +1026,7 @@ function App() {
       difficulty,
       solutionText: card.solutionText,
       solutionImageId: card.solutionImageId,
+      solutionImageIds: card.solutionImageIds,
       smarterApproachText: card.smarterApproachText,
       smarterApproachImageId: card.smarterApproachImageId,
       keyInsight: card.keyInsight,
