@@ -1355,7 +1355,6 @@ function App() {
         );
       }
       setPersistenceError(null);
-      if (draftFacts.length || draftLinks.length) await refreshCardData();
       setSavedSessions((current) =>
         [record, ...current].sort((left, right) =>
           right.endedAt.localeCompare(left.endedAt),
@@ -1364,10 +1363,26 @@ function App() {
       if (!authUser) {
         setUnassignedSessionCount((count) => count + 1);
       }
-      await queueImagesForUpload(Array.from(finalizedImageIds));
-      // The local transaction is the durable commit. Attempt Drive/cloud sync
-      // before showing the summary, but never strand the user in feedback if
-      // the network or Google authorization is unavailable.
+      // Everything below is post-commit housekeeping. A refresh, Drive or
+      // cloud failure must not make a committed session look unsaved.
+      try {
+        if (draftFacts.length || draftLinks.length) await refreshCardData();
+      } catch (refreshError) {
+        setPersistenceError(
+          refreshError instanceof Error ? refreshError.message : "Cards were saved, but the view could not refresh.",
+        );
+      }
+      try {
+        await queueImagesForUpload(Array.from(finalizedImageIds));
+      } catch (imageQueueError) {
+        setSyncError(
+          imageQueueError instanceof Error
+            ? imageQueueError.message
+            : "Your session is saved, but photo uploads are pending.",
+        );
+      }
+      // Attempt Drive/cloud sync before showing the summary, but never strand
+      // the user in feedback if the network or Google authorization is unavailable.
       if (authUser) {
         try {
           await performSync(authUser, true);
