@@ -191,7 +191,7 @@ export default function ImageInput({
       ) : (
         <p className="image-input-hint">
           Take a photo or choose one. It’s stored offline on this device;
-          it stays on this device until you submit the session.
+          It stays on this device until you submit the session.
         </p>
       )}
       <div className="image-input-actions">
@@ -256,7 +256,7 @@ export default function ImageInput({
               )}
             </>
           )}
-          {!record.remoteId && (
+          {record.status !== "local" && !record.remoteId && (
             <button className="image-status-button" type="button" onClick={reconnectDrive}>
               {record.status === "failed" ? "Reconnect Google Drive" : "Connect Google Drive"}
             </button>
