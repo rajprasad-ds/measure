@@ -144,7 +144,7 @@ function getStepTitle(
   }
   if (step === "approach") return "Step 2 of 4: Smarter approach";
   if (step === "solution") return "Step 3 of 6: Solution";
-  if (step === "difficulty") return slowRight ? "Step 4 of 4: Difficulty" : "Step 4 of 6: Difficulty";
+  if (step === "difficulty") return slowRight ? "Step 3 of 4: Difficulty" : "Step 4 of 6: Difficulty";
   if (step === "cause") {
     return "Step 1 of 6: Primary cause";
   }
@@ -152,7 +152,7 @@ function getStepTitle(
     return "Step 2: Slip details";
   }
   if (step === "fact") {
-    return "Step 5: Fact card";
+    return "Step 6 of 6: Fact card";
   }
   if (step === "complete") return "Feedback complete";
   return "";
@@ -421,7 +421,7 @@ export default function SessionFeedbackScreen({
     setActionError(null);
     try {
       await onSaveDifficulty(questionNumber, difficulty);
-      moveToStep(slowRight ? "complete" : "topics");
+      moveToStep("topics");
     } catch (error) {
       showError(error, "Could not save question difficulty.");
     }
@@ -686,9 +686,7 @@ export default function SessionFeedbackScreen({
                         onClick={() => {
                           onSetSmarterApproach(questionNumber, "found");
                           moveToStep(
-                            feedback.questionId
-                              ? (feedback.topics.length > 0 ? "approach" : "topics")
-                              : "question",
+                            feedback.questionId ? "approach" : "question",
                           );
                         }}
                       >
@@ -794,10 +792,10 @@ export default function SessionFeedbackScreen({
                       }}
                     >
                       {slowRight && feedback.smarterApproach === "found"
-                        ? "Continue to smarter approach →"
+                        ? "Finish feedback →"
                         : feedback.result !== "right"
-                          ? "Continue to solution photo →"
-                          : "Continue to root cause →"}
+                          ? "Continue →"
+                          : "Finish question feedback →"}
                     </button>
                   </section>
                 )}
