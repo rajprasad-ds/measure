@@ -440,17 +440,7 @@ function App() {
   }, [session]);
 
   useEffect(() => {
-    if (!session || session.phase !== "active") return;
-
-    if (pendingWarning) {
-      if (
-        now >=
-        pendingWarning.startedAt + INACTIVITY_LIMITS.warningResponseMs
-      ) {
-        endSession();
-      }
-      return;
-    }
+    if (!session || session.phase !== "active" || pendingWarning) return;
 
     const prompt = getInactivityPrompt(
       session,
@@ -477,6 +467,11 @@ function App() {
     }
     setPendingWarning(prompt.warning);
   }, [session, now, pendingWarning]);
+
+  useEffect(() => {
+    if (!session || session.phase !== "active" || now < session.endsAt) return;
+    endSession(session.endsAt);
+  }, [session, now]);
 
   const remaining = session
     ? Math.max(0, Math.ceil((session.endsAt - now) / 1000))
@@ -694,10 +689,9 @@ function App() {
     }
   }
 
-  function endSession() {
-    if (!session) return;
+  function endSession(endedAt = Date.now()) {
+    if (!session || session.phase !== "active") return;
 
-    const endedAt = Date.now();
     const finishedSession = finishSessionAt(session, endedAt);
     pendingWarningRef.current = null;
     setPendingWarning(null);
@@ -1522,7 +1516,6 @@ function App() {
           stopwatchElapsed={stopwatchElapsed}
           isOverAverage={isOverAverage}
           warning={pendingWarning}
-          warningSecondsRemaining={warningSecondsRemaining}
           persistenceError={persistenceError}
           onEnd={endSession}
           onToggleStopwatch={toggleStopwatch}
