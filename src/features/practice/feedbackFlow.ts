@@ -33,7 +33,7 @@ export function getInitialFeedbackStep(
     if (feedback.topics.length === 0 && !feedback.smarterApproachSaved) return "topics";
     return feedback.smarterApproachSaved ? "complete" : "approach";
   }
-  if (feedback.result === "right") return "complete";
+  if (feedback.result === "right" || feedback.result === "wrong_question") return "complete";
   if (sessionKind === "practice" && !feedback.questionId) return "question";
   if (feedback.topics.length === 0 && !feedback.cause) return "topics";
   if (!feedback.solutionSaved && !feedback.cause) return "solution";
@@ -61,6 +61,7 @@ export function getStepAfterResult(
   sessionKind: "practice" | "question_revision",
 ): FeedbackStep {
   if (result === "right") return slowRight ? "reflection" : "complete";
+  if (result === "wrong_question") return "complete";
   return sessionKind === "practice" && !hasQuestion ? "question" : "topics";
 }
 
@@ -82,7 +83,7 @@ export function canCompleteQuestionFeedback(
   sessionKind: "practice" | "question_revision" = "practice",
 ) {
   if (!feedback?.result || validationMessages.length > 0) return false;
-  if (feedback.result !== "right" && !feedback.questionId) return false;
+  if (feedback.result !== "right" && feedback.result !== "wrong_question" && !feedback.questionId) return false;
   if (
     sessionKind === "practice" &&
     isSlowRightAttempt(feedback.result, timeMs)
