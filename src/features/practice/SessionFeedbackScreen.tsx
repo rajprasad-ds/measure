@@ -1020,7 +1020,11 @@ export default function SessionFeedbackScreen({
                         aria-expanded={showFactForm}
                         onClick={() => setShowFactForm((visible) => !visible)}
                       >
-                        {showFactForm ? "Cancel creating a fact" : "Or create a new fact card"}
+                        {showFactForm
+                          ? "Cancel creating a fact"
+                          : linkedFacts.length > 0
+                            ? "Or create another fact card"
+                            : "Or create a new fact card"}
                       </button>
                     </div>
 
