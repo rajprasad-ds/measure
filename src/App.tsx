@@ -1516,6 +1516,7 @@ function App() {
     return (
       <SessionFeedbackScreen
         session={session}
+        userId={authUser.id}
         persistenceError={persistenceError}
         saveError={saveError}
         isSaving={isSavingSession}
