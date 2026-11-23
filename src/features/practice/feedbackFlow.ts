@@ -26,31 +26,25 @@ export function getInitialFeedbackStep(
   linkedFactCount = 0,
 ): FeedbackStep {
   if (!feedback?.result) return "result";
+
   if (slowRight) {
     if (!feedback.smarterApproach) return "reflection";
     if (feedback.smarterApproach === "not_found") return "complete";
     if (!feedback.questionId) return "question";
-    if (feedback.topics.length === 0 && !feedback.smarterApproachSaved) return "topics";
-    return feedback.smarterApproachSaved ? "complete" : "approach";
+    if (!feedback.smarterApproachSaved) return "approach";
+    return "complete";
   }
-  if (feedback.result === "right" || feedback.result === "wrong_question") return "complete";
-  if (sessionKind === "practice" && !feedback.questionId) return "question";
-  if (feedback.topics.length === 0 && !feedback.cause) return "topics";
-  if (!feedback.solutionSaved && !feedback.cause) return "solution";
+
+  if (feedback.result === "right" || feedback.result === "wrong_question") {
+    return "complete";
+  }
+
   if (!feedback.cause) return "cause";
   if (feedback.cause === "slip" && !feedback.slipSubtype) return "slip";
-  if (
-    (feedback.cause === "missing_fact" || feedback.cause === "wrong_concept") &&
-    feedback.topics.length === 0
-  ) {
-    return "topics";
-  }
-  if (
-    (feedback.cause === "missing_fact" || feedback.cause === "wrong_concept") &&
-    linkedFactCount === 0
-  ) {
-    return "fact";
-  }
+  if (sessionKind === "practice" && !feedback.questionId) return "question";
+  if (!feedback.solutionSaved) return "solution";
+  if (feedback.topics.length === 0) return "topics";
+  if (feedback.cause === "missing_fact" && linkedFactCount === 0) return "fact";
   return "complete";
 }
 
@@ -62,18 +56,15 @@ export function getStepAfterResult(
 ): FeedbackStep {
   if (result === "right") return slowRight ? "reflection" : "complete";
   if (result === "wrong_question") return "complete";
-  return sessionKind === "practice" && !hasQuestion ? "question" : "topics";
+  return "cause";
 }
 
 export function getStepAfterCause(
   cause: Cause,
-  topicCount: number,
+  _topicCount: number,
 ): FeedbackStep {
   if (cause === "slip") return "slip";
-  if (cause === "missing_fact" || cause === "wrong_concept") {
-    return topicCount > 0 ? "fact" : "topics";
-  }
-  return "complete";
+  return "question";
 }
 
 export function canCompleteQuestionFeedback(
