@@ -1115,6 +1115,7 @@ function App() {
     updateFeedbackForQuestion(questionNumber, (current) => ({
       ...current,
       attemptId,
+      factDraft: undefined,
       linkedFactIds: Array.from(new Set([...(current.linkedFactIds ?? []), card.id])),
     }));
     await refreshCardData();
