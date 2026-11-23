@@ -1400,6 +1400,7 @@ function App() {
         reviews={factReviews}
         attempts={attemptRecords}
         userId={authUser?.id}
+        onImageUploadComplete={() => { if (authUser) void performSync(authUser); }}
         syncError={syncError}
         onCreateFact={(input) =>
           createFactCard(input, { userId: authUser?.id }).then(async (card) => {
@@ -1517,6 +1518,7 @@ function App() {
       <SessionFeedbackScreen
         session={session}
         userId={authUser.id}
+        onImageUploadComplete={() => { if (authUser) void performSync(authUser); }}
         persistenceError={persistenceError}
         saveError={saveError}
         isSaving={isSavingSession}
