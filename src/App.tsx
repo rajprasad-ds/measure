@@ -1600,6 +1600,7 @@ function App() {
         questionCards={questionCards}
         questionFactLinks={questionFactLinks}
         syncStatus={syncStatus}
+        onRetrySync={() => { if (authUser) void performSync(authUser, true); }}
         onNewSession={() => void startNewSession()}
       />
     );
