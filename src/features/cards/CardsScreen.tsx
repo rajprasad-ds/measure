@@ -25,6 +25,7 @@ type Props = {
   reviews: FactReviewRecord[];
   attempts: AttemptRecord[];
   userId?: string;
+  onImageUploadComplete: () => void;
   syncError: string | null;
   onCreateFact: (input: FactCardInput) => Promise<FactCard>;
   onCreateLinkedFact: (input: FactCardInput, questionId: string) => Promise<FactCard>;
@@ -53,7 +54,7 @@ const cardKinds: FactCardKind[] = ["fact", "formula", "reaction", "misconception
 
 export default function CardsScreen(props: Props) {
   const {
-    questions, facts, links, reviews, attempts, userId,
+    questions, facts, links, reviews, attempts, userId, onImageUploadComplete,
     onCreateFact, onCreateLinkedFact, onUpdateQuestion, onUpdateFact,
     onDeleteQuestion, onDeleteFact, onLink, onUnlink, onRefresh,
     activeTab, onNavigate,
@@ -244,6 +245,7 @@ export default function CardsScreen(props: Props) {
         <section className="card-creator-panel">
           <FactCardCreator
             userId={userId}
+            onImageUploadComplete={onImageUploadComplete}
             initialSubjectId={subjectFilter || undefined}
             initialChapterId={chapterFilter || undefined}
             activeQuestions={activeQuestions.map((card) => ({ id: card.id, promptText: card.promptText, chapterId: card.chapterId }))}
@@ -426,11 +428,11 @@ export default function CardsScreen(props: Props) {
               <form className="card-form" onSubmit={(e) => void submitQuestion(e)}>
                 <label>Subject<select name="subjectId" value={editorSubjectId} onChange={(e) => { setEditorSubjectId(e.target.value); setEditorChapterId(""); setEditorTopicIds([]); }} required>{jeeSyllabus.subjects.map((s) => <option value={s.id} key={s.id}>{s.name}</option>)}</select></label>
                 <label>Chapter<select name="chapterId" value={editorChapterId} onChange={(e) => { setEditorChapterId(e.target.value); setEditorTopicIds([]); }} required><option value="" disabled>Choose chapter</option>{jeeSyllabus.subjects.find((s) => s.id === editorSubjectId)?.chapters.map((c) => <option value={c.id} key={c.id}>{c.name}</option>)}</select></label>
-                <ImageInput label="Question photo" name="promptImageId" value={editorQuestion?.promptImageId} ownerUserId={userId} required />
+                <ImageInput label="Question photo" name="promptImageId" value={editorQuestion?.promptImageId} ownerUserId={userId} onUploadComplete={onImageUploadComplete} required />
                 <label>Question label (optional)<textarea name="promptText" rows={3} defaultValue={editorQuestion?.promptText} /></label>{editorQuestion?.difficulty ? <p className="card-context"><strong>Intrinsic difficulty:</strong> {editorQuestion.difficulty[0].toUpperCase() + editorQuestion.difficulty.slice(1)} · fixed</p> : <label>Intrinsic difficulty<select name="difficulty" defaultValue="" required><option value="" disabled>Choose difficulty</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>}
-                {Array.from({ length: solutionImageCount }, (_, index) => <ImageInput key={`editor-solution-${index}`} label={`Solution image ${index + 1}`} name="solutionImageIds" ownerUserId={userId} value={editorQuestion?.solutionImageIds?.[index] ?? (index === 0 ? editorQuestion?.solutionImageId : undefined)} />)}<button className="account-secondary-button" type="button" onClick={() => setSolutionImageCount((count) => count + 1)}>Add another solution image</button>
+                {Array.from({ length: solutionImageCount }, (_, index) => <ImageInput key={`editor-solution-${index}`} label={`Solution image ${index + 1}`} name="solutionImageIds" ownerUserId={userId} onUploadComplete={onImageUploadComplete} value={editorQuestion?.solutionImageIds?.[index] ?? (index === 0 ? editorQuestion?.solutionImageId : undefined)} />)}<button className="account-secondary-button" type="button" onClick={() => setSolutionImageCount((count) => count + 1)}>Add another solution image</button>
                 <label>Solution or approach <span className="optional-label">optional</span><textarea name="solutionText" rows={4} defaultValue={editorQuestion?.solutionText} /></label>
-                <ImageInput label="Smarter approach photo" name="smarterApproachImageId" value={editorQuestion?.smarterApproachImageId} ownerUserId={userId} />
+                <ImageInput label="Smarter approach photo" name="smarterApproachImageId" value={editorQuestion?.smarterApproachImageId} ownerUserId={userId} onUploadComplete={onImageUploadComplete} />
                 <label>Smarter approach note <span className="optional-label">optional</span><textarea name="smarterApproachText" rows={3} defaultValue={editorQuestion?.smarterApproachText} /></label>
                 <label>Key insight (optional)<input name="keyInsight" defaultValue={editorQuestion?.keyInsight} /></label>
                 <label>Topics (Ctrl/Cmd-click to select multiple)<select name="topicIds" multiple value={editorTopicIds} onChange={(e) => setEditorTopicIds(Array.from(e.target.selectedOptions, (o) => o.value))}>{jeeSyllabus.subjects.find((s) => s.id === editorSubjectId)?.chapters.find((c) => c.id === editorChapterId)?.topics.map((t) => <option value={t.id} key={t.id}>{t.name}</option>)}</select></label>
