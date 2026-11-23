@@ -1523,6 +1523,9 @@ function App() {
             onSignOut={() => undefined}
             onImportLocalSessions={() => undefined}
             onSyncNow={() => undefined}
+            driveConnectionStatus="idle"
+            driveConnectionError={null}
+            onConnectGoogleDrive={() => undefined}
           />
         </section>
       </main>
