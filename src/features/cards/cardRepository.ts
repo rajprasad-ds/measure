@@ -40,6 +40,7 @@ export async function createQuestionCard(
 ): Promise<QuestionCard> {
   const promptText = input.promptText?.trim() ?? "";
   const solutionText = input.solutionText?.trim() ?? "";
+  const solutionImageIds = input.solutionImageIds ?? (input.solutionImageId ? [input.solutionImageId] : []);
   const keyInsight = input.keyInsight?.trim() ?? "";
   if (!input.promptImageId) {
     throw new Error("Add a photo of the question to the question bank.");
@@ -57,7 +58,7 @@ export async function createQuestionCard(
     ...(input.difficulty ? { difficulty: input.difficulty } : {}),
     ...(input.promptImageId ? { promptImageId: input.promptImageId } : {}),
     ...(solutionText ? { solutionText } : {}),
-    ...(input.solutionImageId ? { solutionImageId: input.solutionImageId } : {}),
+    ...(solutionImageIds.length ? { solutionImageIds, solutionImageId: solutionImageIds[0] } : { solutionImageIds: [] }),
     ...(keyInsight ? { keyInsight } : {}),
     timesSeen: 1,
     lastSeenAt: now,
@@ -233,6 +234,7 @@ export async function updateQuestionCard(
 ): Promise<QuestionCard> {
   const promptText = updates.promptText?.trim() ?? "";
   const solutionText = updates.solutionText?.trim() ?? "";
+  const solutionImageIds = updates.solutionImageIds ?? (updates.solutionImageId ? [updates.solutionImageId] : card.solutionImageIds ?? (card.solutionImageId ? [card.solutionImageId] : []));
   const keyInsight = updates.keyInsight?.trim() ?? "";
   if (!updates.promptImageId) {
     throw new Error("Add a photo of the question.");
@@ -249,8 +251,9 @@ export async function updateQuestionCard(
     ...(updates.promptImageId
       ? { promptImageId: updates.promptImageId }
       : { promptImageId: undefined }),
-    ...(updates.solutionImageId
-      ? { solutionImageId: updates.solutionImageId }
+    solutionImageIds,
+    ...(solutionImageIds.length
+      ? { solutionImageId: solutionImageIds[0] }
       : { solutionImageId: undefined }),
     ...(updates.smarterApproachText?.trim()
       ? { smarterApproachText: updates.smarterApproachText.trim() }
