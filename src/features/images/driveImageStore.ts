@@ -48,19 +48,11 @@ function getClientId(): string {
   return id;
 }
 
-async function ensureAccessToken(forceConsent = false): Promise<string> {
-  if (accessToken && !forceConsent) return accessToken;
-  if (tokenPromise && !forceConsent) return tokenPromise;
-
-  await loadGSI();
+function requestAccessToken(forceConsent = false): Promise<string> {
+  const gsi = (window as any).google?.accounts?.oauth2;
+  if (!gsi) return Promise.reject(new Error("Google Identity Services is not ready. Please try again."));
   const clientId = getClientId();
-
   tokenPromise = new Promise((resolve, reject) => {
-    const gsi = (window as any).google?.accounts?.oauth2;
-    if (!gsi) {
-      reject(new Error("Google Identity Services failed to load."));
-      return;
-    }
     const client = gsi.initTokenClient({
       client_id: clientId,
       scope: DRIVE_SCOPE,
@@ -68,23 +60,28 @@ async function ensureAccessToken(forceConsent = false): Promise<string> {
       callback: (resp: any) => {
         tokenPromise = null;
         if (resp.error) {
-          reject(
-            new Error(
-              resp.error_description ||
-                resp.error ||
-                "Google sign-in was cancelled.",
-            ),
-          );
+          reject(new Error(resp.error_description || resp.error || "Google Drive access was cancelled."));
         } else {
           accessToken = resp.access_token;
           resolve(accessToken as string);
         }
       },
     });
+    // Request directly from the click handler so the browser permits the popup.
     client.requestAccessToken({ prompt: forceConsent ? "consent" : "" });
   });
-
   return tokenPromise;
+}
+
+async function ensureAccessToken(): Promise<string> {
+  if (accessToken) return accessToken;
+  if (tokenPromise) return tokenPromise;
+  if (!(window as any).google?.accounts?.oauth2) await loadGSI();
+  throw new Error("Connect Google Drive to enable photo uploads.");
+}
+
+export function prepareDriveConnection(): Promise<void> {
+  return loadGSI();
 }
 
 async function getOrCreateFolderId(token: string): Promise<string> {
@@ -174,10 +171,13 @@ export class DriveImageStore implements ImageStore {
     if (!res.ok) throw new Error(`Drive delete failed: ${res.status}`);
   }
 
-  async reconnect(): Promise<void> {
+  reconnect(): Promise<void> {
     accessToken = null;
     tokenPromise = null;
-    await ensureAccessToken(true);
+    if ((window as any).google?.accounts?.oauth2) {
+      return requestAccessToken(true).then(() => undefined);
+    }
+    return loadGSI().then(() => requestAccessToken(true)).then(() => undefined);
   }
 }
 
