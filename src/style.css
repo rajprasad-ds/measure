@@ -2295,3 +2295,34 @@ h1 {
     font-size: clamp(0.9rem, 3.2vh, 1.1rem);
   }
 }
+
+
+/* Keep fact linking visually primary and creation secondary. */
+.fact-existing-choice {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1rem;
+  border: 1px solid #dce5da;
+  border-radius: 0.85rem;
+  background: #f7faf5;
+}
+
+.fact-existing-choice h4,
+.fact-existing-choice p {
+  margin: 0;
+}
+
+.fact-existing-choice h4 {
+  color: #20392c;
+  font-size: 0.98rem;
+}
+
+.fact-existing-choice p {
+  color: #66766c;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.feedback-fact-step > .fact-step-options > .account-secondary-button {
+  justify-self: start;
+}
