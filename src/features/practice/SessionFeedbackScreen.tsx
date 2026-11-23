@@ -256,23 +256,24 @@ export default function SessionFeedbackScreen({
     0,
   );
   const questionTopicIds = feedback?.topics.map((topic) => topic.id) ?? [];
+  // Show every active fact so cross-chapter dependencies can be linked.
+  // Put facts from this session's chapter and selected topics first; search
+  // remains available across the user's complete fact library.
   const relatedFacts = facts
     .filter((fact) => !fact.deletedAt)
-    .filter(
-      (fact) =>
-        fact.chapterId === session.chapterId ||
-        fact.topicIds.some((topicId) => questionTopicIds.includes(topicId)),
-    )
     .sort(
       (left, right) =>
+        Number(right.subjectId === session.subjectId) -
+          Number(left.subjectId === session.subjectId) ||
         Number(right.chapterId === session.chapterId) -
-        Number(left.chapterId === session.chapterId) ||
+          Number(left.chapterId === session.chapterId) ||
         Number(
           right.topicIds.some((topicId) => questionTopicIds.includes(topicId)),
         ) -
           Number(
             left.topicIds.some((topicId) => questionTopicIds.includes(topicId)),
-          ),
+          ) ||
+        left.promptText.localeCompare(right.promptText),
     );
   const step = questionNumber
     ? flowSteps[questionNumber]?.current ??
@@ -981,35 +982,33 @@ export default function SessionFeedbackScreen({
                       </div>
                     )}
 
-                    {!showFactForm ? (
-                      <div className="fact-step-options">
-                        <button
-                          className="account-action-button"
-                          type="button"
-                          onClick={() => setShowFactForm(true)}
-                        >
-                          Create new fact card
-                        </button>
+                    <div className="fact-step-options">
+                      <CardPicker
+                        label="Find an existing fact card"
+                        options={relatedFacts.map((fact) => ({
+                          id: fact.id,
+                          label: fact.promptText || fact.contentText || "Photo fact card",
+                          detail: [
+                            fact.kind,
+                            fact.chapterId === session.chapterId ? "Current chapter" : fact.chapterId,
+                          ].join(" · "),
+                        }))}
+                        placeholder="Search all your fact cards"
+                        onSelect={(option) => {
+                          const fact = facts.find((item) => item.id === option.id);
+                          if (fact) void useFact(fact);
+                        }}
+                      />
+                      <button
+                        className="account-action-button"
+                        type="button"
+                        onClick={() => setShowFactForm((visible) => !visible)}
+                      >
+                        {showFactForm ? "Close new fact form" : "Create a new fact card"}
+                      </button>
+                    </div>
 
-                        {relatedFacts.length > 0 && (
-                          <CardPicker
-                            label="Or link an existing fact card"
-                            options={relatedFacts.map((fact) => ({
-                              id: fact.id,
-                              label: fact.promptText || fact.contentText || "Photo fact card",
-                              detail: fact.chapterId === session.chapterId ? "This chapter" : fact.chapterId,
-                            }))}
-                            placeholder="Search fact cards"
-                            onSelect={(option) => {
-                              const fact = facts.find((item) => item.id === option.id);
-                              if (fact) void useFact(fact);
-                            }}
-                          />
-                        )}
-
-                        
-                      </div>
-                    ) : (
+                    {showFactForm ? (
                       <form className="inline-card-form" onSubmit={(event) => void submitFact(event)}>
                         <label>
                           Card type
