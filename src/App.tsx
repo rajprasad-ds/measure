@@ -1135,6 +1135,17 @@ function App() {
           topicIds: feedback.topics.map((topic) => topic.id),
         }).map((message) => `Q${questionNumber}: ${message}`),
       );
+      if (feedback.result !== null && feedback.result !== "right" && feedback.result !== "wrong_question") {
+        if (!feedback.questionId) attemptValidationErrors.push("Q" + questionNumber + ": Save the question card.");
+        if (!feedback.solutionSaved) attemptValidationErrors.push("Q" + questionNumber + ": Save a text or image solution.");
+        if (!feedback.difficulty) attemptValidationErrors.push("Q" + questionNumber + ": Choose intrinsic question difficulty.");
+        if (feedback.cause === "missing_fact" && !links.some((link) => link.questionId === feedback.questionId && !link.deletedAt)) {
+          attemptValidationErrors.push("Q" + questionNumber + ": Link or create the forgotten fact card.");
+        }
+      }
+      if (timeMs > SMARTER_APPROACH_THRESHOLD_MS && feedback.result === "right" && feedback.smarterApproach === "found" && (!feedback.questionId || !feedback.smarterApproachSaved || !feedback.difficulty)) {
+        attemptValidationErrors.push("Q" + questionNumber + ": Complete the faster-method card and difficulty.");
+      }
       if (feedback.result === null) return;
       if (feedback.questionId && feedback.topics.length > 0) {
         const linkedTopics =
