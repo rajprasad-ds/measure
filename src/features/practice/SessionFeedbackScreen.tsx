@@ -216,10 +216,15 @@ export default function SessionFeedbackScreen({
     const existingCount = questionCard?.solutionImageIds?.length ?? (questionCard?.solutionImageId ? 1 : 0);
     setSolutionImageCount(Math.max(1, existingCount));
   }, [questionNumber, questionCard?.id, questionCard?.solutionImageIds?.length]);
-  const linkedFacts = links
-    .filter((link) => link.questionId === feedback?.questionId && !link.deletedAt)
-    .map((link) => facts.find((fact) => fact.id === link.factId))
-    .filter((fact): fact is FactCard => Boolean(fact && !fact.deletedAt));
+  const linkedFactIds = new Set([
+    ...links
+      .filter((link) => link.questionId === feedback?.questionId && !link.deletedAt)
+      .map((link) => link.factId),
+    ...(feedback?.linkedFactIds ?? []),
+  ]);
+  const linkedFacts = facts.filter(
+    (fact) => linkedFactIds.has(fact.id) && !fact.deletedAt,
+  );
   const timeMs = questionNumber ? session.questionTimesMs[questionNumber] : 0;
   const slowRight =
     session.sessionKind === "practice" &&
