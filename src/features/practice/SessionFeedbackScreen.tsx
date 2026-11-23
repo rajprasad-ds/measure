@@ -843,7 +843,7 @@ export default function SessionFeedbackScreen({
                     <h3>What made it difficult?</h3>
                     <p>Choose the main reason for this attempt.</p>
                     <div className="cause-options" role="group" aria-label={`Cause for question ${questionNumber}`}>
-                      {CAUSE_OPTIONS.map(({ value, label }) => (
+                      {CAUSE_OPTIONS.filter(({ value }) => feedback.result !== "couldnt_solve" || value !== "slip").map(({ value, label }) => (
                         <button
                           className={feedback.cause === value ? "cause-option selected" : "cause-option"}
                           key={value}
@@ -897,9 +897,9 @@ export default function SessionFeedbackScreen({
                     <button
                       className="account-action-button"
                       type="button"
-                      onClick={() => moveToStep("complete")}
+                      onClick={() => moveToStep("question")}
                     >
-                      Finish question feedback ✓
+                      Continue to question photo →
                     </button>
                   </section>
                 )}
