@@ -110,6 +110,13 @@ export async function markImageFailed(
   });
 }
 
+export async function resetImageUpload(id: string): Promise<void> {
+  await database.localImages.update(id, {
+    status: "pending",
+    attempts: 0,
+    lastError: undefined,
+  });
+}
 export async function markImageUploading(id: string): Promise<void> {
   await database.localImages.update(id, { status: "uploading" });
 }
