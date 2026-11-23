@@ -248,12 +248,13 @@ export default function ImageInput({
               )}
             </>
           )}
-          {record.status === "pending" || record.status === "uploading" ? null : (
-            <button
-              className="image-status-button"
-              type="button"
-              onClick={reconnectDrive}
-            >
+          {record.status === "pending" && (
+            <button className="image-status-button" type="button" onClick={reconnectDrive}>
+              Connect Google Drive
+            </button>
+          )}
+          {record.status === "failed" && (
+            <button className="image-status-button" type="button" onClick={reconnectDrive}>
               Reconnect Google Drive
             </button>
           )}
