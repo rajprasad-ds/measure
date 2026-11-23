@@ -39,7 +39,6 @@ describe("getInactivityPrompt", () => {
   const limits = {
     runningQuestionMs: 8_000,
     stoppedSessionMs: 10_000,
-    warningResponseMs: 1_000,
   };
 
   it("prompts at the running-question threshold and reports its exact start time", () => {
@@ -104,16 +103,16 @@ describe("session recovery", () => {
     expect(recovered.session.questionTimesMs[1]).toBe(14_000);
   });
 
-  it("ends a session on recovery if an unanswered warning expired", () => {
+  it("keeps an active session and its warning after a long period without confirmation", () => {
     const warnedSnapshot = {
       ...snapshot,
       pendingWarning: { kind: "stopped_session" as const, startedAt: 20_000 },
     };
 
-    const recovered = recoverSessionSnapshot(warnedSnapshot, 21_000, 1_000);
-    expect(recovered.session.phase).toBe("feedback");
-    expect(recovered.session.endedAt).toBe(21_000);
-    expect(recovered.pendingWarning).toBeNull();
+    const recovered = recoverSessionSnapshot(warnedSnapshot, 90_000);
+    expect(recovered.session.phase).toBe("active");
+    expect(recovered.session.endedAt).toBeNull();
+    expect(recovered.pendingWarning).toEqual(warnedSnapshot.pendingWarning);
   });
 
   it("stops a long-running question at the prompt without adding time afterward", () => {
