@@ -82,7 +82,7 @@ describe("getInactivityPrompt", () => {
 
 describe("session recovery", () => {
   it("continues an active session when it is still within its planned duration", () => {
-    const recovered = recoverSessionSnapshot(snapshot, 50_000, 1_000);
+    const recovered = recoverSessionSnapshot(snapshot, 50_000);
     expect(recovered.session).toEqual(session);
   });
 
@@ -96,7 +96,7 @@ describe("session recovery", () => {
       },
     };
 
-    const recovered = recoverSessionSnapshot(runningSnapshot, 120_000, 1_000);
+    const recovered = recoverSessionSnapshot(runningSnapshot, 120_000);
     expect(recovered.session.phase).toBe("feedback");
     expect(recovered.session.endedAt).toBe(100_000);
     expect(recovered.session.questionStartedAt).toBeNull();
