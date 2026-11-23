@@ -1,6 +1,7 @@
 import type { SessionRecord } from "../../database";
 import type { SyllabusSubjectId } from "../../syllabus";
 import type { Cause, SlipSubtype } from "../../lib/causes";
+import type { FactCardInput, QuestionCardInput, FactCardKind } from "../cards/types";
 
 export type SessionSetup = {
   subjectId: SyllabusSubjectId;
@@ -22,6 +23,11 @@ export type QuestionFeedback = {
   solutionSaved?: boolean;
   attemptId?: string;
   questionId?: string;
+  /** Reversible capture data; permanent cards are created only when the session is submitted. */
+  questionDraft?: Pick<QuestionCardInput, "promptText" | "promptImageId" | "solutionText" | "solutionImageId" | "solutionImageIds" | "difficulty">;
+  smarterApproachDraft?: Pick<QuestionCardInput, "solutionText" | "solutionImageId" | "solutionImageIds">;
+  factDraft?: Pick<FactCardInput, "kind" | "promptText" | "promptImageId" | "contentText" | "contentImageId" | "wrongBelief">;
+  linkedFactIds?: string[];
 };
 
 export type SessionPhase = "active" | "feedback" | "summary";
