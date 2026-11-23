@@ -1531,7 +1531,7 @@ function App() {
           isOverAverage={isOverAverage}
           warning={pendingWarning}
           persistenceError={persistenceError}
-          onEnd={endSession}
+          onEnd={() => endSession()}
           onToggleStopwatch={toggleStopwatch}
           onSkipQuestion={skipNextQuestion}
           onUpdateQuestionNumber={updateQuestionNumberText}
