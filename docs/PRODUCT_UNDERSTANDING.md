@@ -36,24 +36,76 @@ The system should be explainable. When it selects a question or fact, the studen
 
 ### 3.1 Normal question practice
 
-The student solves questions from an external book or source. Measure is primarily a smart timer and end-of-session feedback workflow; it is not choosing the questions.
+The student solves questions from an external book or source. Measure is primarily a smart timer and end-of-session feedback workflow; it is not choosing the questions. This is the **Step 1 workflow** and must be completed and hardened before implementing revision sessions.
 
-Expected flow:
+**Practice-session context**
+- At the start of a topic-specific practice session, the student selects the subject, chapter, and topic.
+- Every question in that session inherits that subject/chapter/topic attribution. Feedback does not ask the student to select or correct the topic again.
+- Questions are solved outside Measure. The app tracks time and captures useful feedback/question-bank data.
+- The question image is mandatory whenever a question is added to the question bank; typing a full PCM question is not a realistic substitute.
 
-1. Start a timed practice session.
-2. Enter temporary question numbers as the student works through the external source.
-3. Time each question.
-4. End the session and show the feedback screen.
-5. Submit feedback to complete and save the session.
+**The five outcomes and their normal-practice behavior**
 
-Feedback:
-- Main outcome: **Right**, **Wrong**, or **Couldn't solve**.
-- If right but too slow: ask whether a faster method exists. If yes, the student must add the question and the better solution/method to the question database.
-- If wrong or couldn't solve: adding the question and its solution is mandatory, along with relevant cause/topic/difficulty information.
-- A question solved correctly at a reasonable speed is not automatically added to the revision bank.
-- Existing cause categories include misunderstanding, no approach, slip, missing fact, wrong concept, and not sure; the exact feedback flow should be checked against current code and any later decisions.
+1. **Right and fast**
+   - Record the outcome and duration in practice history.
+   - Do not add a question-bank card.
+   - Move to the next question.
 
-Normal practice is not question revision. The app does not choose a revision set during this workflow.
+2. **Right but slow**
+   - Record the outcome and duration.
+   - Ask whether the student knows a faster/better method.
+   - If **no**, do not add a question-bank card; move on.
+   - If **yes**, capture a new question-bank entry in this order:
+     1. Upload the question image.
+     2. Add the faster solution/method (text, images, or both).
+     3. Assign intrinsic difficulty (Easy / Medium / Hard).
+     4. Save the new question.
+   - This is the first capture of this question in normal practice. Do not assume an existing solution/card is present or describe the faster method as an update to an existing solution.
+
+3. **Wrong**
+   - The student must select exactly **one primary diagnostic cause**.
+   - Then adding the question to the question bank is mandatory.
+   - Capture order:
+     1. Select the primary cause.
+     2. Upload the question image.
+     3. Add the solution (text, images, or both; at least one is required).
+     4. Assign intrinsic difficulty (Easy / Medium / Hard).
+     5. If the cause is **Forgot a fact/formula**, resolve the dependency by linking an existing fact card or creating a new fact card. The question cannot be saved until this is done.
+     6. Save the question.
+   - The question's subject/chapter/topic are inherited from the topic-specific practice session.
+
+4. **Couldn't solve**
+   - Uses the same mandatory diagnostic and question-capture sequence as **Wrong**.
+   - Exactly one primary cause is selected, using only options relevant to this outcome.
+   - If the cause is **Forgot a fact/formula**, the fact dependency must be resolved before the question can be saved.
+
+5. **Wrong question**
+   - Record the outcome and duration in practice history.
+   - Do not ask for a diagnostic cause.
+   - Do not add a question-bank card.
+   - Do not count it as an accuracy/weakness signal.
+   - Immediately move to the next question.
+
+**Diagnostic taxonomy for Wrong and Couldn't solve**
+- Use one shared underlying taxonomy so analytics remain consistent, but show outcome-appropriate options/wording in the interface.
+- The student selects exactly one primary cause, not multiple causes.
+- Shared cause concepts:
+  - Conceptual misunderstanding.
+  - Forgotten fact or formula.
+  - Calculation or execution slip (relevant to an attempted-but-wrong answer, not generally to an unsolved question).
+  - Incorrect problem-solving approach / couldn't identify an approach.
+  - Didn't understand or misinterpreted the question.
+  - Other / unsure.
+- Store the practice outcome and diagnostic cause as separate data fields.
+
+**Question and solution capture rules**
+- A question image is mandatory.
+- A solution must contain at least one of text or image; both are allowed. Multiple solution images are allowed and their order must be preserved.
+- Intrinsic difficulty is mandatory for every question-bank entry and is assigned by the student: **Easy**, **Medium**, or **Hard**. It is the question's intrinsic classification, not a changing measure of the student's personal difficulty/performance.
+- A correct-but-slow capture stores the faster method as the solution for this newly created question entry. It does not replace or append to a pre-existing solution.
+- Question-bank capture is conditional for correct answers, mandatory for Wrong/Couldn't solve, and skipped for Wrong question.
+
+Normal practice is not question revision. The app does not choose a revision set during this workflow. **Do not import revision-session feedback assumptions into this workflow.** Repeated attempts on existing question cards and updates to their revision state belong to the later revision-system design.
 
 ### 3.2 Question revision
 
