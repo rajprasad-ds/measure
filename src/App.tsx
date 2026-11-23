@@ -706,18 +706,19 @@ function App() {
     if (resultChanged && current.questionId) {
       const previousQuestion = questionCards.find((card) => card.id === current.questionId);
       if (previousQuestion?.createdFromAttemptId === current.attemptId) {
+        const previousQuestionId = previousQuestion.id;
         const createdFactIds = questionFactLinks
-          .filter((link) => link.questionId === current.questionId && !link.deletedAt)
+          .filter((link) => link.questionId === previousQuestionId && !link.deletedAt)
           .map((link) => link.factId)
           .filter((factId) => {
             const fact = factCards.find((card) => card.id === factId);
             const linkedElsewhere = questionFactLinks.some(
-              (link) => link.factId === factId && link.questionId !== current.questionId && !link.deletedAt,
+              (link) => link.factId === factId && link.questionId !== previousQuestionId && !link.deletedAt,
             );
             return fact?.createdFromAttemptId === current.attemptId && !linkedElsewhere;
           });
         void (async () => {
-          await softDeleteQuestionCard(previousQuestion.id);
+          await softDeleteQuestionCard(previousQuestionId);
           for (const factId of createdFactIds) await softDeleteFactCard(factId);
           await refreshCardData();
         })().catch((error: unknown) => {
