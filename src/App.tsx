@@ -17,7 +17,6 @@ import type {
 import {
   createFactCard,
   createFactCardAndLink,
-  createQuestionCard,
   linkQuestionAndFact,
   recordQuestionSeen,
   softDeleteFactCard,
