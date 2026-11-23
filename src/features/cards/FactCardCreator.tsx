@@ -6,6 +6,7 @@ import CardPicker from "./CardPicker";
 import type { FactCard, FactCardInput, FactCardKind } from "./types";
 
 type Props = {
+  userId?: string;
   initialSubjectId?: string;
   initialChapterId?: string;
   activeQuestions: Array<{ id: string; promptText: string; chapterId: string }>;
@@ -31,6 +32,7 @@ type Step =
   | "link";
 
 export default function FactCardCreator({
+  userId,
   initialSubjectId,
   initialChapterId,
   activeQuestions,
@@ -293,6 +295,7 @@ export default function FactCardCreator({
             label="Recall prompt photo"
             name="promptImageId"
             value={promptImageId}
+            ownerUserId={userId}
             onChange={(id) => setPromptImageId(id)}
             required
           />
@@ -333,6 +336,7 @@ export default function FactCardCreator({
             label="Answer / fact photo"
             name="contentImageId"
             value={contentImageId}
+            ownerUserId={userId}
             onChange={(id) => setContentImageId(id)}
             required
           />
