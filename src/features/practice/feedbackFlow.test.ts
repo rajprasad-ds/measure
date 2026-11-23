@@ -73,7 +73,7 @@ describe("slow-right feedback flow", () => {
         false,
         "practice",
       ),
-    ).toBe("solution");
+    ).toBe("cause");
     expect(
       getInitialFeedbackStep(
         {
@@ -91,7 +91,7 @@ describe("slow-right feedback flow", () => {
     expect(getStepAfterCause("missing_fact", 0)).toBe("question");
     expect(getStepAfterCause("missing_fact", 1)).toBe("question");
     expect(getStepAfterCause("slip", 0)).toBe("slip");
-    expect(getStepAfterCause("stuck_no_approach", 0)).toBe("complete");
+    expect(getStepAfterCause("stuck_no_approach", 0)).toBe("question");
     expect(getStepAfterCause("didnt_understand", 0)).toBe("complete");
     expect(getStepAfterCause("not_sure", 0)).toBe("complete");
   });
