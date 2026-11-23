@@ -105,7 +105,9 @@ describe("slow-right feedback flow", () => {
       topics: [{ id: "t-1", name: "Topic 1" }],
       questionId: "q-1",
       solutionSaved: true,
+      difficulty: "medium",
     };
+    expect(getInitialFeedbackStep({ ...missingFact, difficulty: undefined }, false, "practice", 0)).toBe("difficulty");
     expect(getInitialFeedbackStep(missingFact, false, "practice", 0)).toBe("fact");
     expect(getInitialFeedbackStep(missingFact, false, "practice", 1)).toBe("complete");
     expect(canCompleteQuestionFeedback(missingFact, [], 30_000, "practice", 0)).toBe(false);
@@ -160,6 +162,7 @@ describe("slow-right feedback flow", () => {
           smarterApproach: "found",
           questionId: "question-1",
           smarterApproachSaved: true,
+          difficulty: "medium",
         },
         [],
         SMARTER_APPROACH_THRESHOLD_MS + 1,
@@ -188,7 +191,7 @@ describe("slow-right feedback flow", () => {
     expect(canCompleteQuestionFeedback(wrong, [], 30_000)).toBe(false);
     expect(
       canCompleteQuestionFeedback(
-        { ...wrong, questionId: "question-1", solutionSaved: true },
+        { ...wrong, questionId: "question-1", solutionSaved: true, difficulty: "medium" },
         [],
         30_000,
       ),
