@@ -154,8 +154,10 @@ export default function ImageInput({
 
   async function reconnectDrive() {
     try {
+      // Start the OAuth popup before any await so the browser recognizes the click.
+      const connection = driveImageStore.reconnect();
       if (imageId) await resetImageUpload(imageId);
-      await driveImageStore.reconnect();
+      await connection;
       await processUploadQueue();
       onUploadComplete?.();
     } catch (reconnectError) {
