@@ -1008,7 +1008,7 @@ export default function SessionFeedbackScreen({
                       </button>
                     </div>
 
-                    {showFactForm ? (
+                    {showFactForm && (
                       <form className="inline-card-form" onSubmit={(event) => void submitFact(event)}>
                         <label>
                           Card type
