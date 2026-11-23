@@ -33,6 +33,7 @@ import CardImage from "../images/CardImage";
 
 type Props = {
   session: ActiveSession;
+  userId?: string;
   persistenceError: string | null;
   saveError: string | null;
   isSaving: boolean;
@@ -158,6 +159,7 @@ function getStepTitle(
 
 export default function SessionFeedbackScreen({
   session,
+  userId,
   persistenceError,
   saveError,
   isSaving,
@@ -512,6 +514,7 @@ export default function SessionFeedbackScreen({
             key={`${questionNumber}-${label}-${index}`}
             label={`${label} ${index + 1}`}
             name="solutionImageIds"
+            ownerUserId={userId}
             value={questionCard?.solutionImageIds?.[index] ?? (index === 0 ? questionCard?.solutionImageId : undefined)}
           />
         ))}
@@ -712,7 +715,7 @@ export default function SessionFeedbackScreen({
                         : "Take or choose a clear photo of the question so you can review it later."}
                     </p>
                     <form className="inline-card-form" onSubmit={(event) => void submitQuestionCapture(event)}>
-                      <ImageInput label="Question photo" name="promptImageId" required />
+                      <ImageInput label="Question photo" name="promptImageId" ownerUserId={userId} required />
                       <label>
                         Question label
                         <textarea
@@ -1017,12 +1020,12 @@ export default function SessionFeedbackScreen({
                             <option value="trap">Trap</option>
                           </select>
                         </label>
-                        <ImageInput label="Recall prompt photo" name="promptImageId" />
+                        <ImageInput label="Recall prompt photo" name="promptImageId" ownerUserId={userId} />
                         <label>
                           Fact label
                           <textarea name="promptText" rows={2} placeholder="Optional text on the recall prompt" />
                         </label>
-                        <ImageInput label="Answer / fact photo" name="contentImageId" />
+                        <ImageInput label="Answer / fact photo" name="contentImageId" ownerUserId={userId} />
                         <label>
                           Answer / fact text <span className="optional-label">optional</span>
                           <textarea name="contentText" rows={2} placeholder="The fact, formula, or correction" />
