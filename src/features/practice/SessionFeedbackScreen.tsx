@@ -106,9 +106,9 @@ function getFallbackPreviousStep(
       ? "reflection"
       : "result";
   }
-  if (step === "topics") return "question";
-  if (step === "approach") return "topics";
-  if (step === "solution") return "topics";
+  if (step === "topics") return slowRight ? "approach" : "solution";
+  if (step === "approach") return "question";
+  if (step === "solution") return "question";
   if (step === "cause") {
     return feedback?.result !== "right" ? "solution" : "topics";
   }
@@ -150,13 +150,13 @@ function getStepTitle(
   if (step === "approach") return "Step 3 of 3: Smarter approach";
   if (step === "solution") return "Step 3: Solution photo";
   if (step === "cause") {
-    return feedback?.result !== "right" ? "Step 4: Root cause" : "Step 3: Root cause";
+    return "Step 1: Primary cause";
   }
   if (step === "slip") {
-    return feedback?.result !== "right" ? "Step 5: Slip details" : "Step 4: Slip details";
+    return "Step 2: Slip details";
   }
   if (step === "fact") {
-    return feedback?.result !== "right" ? "Step 5: Memory cue" : "Step 4: Memory cue";
+    return "Step 5: Fact card";
   }
   if (step === "complete") return "Feedback complete";
   return "";
@@ -906,7 +906,7 @@ export default function SessionFeedbackScreen({
 
                 {step === "fact" && (
                   <section className="feedback-step feedback-fact-step">
-                    <h3>Would a fact card help next time?</h3>
+                    <h3>Resolve the forgotten fact or formula</h3>
                     <p>This was caused by a forgotten fact or formula. Link an existing fact card or create one before finishing.</p>
 
                     {linkedFacts.length > 0 && (
