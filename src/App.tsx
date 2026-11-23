@@ -20,7 +20,6 @@ import {
   createFactCard,
   linkQuestionAndFact,
   recordQuestionSeen,
-  softDeleteFactCard,
   softDeleteQuestionCard,
   unlinkQuestionAndFact,
   updateFactCard,
@@ -741,19 +740,10 @@ function App() {
       const previousQuestion = questionCards.find((card) => card.id === current.questionId);
       if (previousQuestion && previousQuestion.createdFromAttemptId === current.attemptId) {
         const previousQuestionId = previousQuestion.id;
-        const createdFactIds = questionFactLinks
-          .filter((link) => link.questionId === previousQuestionId && !link.deletedAt)
-          .map((link) => link.factId)
-          .filter((factId) => {
-            const fact = factCards.find((card) => card.id === factId);
-            const linkedElsewhere = questionFactLinks.some(
-              (link) => link.factId === factId && link.questionId !== previousQuestionId && !link.deletedAt,
-            );
-            return fact?.createdFromAttemptId === current.attemptId && !linkedElsewhere;
-          });
+        // Discard the attempt-created question, but never cascade-delete fact
+        // cards: they are independent records even when their link is removed.
         void (async () => {
           await softDeleteQuestionCard(previousQuestionId);
-          for (const factId of createdFactIds) await softDeleteFactCard(factId);
           await refreshCardData();
         })().catch((error: unknown) => {
           setPersistenceError(error instanceof Error ? error.message : "Could not discard the previous feedback draft.");
@@ -814,15 +804,8 @@ function App() {
       );
       void (async () => {
         for (const link of obsoleteLinks) {
-          const fact = factCards.find((card) => card.id === link.factId);
-          const linkedElsewhere = questionFactLinks.some(
-            (candidate) => candidate.factId === link.factId &&
-              candidate.questionId !== current.questionId && !candidate.deletedAt,
-          );
+          // Removing a relationship must not remove the independent fact card.
           await unlinkQuestionAndFact(current.questionId!, link.factId);
-          if (fact && fact.createdFromAttemptId === current.attemptId && !linkedElsewhere) {
-            await softDeleteFactCard(fact.id);
-          }
         }
         await refreshCardData();
       })().catch((error: unknown) => {
