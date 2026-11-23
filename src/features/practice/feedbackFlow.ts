@@ -31,7 +31,7 @@ export function getInitialFeedbackStep(
   if (slowRight) {
     if (!feedback.smarterApproach) return "reflection";
     if (feedback.smarterApproach === "not_found") return "complete";
-    if (!feedback.questionId) return "question";
+    if (!feedback.questionId && !feedback.questionDraft?.promptImageId) return "question";
     if (!feedback.smarterApproachSaved) return "approach";
     if (!feedback.difficulty) return "difficulty";
     if (feedback.topics.length === 0) return "topics";
@@ -43,7 +43,7 @@ export function getInitialFeedbackStep(
   }
 
   if (!feedback.cause) return "cause";
-  if (sessionKind === "practice" && !feedback.questionId) return "question";
+  if (sessionKind === "practice" && !feedback.questionId && !feedback.questionDraft?.promptImageId) return "question";
   if (!feedback.solutionSaved) return "solution";
   if (!feedback.difficulty) return "difficulty";
   if (feedback.topics.length === 0) return "topics";
@@ -77,7 +77,7 @@ export function canCompleteQuestionFeedback(
   linkedFactCount = 0,
 ) {
   if (!feedback?.result || validationMessages.length > 0) return false;
-  if (feedback.result !== "right" && feedback.result !== "wrong_question" && !feedback.questionId) return false;
+  if (feedback.result !== "right" && feedback.result !== "wrong_question" && !feedback.questionId && !feedback.questionDraft?.promptImageId) return false;
   if (sessionKind === "practice" && feedback.result !== "right" && feedback.result !== "wrong_question") {
     if (!feedback.cause || !feedback.solutionSaved || !feedback.difficulty) return false;
     if ((feedback.cause === "missing_fact" || feedback.cause === "wrong_concept") && feedback.topics.length === 0) return false;
@@ -90,7 +90,7 @@ export function canCompleteQuestionFeedback(
     if (!feedback.smarterApproach) return false;
     if (
       feedback.smarterApproach === "found" &&
-      (!feedback.questionId || !feedback.smarterApproachSaved || !feedback.difficulty)
+      ((!feedback.questionId && !feedback.questionDraft?.promptImageId) || !feedback.smarterApproachSaved || !feedback.difficulty)
     ) {
       return false;
     }
