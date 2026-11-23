@@ -1,11 +1,6 @@
-export type AuthMode = "sign_in" | "sign_up";
-
 type Props = {
   configured: boolean;
   email: string | undefined;
-  authMode: AuthMode;
-  authEmail: string;
-  authPassword: string;
   authMessage: string | null;
   authError: string | null;
   isSubmittingAuth: boolean;
@@ -13,11 +8,7 @@ type Props = {
   syncError: string | null;
   unassignedSessionCount: number;
   unassignedCardCount: number;
-  onAuthEmailChange: (email: string) => void;
-  onAuthPasswordChange: (password: string) => void;
-  onSubmitAuth: (event: React.FormEvent<HTMLFormElement>) => void;
   onGoogleSignIn: () => void;
-  onToggleAuthMode: () => void;
   onSignOut: () => void;
   onImportLocalSessions: () => void;
   onSyncNow: () => void;
@@ -26,9 +17,6 @@ type Props = {
 export default function AccountPanel({
   configured,
   email,
-  authMode,
-  authEmail,
-  authPassword,
   authMessage,
   authError,
   isSubmittingAuth,
@@ -36,11 +24,7 @@ export default function AccountPanel({
   syncError,
   unassignedSessionCount,
   unassignedCardCount,
-  onAuthEmailChange,
-  onAuthPasswordChange,
-  onSubmitAuth,
   onGoogleSignIn,
-  onToggleAuthMode,
   onSignOut,
   onImportLocalSessions,
   onSyncNow,
