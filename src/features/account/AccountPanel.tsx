@@ -12,6 +12,9 @@ type Props = {
   onSignOut: () => void;
   onImportLocalSessions: () => void;
   onSyncNow: () => void;
+  driveConnectionStatus: "loading" | "idle" | "connecting" | "connected" | "error";
+  driveConnectionError: string | null;
+  onConnectGoogleDrive: () => void;
 };
 
 export default function AccountPanel({
@@ -28,6 +31,9 @@ export default function AccountPanel({
   onSignOut,
   onImportLocalSessions,
   onSyncNow,
+  driveConnectionStatus,
+  driveConnectionError,
+  onConnectGoogleDrive,
 }: Props) {
   const signedIn = Boolean(email);
 
@@ -91,6 +97,18 @@ export default function AccountPanel({
               </button>
             </div>
           )}
+          <div className="account-note">
+            <p>Photo backup uses Google Drive, which needs a separate authorization from Google sign-in.</p>
+            {driveConnectionError && <p className="database-error" role="alert">{driveConnectionError}</p>}
+            <button
+              className="account-action-button"
+              type="button"
+              onClick={onConnectGoogleDrive}
+              disabled={syncStatus === "syncing" || driveConnectionStatus === "loading" || driveConnectionStatus === "connecting"}
+            >
+              {driveConnectionStatus === "loading" ? "Preparing Google Drive…" : driveConnectionStatus === "connecting" ? "Connecting Google Drive…" : driveConnectionStatus === "connected" ? "Reconnect Google Drive" : "Connect Google Drive"}
+            </button>
+          </div>
           <button
             className="account-action-button"
             type="button"
