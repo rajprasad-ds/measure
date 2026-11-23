@@ -139,6 +139,7 @@ export default function CardsScreen(props: Props) {
       topicIds,
       promptText: String(form.get("promptText") ?? ""),
       promptImageId: String(form.get("promptImageId") ?? "") || undefined,
+      difficulty: String(form.get("difficulty") ?? "") as QuestionCardInput["difficulty"],
       solutionText: String(form.get("solutionText") ?? ""),
       solutionImageId: String(form.get("solutionImageId") ?? "") || undefined,
       smarterApproachText: String(form.get("smarterApproachText") ?? ""),
@@ -334,6 +335,7 @@ export default function CardsScreen(props: Props) {
             <p className="card-context">{jeeSyllabus.subjects.find((s) => s.id === selectedCard.card.subjectId)?.name} · {getChapter(selectedCard.card.subjectId, selectedCard.card.chapterId)?.name}</p>
             {currentQuestion && (
               <>
+                {currentQuestion.difficulty && <p><strong>Intrinsic difficulty:</strong> {currentQuestion.difficulty[0].toUpperCase() + currentQuestion.difficulty.slice(1)}</p>}
                 {currentQuestion.solutionText && <p>{currentQuestion.solutionText}</p>}
                 {currentQuestion.solutionImageId && <CardImage imageId={currentQuestion.solutionImageId} alt="Saved solution" />}
                 {(currentQuestion.smarterApproachText || currentQuestion.smarterApproachImageId) && (
