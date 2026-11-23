@@ -1017,6 +1017,7 @@ function App() {
     if (!feedback?.questionId) throw new Error("Save the question before assigning its difficulty.");
     const card = questionCards.find((item) => item.id === feedback.questionId);
     if (!card) throw new Error("The saved question could not be found.");
+    if (card.difficulty && card.difficulty !== difficulty) throw new Error("Intrinsic question difficulty cannot be changed after it is set.");
     await updateQuestionCard(card, {
       subjectId: card.subjectId,
       chapterId: card.chapterId,
