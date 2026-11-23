@@ -20,6 +20,16 @@ The system should be explainable. When it selects a question or fact, the studen
 **Important:** Measure can help detect weaknesses, schedule retrieval, and show evidence of progress. It must not claim to guarantee mastery.
 
 ## 2. Core product principles
+## Account and identity requirement — Step 1
+
+A Google account sign-in is mandatory before a student can use practice sessions, create or edit question/fact cards, or store application data. Anonymous use and email/password account creation are not part of the Step 1 product.
+
+- Use Google as the identity provider through Supabase Auth. Every session, attempt, question card, fact card, relationship and image metadata record must be associated with the authenticated Supabase user ID.
+- Do not create new unassigned/anonymous practice data. Existing local unassigned data from earlier builds may be offered for explicit import into the signed-in account; never silently claim it.
+- Google account sign-in and Google Drive file authorization are related but distinct permissions. The user signs into Measure with Google; Drive file access (the limited `drive.file` scope) may require a separate Google consent step when image backup is first used.
+- If Drive authorization is unavailable or revoked, preserve images locally and show a clear sync state; do not silently discard them.
+- Signing out must block access to account-owned application data until the user signs in again. Do not expose another account's cached records.
+
 
 1. **Automate revision decisions.** The student sets time and allocation constraints; Measure chooses the material.
 2. **Separate workflows.** Normal question practice, question revision, and fact revision are distinct session types.
