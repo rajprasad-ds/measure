@@ -1102,10 +1102,10 @@ function App() {
     // Existing questions can be linked now. For a draft question, linkedFactIds
     // records the intended relationship and saveSession creates it atomically
     // when it creates the question card.
+    await queueImagesForUpload([input.promptImageId, input.contentImageId].filter((id): id is string => Boolean(id)));
     if (feedback.questionId) {
       await linkQuestionAndFact(feedback.questionId, card.id, { userId: authUser?.id });
     }
-    await queueImagesForUpload([input.promptImageId, input.contentImageId].filter((id): id is string => Boolean(id)));
     await refreshCardData();
   }
 
@@ -1298,6 +1298,15 @@ function App() {
         if (id) finalizedImageIds.add(id);
       });
     });
+    // Include replacement images staged on an already-existing question card.
+    for (const feedback of feedbackWithCards.values()) {
+      const draft = feedback.questionDraft;
+      if (!draft) continue;
+      [draft.promptImageId, draft.solutionImageId, draft.smarterApproachImageId,
+        ...(draft.solutionImageIds ?? [])].forEach((id) => {
+        if (id) finalizedImageIds.add(id);
+      });
+    }
 
     const rightCount = attempts.filter(
       (attempt) => attempt.result === "right",
