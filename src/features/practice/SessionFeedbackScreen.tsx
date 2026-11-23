@@ -346,7 +346,7 @@ export default function SessionFeedbackScreen({
         promptText,
         promptImageId,
       });
-      moveToStep("topics");
+      moveToStep(slowRight ? "approach" : "solution");
     } catch (error) {
       showError(error, "Could not save this question.");
     }
@@ -359,8 +359,8 @@ export default function SessionFeedbackScreen({
     const solutionImageId = String(form.get("solutionImageId") ?? "") || undefined;
     const solutionText = String(form.get("solutionText") ?? "").trim() || undefined;
 
-    if (!solutionImageId) {
-      setActionError("Please upload a photo of the smarter solution.");
+    if (!solutionImageId && !solutionText) {
+      setActionError("Add the smarter method as text or an image.");
       return;
     }
 
@@ -370,7 +370,7 @@ export default function SessionFeedbackScreen({
         solutionText,
         solutionImageId,
       });
-      moveToStep("complete");
+      moveToStep("topics");
     } catch (error) {
       showError(error, "Could not save this approach.");
     }
@@ -395,7 +395,7 @@ export default function SessionFeedbackScreen({
         solutionText,
         solutionImageId,
       });
-      moveToStep("cause");
+      moveToStep("topics");
     } catch (error) {
       showError(error, "Could not save the solution.");
     }
@@ -764,7 +764,7 @@ export default function SessionFeedbackScreen({
                       Capture the shorter method, trick, or shortcut you found.
                     </p>
                     <form className="inline-card-form" onSubmit={(event) => void submitApproach(event)}>
-                      <ImageInput label="Smarter solution photo" name="solutionImageId" required />
+                      <ImageInput label="Smarter solution photo" name="solutionImageId" />
                       <label>
                         Key trick or approach note <span className="optional-label">optional</span>
                         <textarea
