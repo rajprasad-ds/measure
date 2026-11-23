@@ -244,7 +244,7 @@ export default function SessionFeedbackScreen({
       validationErrors,
       timeMs,
       session.sessionKind,
-      linkedFacts.length,
+      linkedFacts.length + (feedback?.linkedFactIds?.length ?? 0) + (feedback?.factDraft ? 1 : 0),
     );
   const allComplete = questionNumbers.every((number) => {
     const item = session.feedback[number] ?? emptyFeedback;
@@ -258,7 +258,8 @@ export default function SessionFeedbackScreen({
       }),
       session.questionTimesMs[number],
       session.sessionKind,
-      links.filter((link) => link.questionId === item.questionId && !link.deletedAt).length,
+      links.filter((link) => link.questionId === item.questionId && !link.deletedAt).length +
+        (item.linkedFactIds?.length ?? 0) + (item.factDraft ? 1 : 0),
     );
   });
   const activeTimeMs = Object.values(session.questionTimesMs).reduce(
