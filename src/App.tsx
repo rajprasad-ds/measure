@@ -1082,9 +1082,9 @@ function App() {
     for (const { questionNumber } of timedQuestions) {
       const feedback = session.feedback[questionNumber];
       if (!feedback) continue;
+      const attemptId = feedback.attemptId ?? globalThis.crypto.randomUUID();
       let questionId = feedback.questionId;
       if (!questionId && feedback.questionDraft?.promptImageId) {
-        const attemptId = feedback.attemptId ?? globalThis.crypto.randomUUID();
         const card = buildQuestionCardRecord(
           {
             ...feedback.questionDraft,
@@ -1101,7 +1101,7 @@ function App() {
       const nextFeedback = {
         ...feedback,
         ...(questionId ? { questionId } : {}),
-        ...(feedback.attemptId ? {} : { attemptId: globalThis.crypto.randomUUID() }),
+        attemptId,
       };
       feedbackWithCards.set(questionNumber, nextFeedback);
 
@@ -1223,6 +1223,17 @@ function App() {
           if (id) finalizedImageIds.add(id);
         });
       });
+    draftQuestions.forEach((card) => {
+      [card.promptImageId, card.solutionImageId, card.smarterApproachImageId,
+        ...(card.solutionImageIds ?? [])].forEach((id) => {
+        if (id) finalizedImageIds.add(id);
+      });
+    });
+    draftFacts.forEach((card) => {
+      [card.promptImageId, card.contentImageId].forEach((id) => {
+        if (id) finalizedImageIds.add(id);
+      });
+    });
 
     const rightCount = attempts.filter(
       (attempt) => attempt.result === "right",
