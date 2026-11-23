@@ -15,7 +15,10 @@ type SyncableCard = {
   createdFromAttemptId?: string;
 };
 
+export type QuestionDifficulty = "easy" | "medium" | "hard";
+
 export type QuestionCard = SyncableCard & {
+  difficulty?: QuestionDifficulty;
   promptText: string;
   promptImageId?: string;
   solutionText?: string;
@@ -80,6 +83,7 @@ export type QuestionCardInput = Pick<
 > & {
   promptText?: string;
   promptImageId?: string;
+  difficulty?: QuestionDifficulty;
   solutionText?: string;
   solutionImageId?: string;
   smarterApproachText?: string;
