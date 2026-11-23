@@ -81,7 +81,7 @@ export async function getImageRecord(id: string): Promise<LocalImageRecord | und
 export async function getPendingImages(): Promise<LocalImageRecord[]> {
   return database.localImages
     .where("status")
-    .anyOf(["pending", "failed"])
+    .anyOf(["pending", "failed", "uploading"])
     .toArray();
 }
 
