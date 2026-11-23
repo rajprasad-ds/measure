@@ -1319,6 +1319,19 @@ function App() {
           await database.sessions.add(record);
           if (draftQuestions.length) await database.questions.bulkAdd(draftQuestions);
           if (draftFacts.length) await database.factCards.bulkAdd(draftFacts);
+          if (authUser) {
+            for (const factId of new Set(draftLinks.map((link) => link.factId))) {
+              const fact = await database.factCards.get(factId);
+              if (fact && !fact.ownerUserId) {
+                await database.factCards.put({
+                  ...fact,
+                  ownerUserId: authUser.id,
+                  syncStatus: "pending",
+                  updatedAt: timestamp,
+                });
+              }
+            }
+          }
           if (draftLinks.length) await database.questionFactLinks.bulkPut(draftLinks);
           await database.attempts.bulkPut(attempts);
           for (const [questionId, topicIds] of topicsByQuestionId) {
