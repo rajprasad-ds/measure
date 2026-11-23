@@ -39,8 +39,8 @@ The system should be explainable. When it selects a question or fact, the studen
 The student solves questions from an external book or source. Measure is primarily a smart timer and end-of-session feedback workflow; it is not choosing the questions. This is the **Step 1 workflow** and must be completed and hardened before implementing revision sessions.
 
 **Practice-session context**
-- At the start of a topic-specific practice session, the student selects the subject, chapter, and topic.
-- Every question in that session inherits that subject/chapter/topic attribution. Feedback does not ask the student to select or correct the topic again.
+- At session setup, the student selects the subject and chapter only. Topic selection is deliberately not part of creating a session.
+- Whenever topic attribution is required for an individual question or card, the student selects one or more topics through a searchable topic picker. Topic selection happens in the relevant question-feedback/card workflow, not globally at session start.
 - Questions are solved outside Measure. The app tracks time and captures useful feedback/question-bank data.
 - The question image is mandatory whenever a question is added to the question bank; typing a full PCM question is not a realistic substitute.
 
@@ -72,7 +72,7 @@ The student solves questions from an external book or source. Measure is primari
      4. Assign intrinsic difficulty (Easy / Medium / Hard).
      5. If the cause is **Forgot a fact/formula**, resolve the dependency by linking an existing fact card or creating a new fact card. The question cannot be saved until this is done.
      6. Save the question.
-   - The question's subject/chapter/topic are inherited from the topic-specific practice session.
+   - The question inherits subject/chapter from the session. The student assigns its topic or topics using the searchable topic picker in the feedback workflow.
 
 4. **Couldn't solve**
    - Uses the same mandatory diagnostic and question-capture sequence as **Wrong**.
