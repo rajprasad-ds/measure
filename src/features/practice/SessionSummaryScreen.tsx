@@ -13,6 +13,7 @@ type Props = {
   questionCards: QuestionCard[];
   questionFactLinks: QuestionFactLink[];
   syncStatus: "idle" | "syncing" | "synced" | "offline" | "error";
+  onRetrySync: () => void;
   onNewSession: () => void;
 };
 
@@ -23,6 +24,7 @@ export default function SessionSummaryScreen({
   questionCards,
   questionFactLinks,
   syncStatus,
+  onRetrySync,
   onNewSession,
 }: Props) {
   const [pendingImageCount, setPendingImageCount] = useState(0);
@@ -110,9 +112,20 @@ export default function SessionSummaryScreen({
             : "Saved on this device only. Sign in to sync it to your account."}
         </p>
         {pendingImageCount > 0 && (
-          <p className="storage-note">
-            {pendingImageCount} photo{pendingImageCount === 1 ? "" : "s"} awaiting upload to Google Drive.
-          </p>
+          <div className="summary-sync-pending">
+            <p>
+              {pendingImageCount} photo{pendingImageCount === 1 ? "" : "s"} still need to upload to Google Drive.
+              Your session and photos remain saved on this device.
+            </p>
+            <button
+              className="account-secondary-button"
+              type="button"
+              onClick={onRetrySync}
+              disabled={syncStatus === "syncing"}
+            >
+              {syncStatus === "syncing" ? "Retrying upload…" : "Retry sync"}
+            </button>
+          </div>
         )}
         {Object.keys(causeCounts).length > 0 && (
           <div className="summary-topics">
