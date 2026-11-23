@@ -34,6 +34,7 @@ import CardImage from "../images/CardImage";
 type Props = {
   session: ActiveSession;
   userId?: string;
+  onImageUploadComplete: () => void;
   persistenceError: string | null;
   saveError: string | null;
   isSaving: boolean;
@@ -160,6 +161,7 @@ function getStepTitle(
 export default function SessionFeedbackScreen({
   session,
   userId,
+  onImageUploadComplete,
   persistenceError,
   saveError,
   isSaving,
@@ -515,6 +517,7 @@ export default function SessionFeedbackScreen({
             label={`${label} ${index + 1}`}
             name="solutionImageIds"
             ownerUserId={userId}
+            onUploadComplete={onImageUploadComplete}
             value={questionCard?.solutionImageIds?.[index] ?? (index === 0 ? questionCard?.solutionImageId : undefined)}
           />
         ))}
@@ -715,7 +718,7 @@ export default function SessionFeedbackScreen({
                         : "Take or choose a clear photo of the question so you can review it later."}
                     </p>
                     <form className="inline-card-form" onSubmit={(event) => void submitQuestionCapture(event)}>
-                      <ImageInput label="Question photo" name="promptImageId" ownerUserId={userId} required />
+                      <ImageInput label="Question photo" name="promptImageId" ownerUserId={userId} onUploadComplete={onImageUploadComplete} required />
                       <label>
                         Question label
                         <textarea
@@ -1020,7 +1023,7 @@ export default function SessionFeedbackScreen({
                             <option value="trap">Trap</option>
                           </select>
                         </label>
-                        <ImageInput label="Recall prompt photo" name="promptImageId" ownerUserId={userId} />
+                        <ImageInput label="Recall prompt photo" name="promptImageId" ownerUserId={userId} onUploadComplete={onImageUploadComplete} />
                         <label>
                           Fact label
                           <textarea name="promptText" rows={2} placeholder="Optional text on the recall prompt" />
