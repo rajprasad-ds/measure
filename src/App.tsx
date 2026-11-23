@@ -15,6 +15,8 @@ import type {
   QuestionFactLink,
 } from "./features/cards/types";
 import {
+  buildFactCardRecord,
+  buildQuestionCardRecord,
   createFactCard,
   createFactCardAndLink,
   linkQuestionAndFact,
@@ -1069,8 +1071,80 @@ function App() {
     const attempts: AttemptRecord[] = [];
     const attemptValidationErrors: string[] = [];
     const topicsByQuestionId = new Map<string, Set<string>>();
+    const feedbackWithCards = new Map<number, ActiveSession["feedback"][number]>();
+    const draftQuestions: QuestionCard[] = [];
+    const draftFacts: FactCard[] = [];
+    const draftLinks: QuestionFactLink[] = [];
+    const linkKeys = new Set<string>();
+
+    // Prepare all card records without writing them. They are inserted with the
+    // session and attempts in one IndexedDB transaction below.
+    for (const { questionNumber } of timedQuestions) {
+      const feedback = session.feedback[questionNumber];
+      if (!feedback) continue;
+      let questionId = feedback.questionId;
+      if (!questionId && feedback.questionDraft?.promptImageId) {
+        const attemptId = feedback.attemptId ?? globalThis.crypto.randomUUID();
+        const card = buildQuestionCardRecord(
+          {
+            ...feedback.questionDraft,
+            subjectId: session.subjectId,
+            chapterId: session.chapterId,
+            topicIds: feedback.topics.map((topic) => topic.id),
+            createdFromAttemptId: attemptId,
+          },
+          { userId: authUser?.id },
+        );
+        draftQuestions.push(card);
+        questionId = card.id;
+      }
+      const nextFeedback = {
+        ...feedback,
+        ...(questionId ? { questionId } : {}),
+        ...(feedback.attemptId ? {} : { attemptId: globalThis.crypto.randomUUID() }),
+      };
+      feedbackWithCards.set(questionNumber, nextFeedback);
+
+      if (!questionId) continue;
+      const addLink = (factId: string) => {
+        const key = `${questionId}::${factId}`;
+        if (linkKeys.has(key)) return;
+        linkKeys.add(key);
+        const now = timestamp;
+        draftLinks.push({
+          questionId: questionId as string,
+          factId,
+          ...(authUser ? { ownerUserId: authUser.id } : {}),
+          syncStatus: authUser ? "pending" : "local",
+          createdAt: now,
+          updatedAt: now,
+        });
+      };
+      if (feedback.factDraft) {
+        const fact = buildFactCardRecord(
+          {
+            ...feedback.factDraft,
+            subjectId: session.subjectId,
+            chapterId: session.chapterId,
+            topicIds: feedback.topics.map((topic) => topic.id),
+            createdFromAttemptId: nextFeedback.attemptId,
+          },
+          { userId: authUser?.id },
+        );
+        draftFacts.push(fact);
+        addLink(fact.id);
+      }
+      for (const factId of feedback.linkedFactIds ?? []) {
+        const fact = factCards.find((item) => item.id === factId && !item.deletedAt);
+        if (!fact) throw new Error("A selected fact card is no longer available. Choose it again.");
+        if (authUser && fact.ownerUserId && fact.ownerUserId !== authUser.id) {
+          throw new Error("The selected fact card does not belong to this account.");
+        }
+        addLink(factId);
+      }
+    }
     timedQuestions.forEach(({ questionNumber, timeMs }) => {
-      const feedback = session.feedback[questionNumber] ?? {
+      const feedback = feedbackWithCards.get(questionNumber) ?? session.feedback[questionNumber] ?? {
         result: null,
         cause: null,
         slipSubtype: null,
@@ -1085,10 +1159,10 @@ function App() {
         }).map((message) => `Q${questionNumber}: ${message}`),
       );
       if (feedback.result !== null && feedback.result !== "right" && feedback.result !== "wrong_question") {
-        if (!feedback.questionId) attemptValidationErrors.push("Q" + questionNumber + ": Save the question card.");
+        if (!feedback.questionId) attemptValidationErrors.push("Q" + questionNumber + ": Add a question photo.");
         if (!feedback.solutionSaved) attemptValidationErrors.push("Q" + questionNumber + ": Save a text or image solution.");
         if (!feedback.difficulty) attemptValidationErrors.push("Q" + questionNumber + ": Choose intrinsic question difficulty.");
-        if (feedback.cause === "missing_fact" && !questionFactLinks.some((link) => link.questionId === feedback.questionId && !link.deletedAt)) {
+        if (feedback.cause === "missing_fact" && !questionFactLinks.some((link) => link.questionId === feedback.questionId && !link.deletedAt) && !(feedback.linkedFactIds?.length) && !feedback.factDraft) {
           attemptValidationErrors.push("Q" + questionNumber + ": Link or create the forgotten fact card.");
         }
       }
@@ -1127,11 +1201,12 @@ function App() {
     const finalizedQuestionIds = new Set(
       attempts.map((attempt) => attempt.questionId).filter((id): id is string => Boolean(id)),
     );
-    const finalizedFactIds = new Set(
-      questionFactLinks
+    const finalizedFactIds = new Set([
+      ...questionFactLinks
         .filter((link) => finalizedQuestionIds.has(link.questionId) && !link.deletedAt)
         .map((link) => link.factId),
-    );
+      ...draftLinks.filter((link) => finalizedQuestionIds.has(link.questionId)).map((link) => link.factId),
+    ]);
     const finalizedImageIds = new Set<string>();
     questionCards
       .filter((card) => finalizedQuestionIds.has(card.id))
@@ -1232,8 +1307,13 @@ function App() {
         database.attempts,
         database.activeSession,
         database.questions,
+        database.factCards,
+        database.questionFactLinks,
         async () => {
           await database.sessions.add(record);
+          if (draftQuestions.length) await database.questions.bulkAdd(draftQuestions);
+          if (draftFacts.length) await database.factCards.bulkAdd(draftFacts);
+          if (draftLinks.length) await database.questionFactLinks.bulkPut(draftLinks);
           await database.attempts.bulkPut(attempts);
           for (const [questionId, topicIds] of topicsByQuestionId) {
             const card = await database.questions.get(questionId);
@@ -1250,12 +1330,13 @@ function App() {
           await database.activeSession.delete("current");
         },
       );
-      if (updatedQuestionCards.size > 0) {
+      if (updatedQuestionCards.size > 0 || draftQuestions.length > 0) {
         setQuestionCards((cards) =>
-          cards.map((card) => updatedQuestionCards.get(card.id) ?? card),
+          [...cards.map((card) => updatedQuestionCards.get(card.id) ?? card), ...draftQuestions],
         );
       }
       setPersistenceError(null);
+      if (draftFacts.length || draftLinks.length) await refreshCardData();
       setSavedSessions((current) =>
         [record, ...current].sort((left, right) =>
           right.endedAt.localeCompare(left.endedAt),
