@@ -776,6 +776,27 @@ function App() {
       slipSubtype: null,
       topics: [],
     };
+    if (current.cause === "missing_fact" && cause !== "missing_fact" && current.questionId) {
+      const obsoleteLinks = questionFactLinks.filter(
+        (link) => link.questionId === current.questionId && !link.deletedAt,
+      );
+      void (async () => {
+        for (const link of obsoleteLinks) {
+          const fact = factCards.find((card) => card.id === link.factId);
+          const linkedElsewhere = questionFactLinks.some(
+            (candidate) => candidate.factId === link.factId &&
+              candidate.questionId !== current.questionId && !candidate.deletedAt,
+          );
+          await unlinkQuestionAndFact(current.questionId!, link.factId, { userId: authUser?.id });
+          if (fact?.createdFromAttemptId === current.attemptId && !linkedElsewhere) {
+            await softDeleteFactCard(fact.id);
+          }
+        }
+        await refreshCardData();
+      })().catch((error: unknown) => {
+        setPersistenceError(error instanceof Error ? error.message : "Could not update the fact-card link.");
+      });
+    }
     setSession({
       ...session,
       feedback: {
