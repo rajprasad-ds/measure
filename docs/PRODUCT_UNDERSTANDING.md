@@ -412,3 +412,72 @@ However, the central adaptive-revision product is **not yet implemented**. The l
 7. Achievement/streak/analytics definitions and presentation.
 
 The next step is product/UI discussion, not immediate coding. Once the top-level structure and each screen's responsibilities are agreed, the product requirements and implementation plan can be reconciled with the current branch before work begins.
+
+
+---
+
+## 13. Delivery strategy: two major steps
+
+The owner has clarified that completion should happen in **two major steps**, and this sequencing takes precedence over the UI/UX discussion sequence above.
+
+### Step 1 — Complete and harden the question-practice + data-capture foundation
+
+The first milestone is not the adaptive revision planner. It is to make the existing normal question-practice workflow reliable end to end, including:
+
+- Starting and completing a normal question-practice session.
+- Capturing the per-question outcomes, time, causes, topics, and relevant difficulty information.
+- Adding question cards and their solution/approach content.
+- Adding fact cards when appropriate.
+- Creating optional links between questions and facts.
+- Persisting all text and metadata correctly in the database.
+- Persisting images correctly to the intended image store (Google Drive) and maintaining reliable references to those images.
+- Ensuring local persistence, cloud synchronization, ownership, and offline behavior do not lose or mis-associate records.
+
+A critical part of Step 1 is a **data sufficiency audit**. Before beginning the revision planner, inspect the actual database schema, repositories, migrations, feedback flow, and sync paths to establish that the information being captured is sufficient for the future planner and analytics.
+
+At minimum, the audit should map each future requirement to:
+1. The exact data needed.
+2. Whether the app currently captures it.
+3. Where it is stored (local schema and remote schema).
+4. Whether it is reliably persisted and synchronized.
+5. Whether its meaning is unambiguous and historically usable.
+6. Any missing field, migration, validation, or workflow change needed now.
+
+The audit must pay particular attention to whether the current data can support:
+- Question identity and content, including solution/alternative approach.
+- Subject, chapter, and topic attribution.
+- Intrinsic difficulty, kept distinct from evolving personal difficulty/observed performance.
+- Per-question duration and outcome.
+- Cause of failure and slip subtype where relevant.
+- Repeated attempts and their timestamps.
+- Question revision history in the future.
+- Fact identity/content/type and three-state recall outcomes in the future.
+- Fact review timestamps, interval/scheduling state, and consecutive recall history.
+- Optional question–fact relationships.
+- Successful vs unsuccessful retention, not merely whether a card exists.
+- Question/fact coverage by subject, chapter, and topic.
+- Accurate average solving-time analytics.
+- Session completion/feedback submission state, with no partial commits counted as completed work.
+
+Do not assume a field exists just because the UI displays it, or that it is durable just because it exists in React state or IndexedDB. Trace the full path from user input through local persistence, remote schema, sync, and later retrieval. Do not add speculative metadata fields; each field must have a clear future use and a reliable definition.
+
+**Step 1 exit criteria:** the normal practice workflow is usable end to end; question/fact capture and linking work; text, metadata, and images are reliably stored and synchronized; and a documented data audit confirms that the stored data is sufficient for the planned revision engine—or lists the specific remaining gaps that must be closed before Step 2.
+
+### Step 2 — Build the adaptive revision planner and its workflows
+
+Only after Step 1's exit criteria are met should implementation move to the revision system:
+
+- Study availability and weekly intervals.
+- Revision allocation and question/fact split.
+- Time-aware daily session preparation and user-triggered refresh.
+- Adaptive question selection and question-revision lifecycle.
+- Fact front/back revision and three-outcome feedback.
+- Spaced scheduling and cross-influence through optional links.
+- Explainable prioritization.
+- Home progress metrics, combined streak, and Analytics.
+
+The detailed UI/UX design should still proceed layer by layer, but it must respect this delivery order. Product discovery can define the eventual Home and Analytics structure now; implementation priority remains Step 1 first.
+
+### Practical rule for future development
+
+Before implementing any Step 2 feature, ask: **Does Step 1 already capture the raw, trustworthy data this feature will need?** If not, close that data-capture/persistence gap first. The revision planner should not be blocked later by missing historical data that could have been captured during normal practice.
