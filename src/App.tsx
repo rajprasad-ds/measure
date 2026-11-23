@@ -1314,12 +1314,7 @@ function App() {
       const updatedQuestionCards = new Map<string, QuestionCard>();
       await database.transaction(
         "rw",
-        database.sessions,
-        database.attempts,
-        database.activeSession,
-        database.questions,
-        database.factCards,
-        database.questionFactLinks,
+        [database.sessions, database.attempts, database.activeSession, database.questions, database.factCards, database.questionFactLinks],
         async () => {
           await database.sessions.add(record);
           if (draftQuestions.length) await database.questions.bulkAdd(draftQuestions);
