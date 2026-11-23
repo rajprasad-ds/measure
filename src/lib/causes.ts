@@ -17,7 +17,7 @@ export const SLIP_SUBTYPE_OPTIONS = [
 
 export type Cause = (typeof CAUSE_OPTIONS)[number]["value"];
 export type SlipSubtype = (typeof SLIP_SUBTYPE_OPTIONS)[number]["value"];
-export type AttemptResult = "right" | "wrong" | "couldnt_solve";
+export type AttemptResult = "right" | "wrong" | "couldnt_solve" | "wrong_question";
 
 export type AttemptValidationInput = {
   result: AttemptResult | null;
@@ -34,9 +34,9 @@ export function validateAttempt(attempt: AttemptValidationInput): string[] {
     return errors;
   }
 
-  if (attempt.result === "right") {
+  if (attempt.result === "right" || attempt.result === "wrong_question") {
     if (attempt.cause || attempt.slipSubtype) {
-      errors.push("Right answers cannot have a cause or slip subtype.");
+      errors.push("This result cannot have a cause or slip subtype.");
     }
     return errors;
   }
