@@ -148,7 +148,7 @@ function toCloudImage(record: LocalImageRecord) {
     id: record.id,
     user_id: record.ownerUserId ?? null,
     provider: "drive",
-    remote_id: record.remoteId ?? null,
+    remote_id: record.remoteId!,
     mime: record.mime,
     width: record.width,
     height: record.height,
@@ -601,11 +601,14 @@ async function syncPendingImages(userId: string) {
   const pending = await database.localImages
     .where("ownerUserId")
     .equals(userId)
-    .filter((row) => row.syncStatus !== "synced" && Boolean(row.remoteId))
+    .filter((row) => row.syncStatus !== "synced" && typeof row.remoteId === "string" && row.remoteId.trim().length > 0)
     .toArray();
   const client = requireSupabase();
   for (let offset = 0; offset < pending.length; offset += 100) {
-    const batch = pending.slice(offset, offset + 100);
+    const batch = pending
+      .slice(offset, offset + 100)
+      .filter((row) => typeof row.remoteId === "string" && row.remoteId.trim().length > 0);
+    if (batch.length === 0) continue;
     const { error } = await client
       .from("images")
       .upsert(batch.map((row) => ({ ...toCloudImage(row), user_id: userId })), {
