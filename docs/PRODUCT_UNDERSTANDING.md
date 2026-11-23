@@ -604,3 +604,74 @@ Implemented on `phase-1b-cards`:
 - Cloud sync failure after local commit does not block the session summary.
 
 Verification: GitHub Actions completed successfully for the draft-flow and local-only-draft tests (27 tests passed; TypeScript check and production build passed). Browser-level testing of replacing photos, changing outcomes, final commit rollback, Drive upload and cloud sync is still required before Step 1 sign-off.
+
+---
+
+## 15. Current handoff status — 23 November 2026 (latest)
+
+This section supersedes any older status statements above where they conflict. It is intended as the pickup point for another coding agent.
+
+### 15.1 Branch and workflow constraints
+
+- Repository: `rajprasad-ds/measure`.
+- Active working branch: `phase-1b-cards`.
+- Latest branch HEAD checked for this handoff: `9ab0d3edbc9766e2111d5e8e1dac32f2afe7b779` — “Exclude invalid questions from session total validation”.
+- Continue all Stage 1 investigation, implementation, and testing on `phase-1b-cards`.
+- `main` is not the working source of truth for this task. Do not switch implementation to `main`, merge, rebase into `main`, or deploy from `main` unless the owner explicitly asks.
+- Do not begin Stage 2 implementation. Finish and verify the Stage 1 normal-practice and data-capture foundation first.
+- Preserve the current test data for now. The owner has explicitly deferred the full test-data cleanup until Stage 1 is finished. Do not delete local IndexedDB records, Supabase rows, or Drive files as part of routine testing.
+
+### 15.2 Confirmed fixes and latest live-test result
+
+**Reversible feedback drafts and atomic local commit** (see Section 14.5):
+- Feedback edits are staged in the active session rather than creating permanent cards/links as the user moves through the flow.
+- Changing an outcome clears dependent draft values and stale card references.
+- Session, attempts, new question/fact cards, and question–fact links are committed together in an IndexedDB transaction.
+- Only images referenced by the final committed cards become eligible for Drive upload.
+- A later Drive/cloud failure must not destroy the locally committed session.
+
+**Invalid-question session totals / cloud-sync mismatch:**
+- The reported error was: `Could not sync a session: Session totals do not match its attempts`.
+- The frontend intentionally keeps `wrong_question` rows in attempt history but excludes them from valid timed-question count and active-time/average calculations.
+- The Supabase RPC had been using the older aggregate behavior and was counting those rows in the totals, causing the mismatch.
+- The migration `supabase/migrations/20261123180000_exclude_invalid_attempts_from_session_totals.sql` was applied manually in the Supabase SQL Editor by the owner.
+- The owner inspected the deployed `public.upsert_session_with_attempts(jsonb,jsonb,jsonb)` definition and confirmed it now calculates valid-attempt totals separately from total persisted attempt rows. It excludes `wrong_question` from the session's valid count/time aggregate while still inserting all attempt rows.
+- After applying the migration, the owner clicked **Sync now** and reported: **“Sync successful.”**
+- Treat this specific sync error as resolved for the tested case; do not re-open it without new evidence.
+
+### 15.3 Remaining verification before Stage 1 sign-off
+
+The successful sync is a useful confirmation, but it is not complete end-to-end verification. Continue with the following:
+
+1. **Historical session verification:** confirm previously created sessions containing `wrong_question` sync and display consistently after reload/re-fetch. Verify the invalid-question attempt row is retained, while the session timed-question count, active time, average time, accuracy, and weakness signals exclude it as intended.
+2. **Fresh-session verification:** create a new small practice session containing a mix of valid outcomes and at least one `wrong_question`; submit feedback and sync. Confirm no mismatch, no duplicate attempts, and correct summary/history values.
+3. **Attempt persistence:** verify that every timed question has exactly one persisted attempt and that the attempt remains retrievable after reload and cloud pull.
+4. **Feedback reversibility in the browser:** change an outcome after entering data; verify dependent draft values and card references are cleared and no abandoned card/link is created.
+5. **Fact dependency flow:** verify existing fact search is visible and usable before opening the create-new fact form; test both linking an existing fact and creating a new one.
+6. **Image lifecycle:** select, replace, and remove question/solution/fact images before final submission. Confirm no Drive upload or Drive consent is triggered merely by selecting an image. After final submission, verify only final referenced images upload, image order is preserved, and failed uploads remain retryable without losing local data.
+7. **Atomicity and recovery:** test failed final local commit/validation and confirm no partial session, attempt, card, or link is left behind. Separately test Drive/cloud failure after local commit and confirm the local session remains available with a clear pending/error state.
+8. **Offline and account ownership:** create data offline, reconnect and sync without duplicates; verify data remain scoped to the authenticated user and sign-out does not expose cached records to another account.
+9. Run the automated checks (`npm test`, `npm run build`) on the current branch and complete the manual checklist in `docs/TESTING.md`.
+
+**Documentation discrepancy to fix:** `docs/TESTING.md` currently says in its session-summary checklist that Wrong question is included in total timed questions. That conflicts with the current implementation and the deployed RPC behavior: Wrong question is retained as an attempt-history row, but excluded from the valid timed-question count and the active-time/average calculations. Update that checklist wording on `phase-1b-cards` when appropriate, and inspect the rest of the testing document for any other stale migration names or instructions before relying on it.
+
+### 15.4 Test-data cleanup is explicitly deferred
+
+The owner decided not to perform a reset now. Continue testing with the existing test records.
+
+After Stage 1 has passed its exit criteria, plan a separate, deliberate cleanup of test data across:
+- Browser IndexedDB/local storage used by Measure.
+- User-owned Supabase application rows (sessions, attempts, weak topics, question/fact cards, links, reviews, and image metadata).
+- Only the corresponding test image files in Google Drive.
+
+The cleanup must preserve the Google/Supabase account, OAuth/Drive authorization, application configuration, schema, migrations, and RPCs. It must be scoped to the authenticated user's test data and verified before destructive execution. Do not prepare or run a broad project reset. The owner has not yet confirmed whether the Drive location contains only Measure test images, so identify the exact test files before deleting anything.
+
+### 15.5 Recommended pickup sequence for the next agent
+
+1. Read this document, especially Sections 13–15, and `docs/TESTING.md`.
+2. Confirm the checked-out branch is `phase-1b-cards` and inspect its current HEAD and working tree before editing.
+3. Inspect the current source and migrations rather than assuming this handoff is newer than the repository.
+4. Start with the remaining browser verification in Section 15.3, particularly historical and fresh-session sync after the RPC migration.
+5. Fix any confirmed Stage 1 defects and update the testing checklist alongside behavior changes.
+6. Do not implement adaptive revision planning, spaced repetition, Home/Analytics dashboards, or other Stage 2 features as part of this handoff.
+7. Do not clean test data or merge to `main` without the owner's explicit approval.
