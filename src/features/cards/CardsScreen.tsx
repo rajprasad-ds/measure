@@ -444,9 +444,9 @@ export default function CardsScreen(props: Props) {
                 <label>Subject<select name="subjectId" value={editorSubjectId} onChange={(e) => { setEditorSubjectId(e.target.value); setEditorChapterId(""); setEditorTopicIds([]); }} required>{jeeSyllabus.subjects.map((s) => <option value={s.id} key={s.id}>{s.name}</option>)}</select></label>
                 <label>Chapter<select name="chapterId" value={editorChapterId} onChange={(e) => { setEditorChapterId(e.target.value); setEditorTopicIds([]); }} required><option value="" disabled>Choose chapter</option>{jeeSyllabus.subjects.find((s) => s.id === editorSubjectId)?.chapters.map((c) => <option value={c.id} key={c.id}>{c.name}</option>)}</select></label>
                 <label>Card type<select name="kind" defaultValue={editorFact?.kind ?? "fact"}>{cardKinds.map((k) => <option value={k} key={k}>{k}</option>)}</select></label>
-                <ImageInput label="Recall prompt photo" name="promptImageId" value={editorFact?.promptImageId} ownerUserId={userId} required />
-                <label>Prompt text<textarea name="promptText" rows={2} defaultValue={editorFact?.promptText} required /></label>
-                <ImageInput label="Answer / fact photo" name="contentImageId" value={editorFact?.contentImageId} ownerUserId={userId} required />
+                <ImageInput label="Recall prompt photo" name="promptImageId" value={editorFact?.promptImageId} ownerUserId={userId} onUploadComplete={onImageUploadComplete} />
+                <label>Prompt text (optional)<textarea name="promptText" rows={2} defaultValue={editorFact?.promptText} /></label>
+                <ImageInput label="Answer / fact photo" name="contentImageId" value={editorFact?.contentImageId} ownerUserId={userId} onUploadComplete={onImageUploadComplete} />
                 <label>Answer / fact text <span className="optional-label">optional</span><textarea name="contentText" rows={3} defaultValue={editorFact?.contentText} /></label>
                 <label>What I wrongly believed (optional)<textarea name="wrongBelief" rows={2} defaultValue={editorFact?.wrongBelief} /></label>
                 <label>Topics (Ctrl/Cmd-click to select multiple)<select name="topicIds" multiple value={editorTopicIds} onChange={(e) => setEditorTopicIds(Array.from(e.target.selectedOptions, (o) => o.value))}>{jeeSyllabus.subjects.find((s) => s.id === editorSubjectId)?.chapters.find((c) => c.id === editorChapterId)?.topics.map((t) => <option value={t.id} key={t.id}>{t.name}</option>)}</select></label>
