@@ -9,7 +9,7 @@ export type SessionSetup = {
   startingQuestion: number;
 };
 
-export type QuestionResult = "right" | "wrong" | "couldnt_solve";
+export type QuestionResult = "right" | "wrong" | "couldnt_solve" | "wrong_question";
 
 export type QuestionFeedback = {
   result: QuestionResult | null;
