@@ -397,7 +397,7 @@ export default function SessionFeedbackScreen({
 
   async function submitSolution(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!questionNumber || !questionCard) return;
+    if (!questionNumber || !hasQuestionCapture) return;
     const form = new FormData(event.currentTarget);
     const solutionImageIds = form.getAll("solutionImageIds").map(String).filter(Boolean);
     const solutionText = String(form.get("solutionText") ?? "").trim() || undefined;
@@ -530,7 +530,7 @@ export default function SessionFeedbackScreen({
             name="solutionImageIds"
             ownerUserId={userId}
             onUploadComplete={onImageUploadComplete}
-            value={questionCard?.solutionImageIds?.[index] ?? (index === 0 ? questionCard?.solutionImageId : undefined)}
+            value={questionCard?.solutionImageIds?.[index] ?? feedback?.questionDraft?.solutionImageIds?.[index] ?? (index === 0 ? questionCard?.solutionImageId ?? feedback?.questionDraft?.solutionImageId : undefined)}
           />
         ))}
         <button className="account-secondary-button" type="button" onClick={() => setSolutionImageCount((count) => count + 1)}>
@@ -550,7 +550,7 @@ export default function SessionFeedbackScreen({
   const approachCaptureNeeded =
     slowRight &&
     feedback?.smarterApproach === "found" &&
-    !!feedback.questionId;
+    hasQuestionCapture;
 
   return (
     <main className="feedback-shell">
@@ -771,17 +771,17 @@ export default function SessionFeedbackScreen({
                       Which topics in <strong>{chapter?.name}</strong> does this question cover?
                     </p>
 
-                    {questionCard && (
+                    {(questionCard || feedback?.questionDraft) && (
                       <div className="feedback-mini-preview">
-                        {questionCard.promptImageId && (
+                        {(questionCard?.promptImageId ?? feedback?.questionDraft?.promptImageId) && (
                           <div className="mini-preview-thumb">
-                            <CardImage imageId={questionCard.promptImageId} alt="Question preview" />
+                            <CardImage imageId={(questionCard?.promptImageId ?? feedback?.questionDraft?.promptImageId)!} alt="Question preview" />
                           </div>
                         )}
                         <div className="mini-preview-info">
                           <span className="mini-preview-tag">Question saved</span>
-                          {questionCard.promptText && (
-                            <span className="mini-preview-text">{questionCard.promptText}</span>
+                          {(questionCard?.promptText ?? feedback?.questionDraft?.promptText) && (
+                            <span className="mini-preview-text">{questionCard?.promptText ?? feedback?.questionDraft?.promptText}</span>
                           )}
                         </div>
                       </div>
@@ -858,16 +858,16 @@ export default function SessionFeedbackScreen({
                       </div>
                     )}
 
-                    {(questionCard?.solutionImageIds?.length || questionCard?.solutionImageId) && (
+                    {(questionCard?.solutionImageIds?.length || questionCard?.solutionImageId || feedback?.questionDraft?.solutionImageIds?.length || feedback?.questionDraft?.solutionImageId) && (
                       <div className="feedback-mini-preview" style={{ marginTop: "0.5rem" }}>
-                        {(questionCard.solutionImageIds ?? [questionCard.solutionImageId!]).map((imageId, index) => (
+                        {(questionCard?.solutionImageIds ?? feedback?.questionDraft?.solutionImageIds ?? [questionCard?.solutionImageId ?? feedback?.questionDraft?.solutionImageId!]).map((imageId, index) => (
                           <div className="mini-preview-thumb" key={imageId}>
                             <CardImage imageId={imageId} alt={`Attached solution ${index + 1}`} />
                           </div>
                         ))}
                         <div className="mini-preview-info">
                           <span className="mini-preview-tag">Current solution images</span>
-                          {questionCard.solutionText && <span className="mini-preview-text">{questionCard.solutionText}</span>}
+                          {(questionCard?.solutionText ?? feedback?.questionDraft?.solutionText) && <span className="mini-preview-text">{questionCard?.solutionText ?? feedback?.questionDraft?.solutionText}</span>}
                         </div>
                       </div>
                     )}
@@ -879,7 +879,7 @@ export default function SessionFeedbackScreen({
                         <textarea
                           name="solutionText"
                           rows={2}
-                          defaultValue={questionCard?.solutionText ?? ""}
+                          defaultValue={questionCard?.solutionText ?? feedback?.questionDraft?.solutionText ?? ""}
                           placeholder="Key formula, formula steps, or method notes (optional)"
                         />
                       </label>
