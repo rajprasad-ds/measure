@@ -52,6 +52,7 @@ Also verify:
    - `20261123120000_wrong_question_attempts.sql`
    - `20261123130000_question_difficulty.sql`
    - `20261123140000_question_solution_image_list.sql`
+   - `20261123150000_fact_card_text_or_image.sql`
 4. Confirm Google Drive API is enabled in the Google Cloud project and the OAuth web client has `http://localhost:5173` and the production app origin under Authorized JavaScript origins. `.env.local` must contain `VITE_GOOGLE_CLIENT_ID` using that web client ID. Do not put the client secret in frontend environment variables.
 5. Select a photo. If Drive access has not been granted, use **Connect Google Drive** / **Reconnect Google Drive**, grant the `drive.file` permission, and confirm the image status changes to Uploaded.
 6. Confirm image metadata syncs to Supabase after upload and contains the Drive remote ID. Confirm the card's image reference survives reload.
