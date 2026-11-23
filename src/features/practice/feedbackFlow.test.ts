@@ -101,6 +101,28 @@ describe("slow-right feedback flow", () => {
     expect(canCompleteQuestionFeedback(invalidQuestion, [], 45_000)).toBe(true);
   });
 
+  it("allows an independently saved fact to await its question link", () => {
+    const stagedQuestionWithIndependentFact: QuestionFeedback = {
+      result: "wrong",
+      cause: "missing_fact",
+      slipSubtype: null,
+      topics: [{ id: "t-1", name: "Topic 1" }],
+      questionDraft: { promptImageId: "local-question-image" },
+      solutionSaved: true,
+      difficulty: "medium",
+      linkedFactIds: ["independent-fact-1"],
+    };
+    expect(
+      canCompleteQuestionFeedback(
+        stagedQuestionWithIndependentFact,
+        [],
+        30_000,
+        "practice",
+        1,
+      ),
+    ).toBe(true);
+  });
+
   it("recognizes staged question and fact drafts without persisted card IDs", () => {
     const stagedWrong: QuestionFeedback = {
       result: "wrong",
