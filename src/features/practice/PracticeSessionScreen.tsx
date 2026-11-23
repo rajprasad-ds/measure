@@ -7,7 +7,6 @@ type Props = {
   stopwatchElapsed: number;
   isOverAverage: boolean;
   warning: InactivityWarning | null;
-  warningSecondsRemaining: number;
   persistenceError: string | null;
   onEnd: () => void;
   onToggleStopwatch: () => void;
@@ -23,7 +22,6 @@ export default function PracticeSessionScreen({
   stopwatchElapsed,
   isOverAverage,
   warning,
-  warningSecondsRemaining,
   persistenceError,
   onEnd,
   onToggleStopwatch,
@@ -153,11 +151,8 @@ export default function PracticeSessionScreen({
             </h2>
             <p id="inactivity-description">
               {warning.kind === "running_question"
-                ? "The question timer has paused at 8 minutes. Confirm within one minute to continue; press Start when you are ready to resume timing."
-                : "This session will move to feedback if you do not confirm within one minute."}
-            </p>
-            <p className="inactivity-countdown">
-              Closing in <strong>{warningSecondsRemaining}</strong> sec
+                ? "The question timer has paused at 8 minutes. Confirm when you are ready; press Start to resume timing."
+                : "Take your time. Confirm when you’re ready to dismiss this reminder."}
             </p>
             <button
               className="start-button"
