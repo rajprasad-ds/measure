@@ -1028,7 +1028,7 @@ export default function SessionFeedbackScreen({
                           Fact label
                           <textarea name="promptText" rows={2} placeholder="Optional text on the recall prompt" />
                         </label>
-                        <ImageInput label="Answer / fact photo" name="contentImageId" ownerUserId={userId} />
+                        <ImageInput label="Answer / fact photo" name="contentImageId" ownerUserId={userId} onUploadComplete={onImageUploadComplete} />
                         <label>
                           Answer / fact text <span className="optional-label">optional</span>
                           <textarea name="contentText" rows={2} placeholder="The fact, formula, or correction" />
