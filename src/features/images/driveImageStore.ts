@@ -4,6 +4,7 @@ import {
   markImageFailed,
   markImageUploaded,
   markImageUploading,
+  resetImageUpload,
 } from "./imageRepository";
 
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
@@ -195,6 +196,16 @@ const lastAttemptAtById = new Map<string, number>();
 function backoffFor(attempts: number): number {
   if (attempts <= 0) return 0;
   return BACKOFF_MS[Math.min(attempts - 1, BACKOFF_MS.length - 1)];
+}
+
+export async function retryFailedUploads(): Promise<void> {
+  const pending = await getPendingImages();
+  for (const image of pending) {
+    if (image.status === "failed" || image.status === "uploading") {
+      await resetImageUpload(image.id);
+      lastAttemptAtById.delete(image.id);
+    }
+  }
 }
 
 export async function processUploadQueue(
