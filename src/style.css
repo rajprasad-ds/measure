@@ -2353,3 +2353,25 @@ h1 {
     flex-direction: column;
   }
 }
+
+
+/* Feedback screens use one main surface, not nested cards inside cards. */
+.feedback-step {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.feedback-step-panel {
+  gap: 1.15rem;
+}
+
+.inline-card-form {
+  gap: 0.85rem;
+}
+
+.image-input {
+  padding: 0.7rem;
+  border-radius: 0.7rem;
+}
