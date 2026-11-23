@@ -590,3 +590,17 @@ The current feedback UI feels cluttered despite the palette being acceptable. Re
 - Preserve the five outcomes and agreed capture order; do not change product behavior merely to simplify the interface.
 
 These corrections remain part of Step 1. Do not begin Step 2 revision workflows while they are unresolved.
+
+
+### 14.5 Implementation status — reversible drafts
+
+Implemented on `phase-1b-cards`:
+- Question photo, solution, smarter-method, difficulty, fact-card and existing-fact selections are staged in the active session feedback object rather than immediately creating new permanent cards or links.
+- Changing the selected outcome clears all dependent draft data and any previous attempt card reference.
+- Question and fact card records plus their question-fact links are prepared before the final write, then inserted in the same IndexedDB transaction as the session and attempts.
+- Existing selected fact cards are validated and linked at final submission; locally owned cards are assigned to the authenticated user in that same transaction.
+- Only images referenced by final cards are queued for Drive upload after the local transaction succeeds. The active feedback image-selection path saves blobs locally and does not itself queue uploads.
+- Feedback completion checks recognize staged question and fact drafts even though they do not yet have persistent card IDs.
+- Cloud sync failure after local commit does not block the session summary.
+
+Verification: GitHub Actions completed successfully for the draft-flow and local-only-draft tests (27 tests passed; TypeScript check and production build passed). Browser-level testing of replacing photos, changing outcomes, final commit rollback, Drive upload and cloud sync is still required before Step 1 sign-off.
