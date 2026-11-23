@@ -23,6 +23,7 @@ export type QuestionCard = SyncableCard & {
   promptImageId?: string;
   solutionText?: string;
   solutionImageId?: string;
+  solutionImageIds?: string[];
   smarterApproachText?: string;
   smarterApproachImageId?: string;
   keyInsight?: string;
@@ -86,6 +87,7 @@ export type QuestionCardInput = Pick<
   difficulty?: QuestionDifficulty;
   solutionText?: string;
   solutionImageId?: string;
+  solutionImageIds?: string[];
   smarterApproachText?: string;
   smarterApproachImageId?: string;
   keyInsight?: string;
