@@ -111,11 +111,12 @@ export default function SessionSummaryScreen({
               : "Saved on this device. Cloud sync is pending."
             : "Saved on this device only. Sign in to sync it to your account."}
         </p>
-        {pendingImageCount > 0 && (
+        {(pendingImageCount > 0 || syncStatus === "error" || syncStatus === "offline") && (
           <div className="summary-sync-pending">
             <p>
-              {pendingImageCount} photo{pendingImageCount === 1 ? "" : "s"} still need to upload to Google Drive.
-              Your session and photos remain saved on this device.
+              {pendingImageCount > 0
+                ? `${pendingImageCount} photo${pendingImageCount === 1 ? "" : "s"} still need to upload to Google Drive. Your session and photos remain saved on this device.`
+                : "Cloud sync needs attention. Your session and photos remain saved on this device."}
             </p>
             <button
               className="account-secondary-button"
