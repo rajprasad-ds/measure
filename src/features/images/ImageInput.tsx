@@ -17,6 +17,7 @@ type Props = {
   name: string;
   value?: string;
   ownerUserId?: string;
+  onUploadComplete?: () => void;
   required?: boolean;
   onChange?: (imageId: string) => void;
 };
@@ -26,6 +27,7 @@ export default function ImageInput({
   name,
   value,
   ownerUserId,
+  onUploadComplete,
   required = false,
   onChange,
 }: Props) {
@@ -115,7 +117,8 @@ export default function ImageInput({
       const nextId = await saveImageFile(file, ownerUserId);
       setImageId(nextId);
       onChange?.(nextId);
-      void processUploadQueue();
+      await processUploadQueue();
+      onUploadComplete?.();
     } catch (saveError) {
       setError(
         saveError instanceof Error
@@ -133,6 +136,7 @@ export default function ImageInput({
     try {
       await resetImageUpload(imageId);
       await processUploadQueue();
+      onUploadComplete?.();
     } catch (queueError) {
       const message =
         queueError instanceof Error
@@ -148,6 +152,7 @@ export default function ImageInput({
       if (imageId) await resetImageUpload(imageId);
       await driveImageStore.reconnect();
       await processUploadQueue();
+      onUploadComplete?.();
     } catch (reconnectError) {
       setError(
         reconnectError instanceof Error
