@@ -96,6 +96,23 @@ describe("slow-right feedback flow", () => {
     expect(getStepAfterCause("not_sure", 0)).toBe("complete");
   });
 
+
+  it("completes a wrong-question result without a card or diagnostic cause", () => {
+    expect(
+      getStepAfterResult("wrong_question", false, false, "practice"),
+    ).toBe("complete");
+    const invalidQuestion: QuestionFeedback = {
+      result: "wrong_question",
+      cause: null,
+      slipSubtype: null,
+      topics: [],
+    };
+    expect(
+      getInitialFeedbackStep(invalidQuestion, false, "practice"),
+    ).toBe("complete");
+    expect(canCompleteQuestionFeedback(invalidQuestion, [], 45_000)).toBe(true);
+  });
+
   it("uses a strict one-minute threshold", () => {
     expect(isSlowRightAttempt("right", SMARTER_APPROACH_THRESHOLD_MS)).toBe(false);
     expect(isSlowRightAttempt("right", SMARTER_APPROACH_THRESHOLD_MS + 1)).toBe(true);
