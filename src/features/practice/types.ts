@@ -1,7 +1,7 @@
 import type { SessionRecord } from "../../database";
 import type { SyllabusSubjectId } from "../../syllabus";
 import type { Cause, SlipSubtype } from "../../lib/causes";
-import type { FactCardInput, QuestionCardInput, FactCardKind } from "../cards/types";
+import type { FactCardInput, QuestionCardInput } from "../cards/types";
 
 export type SessionSetup = {
   subjectId: SyllabusSubjectId;
