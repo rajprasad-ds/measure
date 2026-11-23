@@ -395,8 +395,10 @@ function App() {
     setSyncStatus("syncing");
     setSyncError(null);
     try {
+      // Upload local photo blobs to Drive first. Only then can their remote IDs
+      // be written to the Supabase images table (remote_id is NOT NULL).
+      await processUploadQueue();
       await syncAccountSessions(user);
-      void processUploadQueue();
       const localRecords = await database.sessions.toArray();
       setSavedSessions(
         localRecords
