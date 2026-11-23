@@ -105,22 +105,20 @@ function getFallbackPreviousStep(
   if (step === "reflection") return "result";
   if (step === "question") {
     if (slowRight && feedback?.smarterApproach === "found") return "reflection";
-    if (feedback?.cause === "slip") return "slip";
     if (feedback?.cause) return "cause";
     return "result";
   }
   if (step === "solution") return "question";
   if (step === "difficulty") return slowRight ? "approach" : "solution";
-  if (step === "topics") return slowRight ? "approach" : "solution";
-  if (step === "approach") return "question";
+  if (step === "topics") return slowRight ? "question" : "difficulty";
+  if (step === "approach") return slowRight ? "topics" : "question";
   if (step === "cause") return "result";
   if (step === "slip") return "cause";
   if (step === "fact") return "topics";
   if (step === "complete") {
-    if (slowRight) return feedback?.smarterApproach === "found" ? "approach" : "reflection";
+    if (slowRight) return "difficulty";
     if (feedback?.result === "right" || feedback?.result === "wrong_question") return "result";
     if (feedback?.cause === "missing_fact") return "fact";
-    if (feedback?.cause === "slip") return "slip";
     return "topics";
   }
   return undefined;
