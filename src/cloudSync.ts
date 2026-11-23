@@ -623,6 +623,21 @@ async function syncPendingImages(userId: string) {
       ),
     );
   }
+  // Card rows have foreign keys to images. Never attempt the card upsert while
+  // a referenced photo is still waiting for Drive upload or image metadata sync.
+  if (referencedImageIds.size > 0) {
+    const finalRows = await database.localImages.bulkGet(Array.from(referencedImageIds));
+    const unresolved = finalRows.filter(
+      (row) => !row || row.syncStatus !== "synced" || !row.remoteId,
+    );
+    if (unresolved.length > 0) {
+      const failed = finalRows.find((row) => row?.status === "failed" && row.lastError);
+      const detail = failed?.lastError ? ` Latest upload error: ${failed.lastError}` : "";
+      throw new Error(
+        `Cloud sync paused: ${unresolved.length} linked photo(s) still need to finish uploading to Google Drive. Your session and cards remain saved on this device.${detail}`,
+      );
+    }
+  }
 }
 
 export async function syncAccountSessions(user: User): Promise<SessionRecord[]> {
