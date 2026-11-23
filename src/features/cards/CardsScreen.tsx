@@ -82,7 +82,7 @@ export default function CardsScreen(props: Props) {
     setEditorSubjectId(card?.subjectId || subjectFilter || jeeSyllabus.subjects[0].id);
     setEditorChapterId(card?.chapterId ?? chapterFilter);
     setEditorTopicIds(card?.topicIds ?? []);
-    setSolutionImageCount(Math.max(1, card?.solutionImageIds?.length ?? (card?.solutionImageId ? 1 : 0)));
+    setSolutionImageCount(nextEditor.kind === "question" ? Math.max(1, card?.solutionImageIds?.length ?? (card?.solutionImageId ? 1 : 0)) : 1);
   }
 
   const activeQuestions = questions.filter((card) => !card.deletedAt);
