@@ -55,7 +55,7 @@ export async function saveImageFile(
           width: Math.max(1, Math.round(bitmap.width * scale)),
           height: Math.max(1, Math.round(bitmap.height * scale)),
           bytes: blob.size,
-          status: "pending",
+          status: "local",
           syncStatus: "local",
           ownerUserId,
           attempts: 0,
