@@ -485,7 +485,7 @@ export default function SessionFeedbackScreen({
   const questionCaptureNeeded =
     session.sessionKind === "practice" &&
     !!feedback &&
-    ((feedback.result !== null && feedback.result !== "right" && !feedback.questionId) ||
+    ((feedback.result !== null && feedback.result !== "right" && feedback.result !== "wrong_question" && !feedback.questionId) ||
       (slowRight &&
         feedback.smarterApproach === "found" &&
         !feedback.questionId));
@@ -591,6 +591,7 @@ export default function SessionFeedbackScreen({
                           ["right", "Got it right"],
                           ["wrong", "Got it wrong"],
                           ["couldnt_solve", "Couldn’t solve"],
+                          ["wrong_question", "Wrong question"],
                         ] as const
                       ).map(([result, label]) => (
                         <button
@@ -1028,7 +1029,9 @@ export default function SessionFeedbackScreen({
                             ? feedback.smarterApproach === "found"
                               ? "Your question and smarter approach are saved."
                               : "Your result is recorded."
-                            : "Your question, topics, and diagnosis are recorded."}
+                            : feedback.result === "wrong_question"
+                              ? "This question was invalid; no diagnosis or question card was created."
+                              : "Your question, topics, and diagnosis are recorded."}
                         </p>
                       </div>
                     </div>
@@ -1038,6 +1041,7 @@ export default function SessionFeedbackScreen({
                         {feedback.result === "right" && "Got it right"}
                         {feedback.result === "wrong" && "Got it wrong"}
                         {feedback.result === "couldnt_solve" && "Couldn’t solve"}
+                        {feedback.result === "wrong_question" && "Wrong question"}
                       </span>
 
                       {feedback.cause && (
