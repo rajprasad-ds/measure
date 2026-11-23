@@ -1368,8 +1368,8 @@ function App() {
         setUnassignedSessionCount((count) => count + 1);
       }
       await queueImagesForUpload(Array.from(finalizedImageIds));
+      if (authUser) await performSync(authUser, true);
       setSession({ ...session, phase: "summary", record });
-      if (authUser) void performSync(authUser, true);
     } catch (error) {
       setSaveError(
         error instanceof Error
