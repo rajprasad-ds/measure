@@ -40,7 +40,6 @@ import {
 import {
   finishSessionAt,
   getInactivityPrompt,
-  INACTIVITY_LIMITS,
   recoverSessionSnapshot,
   stopQuestionAtInactivityPrompt,
 } from "./features/practice/sessionLifecycle";
