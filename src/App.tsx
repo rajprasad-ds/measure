@@ -62,7 +62,7 @@ import SessionRecoveryScreen from "./features/practice/SessionRecoveryScreen";
 import PracticeSessionScreen from "./features/practice/PracticeSessionScreen";
 import SessionFeedbackScreen from "./features/practice/SessionFeedbackScreen";
 import SessionSummaryScreen from "./features/practice/SessionSummaryScreen";
-import AccountPanel, { type AuthMode } from "./features/account/AccountPanel";
+import AccountPanel from "./features/account/AccountPanel";
 import CardsScreen from "./features/cards/CardsScreen";
 import MainNavigation from "./features/navigation/MainNavigation";
 
@@ -98,9 +98,7 @@ function App() {
   const [databaseError, setDatabaseError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [authUser, setAuthUser] = useState<User | null>(null);
-  const [authMode, setAuthMode] = useState<AuthMode>("sign_in");
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [authMessage, setAuthMessage] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
@@ -311,6 +309,7 @@ function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, authSession) => {
       setAuthUser(authSession?.user ?? null);
+      setIsAuthLoading(false);
       setAuthError(null);
       setAuthMessage(null);
     });
@@ -324,6 +323,7 @@ function App() {
           return;
         }
         setAuthUser(data.session?.user ?? null);
+        setIsAuthLoading(false);
       })
       .catch((error: unknown) => {
         if (!cancelled) {
@@ -514,10 +514,9 @@ function App() {
     setSetup((current) => ({ ...current, [key]: value }));
   }
 
-  async function submitAuth(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function signInWithGoogle() {
     if (!supabase) {
-      setAuthError("Supabase is not configured for this app.");
+      setAuthError("Sign-in is not configured for this app.");
       return;
     }
 
@@ -525,34 +524,18 @@ function App() {
     setAuthError(null);
     setAuthMessage(null);
     try {
-      if (authMode === "sign_up") {
-        const { data, error } = await supabase.auth.signUp({
-          email: authEmail.trim(),
-          password: authPassword,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        if (!data.session) {
-          setAuthMessage(
-            "Check your email to confirm your account, then sign in here.",
-          );
-        } else {
-          setAuthUser(data.user);
-        }
-      } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: authEmail.trim(),
-          password: authPassword,
-        });
-        if (error) throw error;
-        setAuthUser(data.user);
-      }
-      setAuthPassword("");
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin,
+          queryParams: { prompt: "select_account" },
+        },
+      });
+      if (error) throw error;
     } catch (error) {
       setAuthError(
-        error instanceof Error ? error.message : "Authentication failed.",
+        error instanceof Error ? error.message : "Google sign-in failed.",
       );
-    } finally {
       setIsSubmittingAuth(false);
     }
   }
@@ -1327,12 +1310,50 @@ function App() {
     }
   }
 
-  if (isLoadingActiveSession) {
+  if (isAuthLoading || isLoadingActiveSession) {
     return (
       <main className="setup-shell">
         <section className="setup-card" aria-live="polite">
           <p className="eyebrow">JEE PRACTICE</p>
           <h1>Checking for an active session.</h1>
+        </section>
+      </main>
+    );
+  }
+
+  if (!authUser) {
+    return (
+      <main className="setup-shell">
+        <section className="setup-card" aria-labelledby="app-title">
+          <p className="eyebrow">MEASURE · JEE PRACTICE</p>
+          <h1 id="app-title">Sign in to continue.</h1>
+          <p className="intro">
+            A Google account is required so every practice session, question
+            card, fact card and image is associated with your account and can
+            sync across devices.
+          </p>
+          <AccountPanel
+            configured={supabaseConfigured}
+            email={undefined}
+            authMode="sign_in"
+            authEmail=""
+            authPassword=""
+            authMessage={authMessage}
+            authError={authError}
+            isSubmittingAuth={isSubmittingAuth}
+            syncStatus={syncStatus}
+            syncError={syncError}
+            unassignedSessionCount={unassignedSessionCount}
+            unassignedCardCount={unassignedCardCount}
+            onAuthEmailChange={() => undefined}
+            onAuthPasswordChange={() => undefined}
+            onSubmitAuth={(event) => event.preventDefault()}
+            onGoogleSignIn={() => void signInWithGoogle()}
+            onToggleAuthMode={() => undefined}
+            onSignOut={() => undefined}
+            onImportLocalSessions={() => undefined}
+            onSyncNow={() => undefined}
+          />
         </section>
       </main>
     );
@@ -1540,9 +1561,6 @@ function App() {
         <AccountPanel
           configured={supabaseConfigured}
           email={authUser?.email}
-          authMode={authMode}
-          authEmail={authEmail}
-          authPassword={authPassword}
           authMessage={authMessage}
           authError={authError}
           isSubmittingAuth={isSubmittingAuth}
@@ -1550,14 +1568,11 @@ function App() {
           syncError={syncError}
           unassignedSessionCount={unassignedSessionCount}
           unassignedCardCount={unassignedCardCount}
-          onAuthEmailChange={setAuthEmail}
-          onAuthPasswordChange={setAuthPassword}
-          onSubmitAuth={(event) => void submitAuth(event)}
-          onToggleAuthMode={() => {
-            setAuthMode((mode) => (mode === "sign_in" ? "sign_up" : "sign_in"));
-            setAuthError(null);
-            setAuthMessage(null);
-          }}
+          onAuthEmailChange={() => undefined}
+          onAuthPasswordChange={() => undefined}
+          onSubmitAuth={(event) => event.preventDefault()}
+          onGoogleSignIn={() => void signInWithGoogle()}
+          onToggleAuthMode={() => undefined}
           onSignOut={() => void signOut()}
           onImportLocalSessions={() => void importLocalSessions()}
           onSyncNow={() => {
