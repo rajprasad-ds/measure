@@ -112,13 +112,13 @@ function getFallbackPreviousStep(
   }
   if (step === "solution") return "question";
   if (step === "difficulty") return slowRight ? "approach" : "solution";
-  if (step === "topics") return slowRight ? "question" : "difficulty";
-  if (step === "approach") return slowRight ? "topics" : "question";
+  if (step === "topics") return "difficulty";
+  if (step === "approach") return "question";
   if (step === "cause") return "result";
   if (step === "slip") return "cause";
   if (step === "fact") return "topics";
   if (step === "complete") {
-    if (slowRight) return "difficulty";
+    if (slowRight) return "topics";
     if (feedback?.result === "right" || feedback?.result === "wrong_question") return "result";
     if (feedback?.cause === "missing_fact") return "fact";
     return "topics";
@@ -139,10 +139,10 @@ function getStepTitle(
   }
   if (step === "topics") {
     return slowRight && feedback?.smarterApproach === "found"
-      ? "Step 2 of 4: Attach topics"
+      ? "Step 4 of 4: Attach topics"
       : feedback?.result === "right" ? "Step 2 of 4: Attach topics" : "Step 5 of 6: Attach topics";
   }
-  if (step === "approach") return "Step 3 of 4: Smarter approach";
+  if (step === "approach") return "Step 2 of 4: Smarter approach";
   if (step === "solution") return "Step 3 of 6: Solution";
   if (step === "difficulty") return slowRight ? "Step 4 of 4: Difficulty" : "Step 4 of 6: Difficulty";
   if (step === "cause") {
@@ -352,7 +352,7 @@ export default function SessionFeedbackScreen({
         promptText,
         promptImageId,
       });
-      moveToStep(slowRight ? "topics" : "solution");
+      moveToStep(slowRight ? "approach" : "solution");
     } catch (error) {
       showError(error, "Could not save this question.");
     }
@@ -415,7 +415,7 @@ export default function SessionFeedbackScreen({
         setActionError("Intrinsic difficulty is fixed once selected.");
         return;
       }
-      moveToStep(slowRight ? "complete" : "topics");
+      moveToStep("topics");
       return;
     }
     setActionError(null);
@@ -785,7 +785,7 @@ export default function SessionFeedbackScreen({
                       onClick={() => {
                         setActionError(null);
                         if (slowRight && feedback.smarterApproach === "found") {
-                          moveToStep("approach");
+                          moveToStep("complete");
                         } else if (feedback.result !== "right" && feedback.cause === "missing_fact") {
                           moveToStep("fact");
                         } else {
