@@ -16,6 +16,7 @@ type Props = {
   label: string;
   name: string;
   value?: string;
+  ownerUserId?: string;
   required?: boolean;
   onChange?: (imageId: string) => void;
 };
@@ -24,6 +25,7 @@ export default function ImageInput({
   label,
   name,
   value,
+  ownerUserId,
   required = false,
   onChange,
 }: Props) {
@@ -110,7 +112,7 @@ export default function ImageInput({
     setIsSaving(true);
     setError(null);
     try {
-      const nextId = await saveImageFile(file);
+      const nextId = await saveImageFile(file, ownerUserId);
       setImageId(nextId);
       onChange?.(nextId);
       void processUploadQueue();
