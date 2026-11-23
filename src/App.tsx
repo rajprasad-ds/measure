@@ -19,6 +19,7 @@ import {
   buildQuestionCardRecord,
   createFactCard,
   createFactCardAndLink,
+  createQuestionCard,
   linkQuestionAndFact,
   recordQuestionSeen,
   softDeleteFactCard,
@@ -979,15 +980,37 @@ function App() {
     input: Pick<QuestionCardInput, "promptText" | "promptImageId">,
   ) {
     if (!session || session.sessionKind !== "practice") {
-      throw new Error("New question cards can only be drafted from practice feedback.");
+      throw new Error("New question cards can only be saved from practice feedback.");
     }
     if (!input.promptImageId) throw new Error("Add a photo of the question.");
+    const feedback = session.feedback[questionNumber];
+    if (!feedback) throw new Error("The attempt is no longer available.");
+
+    if (!feedback.questionId) {
+      const attemptId = feedback.attemptId ?? globalThis.crypto.randomUUID();
+      const card = await createQuestionCard(
+        {
+          subjectId: session.subjectId,
+          chapterId: session.chapterId,
+          topicIds: feedback.topics.map((topic) => topic.id),
+          ...input,
+          createdFromAttemptId: attemptId,
+        },
+        { userId: authUser?.id },
+      );
+      updateFeedbackForQuestion(questionNumber, (current) => ({
+        ...current,
+        attemptId,
+        questionId: card.id,
+        questionDraft: { ...current.questionDraft, ...input },
+      }));
+      await refreshCardData();
+      return;
+    }
+
     updateFeedbackForQuestion(questionNumber, (current) => ({
       ...current,
-      questionDraft: {
-        ...current.questionDraft,
-        ...input,
-      },
+      questionDraft: { ...current.questionDraft, ...input },
     }));
   }
 
@@ -1073,10 +1096,28 @@ function App() {
     if (!frontPresent || !backPresent) {
       throw new Error("Add text or an image to both sides of the fact card.");
     }
+    const feedback = session.feedback[questionNumber];
+    if (!feedback?.questionId) {
+      throw new Error("Save or select the question card before linking a fact card.");
+    }
+    const attemptId = feedback.attemptId ?? globalThis.crypto.randomUUID();
+    const card = await createFactCardAndLink(
+      {
+        ...input,
+        subjectId: session.subjectId,
+        chapterId: session.chapterId,
+        topicIds: feedback.topics.map((topic) => topic.id),
+        createdFromAttemptId: attemptId,
+      },
+      feedback.questionId,
+      { userId: authUser?.id },
+    );
     updateFeedbackForQuestion(questionNumber, (current) => ({
       ...current,
-      factDraft: input,
+      attemptId,
+      linkedFactIds: Array.from(new Set([...(current.linkedFactIds ?? []), card.id])),
     }));
+    await refreshCardData();
   }
 
   async function useFactCardForAttempt(questionNumber: number, card: FactCard) {
@@ -1105,7 +1146,11 @@ function App() {
     const draftQuestions: QuestionCard[] = [];
     const draftFacts: FactCard[] = [];
     const draftLinks: QuestionFactLink[] = [];
-    const linkKeys = new Set<string>();
+    const linkKeys = new Set(
+      questionFactLinks
+        .filter((link) => !link.deletedAt)
+        .map((link) => `${link.questionId}::${link.factId}`),
+    );
 
     // Prepare all card records without writing them. They are inserted with the
     // session and attempts in one IndexedDB transaction below.
@@ -1369,6 +1414,19 @@ function App() {
           }
           if (draftLinks.length) await database.questionFactLinks.bulkPut(draftLinks);
           await database.attempts.bulkPut(attempts);
+          for (const feedback of feedbackWithCards.values()) {
+            if (!feedback.questionId || !feedback.questionDraft) continue;
+            const card = await database.questions.get(feedback.questionId);
+            if (!card) continue;
+            const updated: QuestionCard = {
+              ...card,
+              ...feedback.questionDraft,
+              updatedAt: timestamp,
+              syncStatus: card.ownerUserId ? "pending" : "local",
+            };
+            await database.questions.put(updated);
+            updatedQuestionCards.set(updated.id, updated);
+          }
           for (const [questionId, topicIds] of topicsByQuestionId) {
             const card = await database.questions.get(questionId);
             if (!card) continue;
