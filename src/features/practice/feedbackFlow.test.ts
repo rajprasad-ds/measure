@@ -90,7 +90,7 @@ describe("slow-right feedback flow", () => {
     ).toBe("cause");
     expect(getStepAfterCause("missing_fact", 0)).toBe("question");
     expect(getStepAfterCause("missing_fact", 1)).toBe("question");
-    expect(getStepAfterCause("slip", 0)).toBe("slip");
+    expect(getStepAfterCause("slip", 0)).toBe("question");
     expect(getStepAfterCause("stuck_no_approach", 0)).toBe("question");
     expect(getStepAfterCause("didnt_understand", 0)).toBe("question");
     expect(getStepAfterCause("not_sure", 0)).toBe("question");
@@ -188,7 +188,7 @@ describe("slow-right feedback flow", () => {
     expect(canCompleteQuestionFeedback(wrong, [], 30_000)).toBe(false);
     expect(
       canCompleteQuestionFeedback(
-        { ...wrong, questionId: "question-1" },
+        { ...wrong, questionId: "question-1", solutionSaved: true },
         [],
         30_000,
       ),
