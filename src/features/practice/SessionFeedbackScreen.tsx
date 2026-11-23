@@ -985,12 +985,12 @@ export default function SessionFeedbackScreen({
                             <option value="trap">Trap</option>
                           </select>
                         </label>
-                        <ImageInput label="Recall prompt photo" name="promptImageId" required />
+                        <ImageInput label="Recall prompt photo" name="promptImageId" />
                         <label>
                           Fact label
                           <textarea name="promptText" rows={2} placeholder="Optional text on the recall prompt" />
                         </label>
-                        <ImageInput label="Answer / fact photo" name="contentImageId" required />
+                        <ImageInput label="Answer / fact photo" name="contentImageId" />
                         <label>
                           Answer / fact text <span className="optional-label">optional</span>
                           <textarea name="contentText" rows={2} placeholder="The fact, formula, or correction" />
