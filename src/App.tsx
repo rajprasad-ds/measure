@@ -1297,8 +1297,13 @@ function App() {
       return;
     }
 
-    const timedQuestionCount = attempts.length;
-    const activeTimeMs = attempts.reduce(
+    // "Wrong question" attempts remain in attempt history, but are excluded
+    // from valid-question counts, accuracy, and average solving time.
+    const validAttempts = attempts.filter(
+      (attempt) => attempt.result !== "wrong_question",
+    );
+    const timedQuestionCount = validAttempts.length;
+    const activeTimeMs = validAttempts.reduce(
       (total, attempt) => total + attempt.timeMs,
       0,
     );
