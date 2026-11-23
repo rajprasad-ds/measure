@@ -300,7 +300,6 @@ export default function FactCardCreator({
             ownerUserId={userId}
             onUploadComplete={onImageUploadComplete}
             onChange={(id) => setPromptImageId(id)}
-            required
           />
           <label>
             Prompt label <span className="optional-label">optional</span>
@@ -340,8 +339,8 @@ export default function FactCardCreator({
             name="contentImageId"
             value={contentImageId}
             ownerUserId={userId}
+            onUploadComplete={onImageUploadComplete}
             onChange={(id) => setContentImageId(id)}
-            required
           />
           <label>
             Answer text <span className="optional-label">optional</span>
