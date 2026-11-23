@@ -16,6 +16,7 @@ type Props = {
   onAuthEmailChange: (email: string) => void;
   onAuthPasswordChange: (password: string) => void;
   onSubmitAuth: (event: React.FormEvent<HTMLFormElement>) => void;
+  onGoogleSignIn: () => void;
   onToggleAuthMode: () => void;
   onSignOut: () => void;
   onImportLocalSessions: () => void;
@@ -38,6 +39,7 @@ export default function AccountPanel({
   onAuthEmailChange,
   onAuthPasswordChange,
   onSubmitAuth,
+  onGoogleSignIn,
   onToggleAuthMode,
   onSignOut,
   onImportLocalSessions,
@@ -117,63 +119,24 @@ export default function AccountPanel({
       ) : (
         <>
           <p className="account-note">
-            Sign in to back up completed sessions and access them on your other
-            devices. You can still practice offline.
+            Sign in with Google to use Measure. Your account keeps your
+            sessions, question cards, fact cards and related images associated
+            with you across devices. Google Drive file access is requested
+            separately when image backup is enabled.
           </p>
-          <form className="auth-form" onSubmit={onSubmitAuth}>
-            <label>
-              Email
-              <input
-                type="email"
-                autoComplete="email"
-                value={authEmail}
-                onChange={(event) => onAuthEmailChange(event.target.value)}
-                required
-              />
-            </label>
-            <label>
-              Password
-              <input
-                type="password"
-                autoComplete={
-                  authMode === "sign_up" ? "new-password" : "current-password"
-                }
-                minLength={8}
-                value={authPassword}
-                onChange={(event) => onAuthPasswordChange(event.target.value)}
-                required
-              />
-            </label>
-            <button
-              className="account-action-button"
-              type="submit"
-              disabled={isSubmittingAuth}
-            >
-              {isSubmittingAuth
-                ? "Please wait…"
-                : authMode === "sign_in"
-                  ? "Sign in"
-                  : "Create account"}
-            </button>
-            <button
-              className="account-text-button"
-              type="button"
-              onClick={onToggleAuthMode}
-            >
-              {authMode === "sign_in"
-                ? "New here? Create an account"
-                : "Already have an account? Sign in"}
-            </button>
-          </form>
+          <button
+            className="account-action-button"
+            type="button"
+            onClick={onGoogleSignIn}
+            disabled={isSubmittingAuth}
+          >
+            {isSubmittingAuth ? "Redirecting to Google…" : "Continue with Google"}
+          </button>
           {authMessage && (
-            <p className="account-message" role="status">
-              {authMessage}
-            </p>
+            <p className="account-message" role="status">{authMessage}</p>
           )}
           {authError && (
-            <p className="database-error" role="alert">
-              {authError}
-            </p>
+            <p className="database-error" role="alert">{authError}</p>
           )}
         </>
       )}
