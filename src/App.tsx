@@ -384,7 +384,8 @@ function App() {
     });
   }, [authUser]);
 
-  async function performSync(user: User) {
+  async function performSync(user: User, afterSessionSubmission = false) {
+    if (session?.phase === "feedback" && !afterSessionSubmission) return;
     if (syncInProgress.current) return;
     if (!navigator.onLine) {
       setSyncStatus("offline");
@@ -1347,7 +1348,7 @@ function App() {
       }
       await queueImagesForUpload(Array.from(finalizedImageIds));
       setSession({ ...session, phase: "summary", record });
-      if (authUser) void performSync(authUser);
+      if (authUser) void performSync(authUser, true);
     } catch (error) {
       setSaveError(
         error instanceof Error
