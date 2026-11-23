@@ -11,6 +11,7 @@ import type {
   FactReviewRecord,
   QuestionCard,
   QuestionCardInput,
+  QuestionDifficulty,
   QuestionFactLink,
 } from "./features/cards/types";
 import {
@@ -959,10 +960,10 @@ function App() {
       ),
       promptText: card.promptText,
       promptImageId: card.promptImageId,
-      smarterApproachText: input.solutionText,
-      smarterApproachImageId: input.solutionImageId,
-      solutionText: card.solutionText,
-      solutionImageId: card.solutionImageId,
+      solutionText: input.solutionText,
+      solutionImageId: input.solutionImageId,
+      smarterApproachText: card.smarterApproachText,
+      smarterApproachImageId: card.smarterApproachImageId,
       keyInsight: card.keyInsight,
     });
     updateFeedbackForQuestion(questionNumber, (current) => ({
@@ -1004,6 +1005,30 @@ function App() {
       ...current,
       solutionSaved: true,
     }));
+    await refreshCardData();
+    if (authUser) void performSync(authUser);
+  }
+
+  async function saveQuestionDifficulty(questionNumber: number, difficulty: QuestionDifficulty) {
+    if (!session || session.sessionKind !== "practice") throw new Error("Question difficulty can only be set during practice feedback.");
+    const feedback = session.feedback[questionNumber];
+    if (!feedback?.questionId) throw new Error("Save the question before assigning its difficulty.");
+    const card = questionCards.find((item) => item.id === feedback.questionId);
+    if (!card) throw new Error("The saved question could not be found.");
+    await updateQuestionCard(card, {
+      subjectId: card.subjectId,
+      chapterId: card.chapterId,
+      topicIds: Array.from(new Set([...card.topicIds, ...feedback.topics.map((topic) => topic.id)])),
+      promptText: card.promptText,
+      promptImageId: card.promptImageId,
+      difficulty,
+      solutionText: card.solutionText,
+      solutionImageId: card.solutionImageId,
+      smarterApproachText: card.smarterApproachText,
+      smarterApproachImageId: card.smarterApproachImageId,
+      keyInsight: card.keyInsight,
+    });
+    updateFeedbackForQuestion(questionNumber, (current) => ({ ...current, difficulty }));
     await refreshCardData();
     if (authUser) void performSync(authUser);
   }
