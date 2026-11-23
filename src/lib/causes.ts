@@ -1,10 +1,10 @@
 export const CAUSE_OPTIONS = [
   { value: "didnt_understand", label: "Didn't understand the question" },
-  { value: "stuck_no_approach", label: "Stuck, no approach" },
-  { value: "slip", label: "Slip" },
-  { value: "missing_fact", label: "Missing fact or formula" },
-  { value: "wrong_concept", label: "Wrong concept used" },
-  { value: "not_sure", label: "Not sure" },
+  { value: "stuck_no_approach", label: "Couldn’t identify an approach" },
+  { value: "slip", label: "Calculation or execution slip" },
+  { value: "missing_fact", label: "Forgotten fact or formula" },
+  { value: "wrong_concept", label: "Conceptual misunderstanding" },
+  { value: "not_sure", label: "Other / unsure" },
 ] as const;
 
 export const SLIP_SUBTYPE_OPTIONS = [
