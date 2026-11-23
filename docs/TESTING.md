@@ -1,83 +1,66 @@
 # Manual test checklist
 
-## Phase 1a: Attempts and causes
+Run the automated checks first: `npm test` and `npm run build`. The GitHub Actions workflow also runs tests, type-checking, and a production build on each branch update.
 
-1. Run `supabase/migrations/20261110194500_attempts.sql` after the existing
-   session migrations. Sign in on the app and confirm cloud sync still loads
-   prior sessions.
-2. Start a session and time at least five questions. In feedback:
-   - Save is disabled until every timed question has a result.
-   - For each non-right result, choose one cause.
-   - `Missing fact or formula` and `Wrong concept used` require at least one
-     topic; other causes allow topics to be empty.
-   - `Slip` offers optional subtypes.
-   - Changing a question to Right clears its cause, subtype, and topics.
-3. Save and confirm the summary retains the existing result totals and shows a
-   breakdown by cause.
-4. In browser developer tools, inspect the local IndexedDB `jee-practice`
-   database. Confirm one `attempts` row exists per timed question, including
-   the correct result, cause, subtype, topic IDs, and time. Confirm question
-   numbers are not stored in attempt rows.
-5. Sign out or go offline before saving another session. Confirm session and
-   attempt rows are saved locally, then sign in/go online and use **Sync now**.
-   Repeat **Sync now** and confirm no duplicate attempts appear on the device
-   or in Supabase.
-6. Import existing device-only sessions. Confirm they sync without generated
-   attempts and previously synced sessions remain visible.
+## 1. Account and local session
 
-## Phase 1b: Cards and links
+1. Confirm the app requires Google sign-in. Sign in, refresh, and confirm the Supabase session is restored. Sign out and confirm the app returns to the sign-in screen.
+2. Start a practice session with a subject, chapter, duration, and starting question number. Confirm topic selection is not part of session setup.
+3. Start/stop question timers, skip a question, refresh during an active session, and resume it. Confirm the question number and elapsed times survive reload.
+4. Let the global session timer reach zero. Confirm the session ends at its exact end timestamp and moves directly to feedback without overtime.
+5. Leave an inactivity warning unanswered. Confirm it remains a warning and does not automatically terminate the session.
 
-1. Apply `supabase/migrations/20261110201500_cards.sql` after the attempts
-   migration. Confirm the new tables show RLS enabled in Supabase.
-2. From **Cards**, create a question with prompt text and a key insight but no
-   solution; verify it saves. Try with neither solution nor insight and verify
-   it is rejected. Create a fact card and verify both prompt and answer are
-   required.
-3. Create a fact card linked to a question, then open both details and confirm
-   the link appears in both directions. Unlink and soft-delete cards; verify
-   they leave the active list.
-4. From feedback, mark an attempt `missing_fact` or `wrong_concept`, add a
-   topic, save a question card and then add a fact card. Verify the fact links
-   automatically to that question, and saving the session adds the question ID
-   to its attempt without saving a question number.
-5. Create or find a similar question from feedback. Choose **Same one** and
-   confirm no duplicate is created, the attempt links to the existing card, and
-   its `timesSeen` value increases.
-6. With an account, sync cards and links. Press **Sync now** twice and confirm
-   no duplicates. On another device, pull and check the same cards, links, and
-   soft-deleted state.
+## 2. Normal-practice feedback
 
-## Practice feedback and local images
+Test each of the five outcomes separately:
 
-1. In a practice session, stop a question at one minute or less and mark it
-   right. Confirm there is no smarter-approach prompt.
-2. Stop another question after one minute and mark it right. Confirm the
-   app nudges you to look for a shorter approach:
-   - Reflection: "You spent mm:ss on this question. Did you find one worth saving?"
-   - **Not this time** immediately completes feedback for this question without cards.
-   - **Yes, save my approach** strictly asks for one task at a time:
-     - **Step 1 of 3: Question photo:** upload a clear photo of the question.
-     - **Step 2 of 3: Attach topics:** search and select syllabus topics, with a small visual preview of the uploaded question.
-     - **Step 3 of 3: Smarter approach:** upload a photo of the shorter method and optional note.
-   - Back navigation returns to the prior step without losing progress.
-3. Mark a question wrong or unsolved. Confirm the flow moves strictly one task at a time:
-   - **Step 1: Question photo:** upload a photo of the question (or pick "Use existing" if duplicate).
-   - **Step 2: Attach topics:** search and select syllabus topics, with a small visual preview of the uploaded question.
-   - **Step 3: Solution photo:** upload a photo of the textbook/correct solution (or skip if not available yet).
-   - **Step 4: Root cause:** select one of the six root causes.
-   - **Step 5 (conditional):**
-     - If `slip`: pick slip subtype (calculation, sign, misread, marking, units).
-     - If `missing_fact` or `wrong_concept`: memory cue screen offering to create a fact card, link an existing one, or skip.
-     - If other causes: finishes immediately without extra screens.
-   - Confirm back navigation works across all steps.
-4. Confirm feedback handles one question at a time, step changes slide in the
-   chosen direction, progress is clear, and Next is disabled until the current
-   question is complete.
-5. Capture a question and solution photo from camera and gallery. Confirm
-   each is compressed, survives a reload, and appears in card detail.
-6. Confirm the Cards screen cannot create a new question card. Existing
-   question cards remain editable. A revision-session feedback flow must never
-   offer new-question creation.
-7. Photos currently stay local to the device. Confirm synced cards on another
-   device show a clear missing-photo notice rather than a broken image; Drive
-   upload/download is not enabled yet.
+1. **Right and fast:** records result/time, creates no question card, and advances.
+2. **Right but slow:** asks whether a faster/better method was found. No means no card. Yes captures, in order: question image, faster method (text/images/both), intrinsic difficulty, then topic attribution. The faster method must be stored as the new card's solution.
+3. **Wrong:** asks for exactly one primary cause first, then requires a question image, a solution (text, one or more ordered images, or both), intrinsic difficulty, and topic attribution. Forgotten fact/formula additionally requires linking or creating a fact card.
+4. **Couldn't solve:** follows the same required capture sequence as Wrong, but does not offer calculation/execution slip as a cause.
+5. **Wrong question:** records result/time, creates no question card, asks for no cause, and contributes to neither accuracy nor topic-weakness signals.
+
+Also verify:
+- The question label is optional; the question image is mandatory.
+- A solution can be text-only, image-only, or text plus multiple ordered images.
+- Easy/Medium/Hard is mandatory for each new question card and cannot be changed after it is saved.
+- The searchable topic picker appears in the individual feedback flow, not session setup.
+- Back navigation preserves entered data and returns to the correct previous step.
+- A forgotten fact/formula cannot be bypassed; feedback cannot complete until a fact card is linked or created.
+- Only one primary cause is stored. A slip subtype is optional detail, not another primary cause.
+
+## 3. Fact cards
+
+1. Create a fact card with text-only front and image-only back.
+2. Create another with image-only front and text-only back.
+3. Confirm each side rejects being completely empty.
+4. Create and link a fact card from a Forgotten fact/formula question. Confirm the link appears from both card details.
+5. Link an existing fact card and confirm it satisfies the dependency. Try to finish without resolving the dependency and confirm the app blocks completion.
+
+## 4. Session summary
+
+1. Confirm the summary shows total timed questions, Right and fast, Right but slow, Wrong, Couldn't solve, Wrong question, active time, average time per question, and accuracy.
+2. Confirm question-card and linked/created fact-card counts are correct.
+3. Confirm **View question details** is collapsed by default and expands to show each question's result, time, cause, topics, intrinsic difficulty, and linked fact count where applicable.
+4. Confirm Wrong question is included in total timed questions but excluded from accuracy and weakness signals.
+
+## 5. Local persistence, cloud sync, and images
+
+1. In browser developer tools, inspect the IndexedDB `jee-practice` database. Confirm sessions, attempts, question cards, fact cards, links, image metadata, and image blobs persist after reload.
+2. Confirm each signed-in user's session/card/link/image metadata records are associated with the authenticated Supabase user ID.
+3. Apply these new Supabase migrations in timestamp order after the existing migrations:
+   - `20261123120000_wrong_question_attempts.sql`
+   - `20261123130000_question_difficulty.sql`
+   - `20261123140000_question_solution_image_list.sql`
+4. Confirm Google Drive API is enabled in the Google Cloud project and the OAuth web client has `http://localhost:5173` and the production app origin under Authorized JavaScript origins. `.env.local` must contain `VITE_GOOGLE_CLIENT_ID` using that web client ID. Do not put the client secret in frontend environment variables.
+5. Select a photo. If Drive access has not been granted, use **Connect Google Drive** / **Reconnect Google Drive**, grant the `drive.file` permission, and confirm the image status changes to Uploaded.
+6. Confirm image metadata syncs to Supabase after upload and contains the Drive remote ID. Confirm the card's image reference survives reload.
+7. Test with multiple solution images. Confirm their order is preserved after reload and cloud sync.
+8. Test offline: create feedback and cards while offline, then reconnect. Confirm local records remain intact and sync without duplicates.
+9. Sign in on another device/browser and confirm cards, fact links, and images can be retrieved. Do not treat a card record syncing as proof that its image bytes and Drive metadata also synced.
+
+## 6. Session commit integrity
+
+1. Attempt to save a session with a timed question missing its result, cause, question card, solution, difficulty, required topic, or forgotten-fact link. Confirm the session is not committed.
+2. After all required feedback is complete, save the session and confirm exactly one attempt record exists per timed question.
+3. Repeat sync and confirm no duplicate sessions, attempts, cards, links, or image metadata are created.
