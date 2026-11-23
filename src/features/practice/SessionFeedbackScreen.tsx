@@ -192,6 +192,10 @@ export default function SessionFeedbackScreen({
   const [slideDirection, setSlideDirection] = useState<"forward" | "back">(
     "forward",
   );
+  useEffect(() => {
+    setShowFactForm(false);
+    setActionError(null);
+  }, [currentIndex]);
   const chapter = getChapter(session.subjectId, session.chapterId);
   const questionNumbers = useMemo(
     () =>
