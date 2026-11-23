@@ -340,7 +340,7 @@ export default function SessionFeedbackScreen({
         promptText,
         promptImageId,
       });
-      moveToStep(slowRight ? "approach" : "solution");
+      moveToStep(slowRight ? "topics" : "solution");
     } catch (error) {
       showError(error, "Could not save this question.");
     }
