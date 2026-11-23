@@ -1518,6 +1518,9 @@ function App() {
       <SessionSummaryScreen
         record={session.record}
         feedback={session.feedback}
+        questionTimesMs={session.questionTimesMs}
+        questionCards={questionCards}
+        questionFactLinks={questionFactLinks}
         syncStatus={syncStatus}
         onNewSession={() => void startNewSession()}
       />
