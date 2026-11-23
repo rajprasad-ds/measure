@@ -97,6 +97,21 @@ describe("slow-right feedback flow", () => {
   });
 
 
+  it("requires solution capture and a linked fact for forgotten facts", () => {
+    const missingFact: QuestionFeedback = {
+      result: "wrong",
+      cause: "missing_fact",
+      slipSubtype: null,
+      topics: [{ id: "t-1", name: "Topic 1" }],
+      questionId: "q-1",
+      solutionSaved: true,
+    };
+    expect(getInitialFeedbackStep(missingFact, false, "practice", 0)).toBe("fact");
+    expect(getInitialFeedbackStep(missingFact, false, "practice", 1)).toBe("complete");
+    expect(canCompleteQuestionFeedback(missingFact, [], 30_000, "practice", 0)).toBe(false);
+    expect(canCompleteQuestionFeedback(missingFact, [], 30_000, "practice", 1)).toBe(true);
+    expect(canCompleteQuestionFeedback({ ...missingFact, solutionSaved: false }, [], 30_000, "practice", 1)).toBe(false);
+  });
   it("completes a wrong-question result without a card or diagnostic cause", () => {
     expect(
       getStepAfterResult("wrong_question", false, false, "practice"),
