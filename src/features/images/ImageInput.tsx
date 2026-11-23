@@ -3,6 +3,7 @@ import {
   getImageRecord,
   getLocalImageBlob,
   markImageFailed,
+  resetImageUpload,
   saveImageFile,
 } from "./imageRepository";
 import {
@@ -128,6 +129,7 @@ export default function ImageInput({
     if (!imageId || !record) return;
     setError(null);
     try {
+      await resetImageUpload(imageId);
       await processUploadQueue();
     } catch (queueError) {
       const message =
@@ -141,6 +143,7 @@ export default function ImageInput({
 
   async function reconnectDrive() {
     try {
+      if (imageId) await resetImageUpload(imageId);
       await driveImageStore.reconnect();
       await processUploadQueue();
     } catch (reconnectError) {
