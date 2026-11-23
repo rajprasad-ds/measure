@@ -101,6 +101,32 @@ describe("slow-right feedback flow", () => {
     expect(canCompleteQuestionFeedback(invalidQuestion, [], 45_000)).toBe(true);
   });
 
+  it("recognizes staged question and fact drafts without persisted card IDs", () => {
+    const stagedWrong: QuestionFeedback = {
+      result: "wrong",
+      cause: "missing_fact",
+      slipSubtype: null,
+      topics: [{ id: "t-1", name: "Topic 1" }],
+      questionDraft: { promptImageId: "local-question-image" },
+      solutionSaved: true,
+      difficulty: "medium",
+    };
+    expect(getInitialFeedbackStep(stagedWrong, false, "practice", 0)).toBe("fact");
+    expect(canCompleteQuestionFeedback(stagedWrong, [], 30_000, "practice", 0)).toBe(false);
+    expect(canCompleteQuestionFeedback(
+      { ...stagedWrong, factDraft: { kind: "formula", promptText: "Front", contentText: "Back" } },
+      [],
+      30_000,
+      "practice",
+      1,
+    )).toBe(true);
+    expect(getInitialFeedbackStep(
+      { ...right, smarterApproach: "found", questionDraft: { promptImageId: "local-question-image" } },
+      true,
+      "practice",
+    )).toBe("approach");
+  });
+
   it("uses a strict one-minute threshold", () => {
     expect(isSlowRightAttempt("right", SMARTER_APPROACH_THRESHOLD_MS)).toBe(false);
     expect(isSlowRightAttempt("right", SMARTER_APPROACH_THRESHOLD_MS + 1)).toBe(true);
