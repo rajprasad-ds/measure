@@ -17,41 +17,12 @@ const right: QuestionFeedback = {
 };
 
 describe("slow-right feedback flow", () => {
-  it("routes a slow correct answer through reflection before capturing anything", () => {
-    expect(
-      getStepAfterResult(
-        "right",
-        true,
-        false,
-        "practice",
-      ),
-    ).toBe("reflection");
-    expect(
-      getInitialFeedbackStep(
-        { ...right, smarterApproach: "found" },
-        true,
-        "practice",
-      ),
-    ).toBe("question");
-    expect(
-      getInitialFeedbackStep(
-        { ...right, smarterApproach: "found", questionId: "q-1" },
-        true,
-        "practice",
-      ),
-    ).toBe("topics");
-    expect(
-      getInitialFeedbackStep(
-        {
-          ...right,
-          smarterApproach: "found",
-          questionId: "q-1",
-          topics: [{ id: "t-1", name: "Topic 1" }],
-        },
-        true,
-        "practice",
-      ),
-    ).toBe("approach");
+  it("routes a slow correct answer through question, method, difficulty, then topics", () => {
+    expect(getStepAfterResult("right", true, false, "practice")).toBe("reflection");
+    expect(getInitialFeedbackStep({ ...right, smarterApproach: "found" }, true, "practice")).toBe("question");
+    expect(getInitialFeedbackStep({ ...right, smarterApproach: "found", questionId: "q-1" }, true, "practice")).toBe("approach");
+    expect(getInitialFeedbackStep({ ...right, smarterApproach: "found", questionId: "q-1", smarterApproachSaved: true }, true, "practice")).toBe("difficulty");
+    expect(getInitialFeedbackStep({ ...right, smarterApproach: "found", questionId: "q-1", smarterApproachSaved: true, difficulty: "medium" }, true, "practice")).toBe("topics");
   });
 
   it("routes failed answers through cause, question, solution, and topics", () => {
