@@ -711,7 +711,7 @@ function App() {
           ...(result !== "right" && !current.attemptId
             ? { attemptId: globalThis.crypto.randomUUID() }
             : {}),
-          ...(result === "right"
+          ...(result === "right" || result === "wrong_question"
             ? { cause: null, slipSubtype: null, topics: [] }
             : {}),
         },
@@ -1150,7 +1150,7 @@ function App() {
       { topic: string; questionCount: number }
     >();
     attempts.forEach((attempt, index) => {
-      if (attempt.result === "right") return;
+      if (attempt.result === "right" || attempt.result === "wrong_question") return;
       const feedback = session.feedback[timedQuestions[index].questionNumber];
       feedback.topics.forEach((topic) => {
         const current = topicCounts.get(topic.id);
