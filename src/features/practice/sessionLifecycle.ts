@@ -7,13 +7,11 @@ import type {
 export type InactivityLimits = {
   runningQuestionMs: number;
   stoppedSessionMs: number;
-  warningResponseMs: number;
 };
 
 export const INACTIVITY_LIMITS: InactivityLimits = {
   runningQuestionMs: 8 * 60_000,
   stoppedSessionMs: 10 * 60_000,
-  warningResponseMs: 60_000,
 };
 
 export type InactivityPrompt = {
@@ -82,7 +80,6 @@ export function finishSessionAt(
 export function recoverSessionSnapshot(
   snapshot: ActiveSessionSnapshot,
   now: number,
-  warningResponseMs = INACTIVITY_LIMITS.warningResponseMs,
 ): ActiveSessionSnapshot {
   const endedAt = snapshot.session.endsAt;
   if (
@@ -92,21 +89,6 @@ export function recoverSessionSnapshot(
     return {
       ...snapshot,
       session: finishSessionAt(snapshot.session, endedAt),
-      pendingWarning: null,
-      savedAt: now,
-    };
-  }
-
-  if (
-    snapshot.pendingWarning &&
-    now >= snapshot.pendingWarning.startedAt + warningResponseMs
-  ) {
-    return {
-      ...snapshot,
-      session: finishSessionAt(
-        snapshot.session,
-        snapshot.pendingWarning.startedAt + warningResponseMs,
-      ),
       pendingWarning: null,
       savedAt: now,
     };
