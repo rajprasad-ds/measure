@@ -987,28 +987,33 @@ export default function SessionFeedbackScreen({
                     )}
 
                     <div className="fact-step-options">
-                      <CardPicker
-                        label="Find an existing fact card"
-                        options={relatedFacts.map((fact) => ({
-                          id: fact.id,
-                          label: fact.promptText || fact.contentText || "Photo fact card",
-                          detail: [
-                            fact.kind,
-                            fact.chapterId === session.chapterId ? "Current chapter" : fact.chapterId,
-                          ].join(" · "),
-                        }))}
-                        placeholder="Search all your fact cards"
-                        onSelect={(option) => {
-                          const fact = facts.find((item) => item.id === option.id);
-                          if (fact) void useFact(fact);
-                        }}
-                      />
+                      <div className="fact-existing-choice">
+                        <h4>Link an existing fact</h4>
+                        <p>Search your saved fact cards, including cards from other chapters.</p>
+                        <CardPicker
+                          label="Search fact cards"
+                          options={relatedFacts.map((fact) => ({
+                            id: fact.id,
+                            label: fact.promptText || fact.contentText || "Photo fact card",
+                            detail: [
+                              fact.kind,
+                              fact.chapterId === session.chapterId ? "Current chapter" : fact.chapterId,
+                            ].join(" · "),
+                          }))}
+                          placeholder="Type a formula, fact, or keyword"
+                          onSelect={(option) => {
+                            const fact = facts.find((item) => item.id === option.id);
+                            if (fact) void useFact(fact);
+                          }}
+                        />
+                      </div>
                       <button
-                        className="account-action-button"
+                        className="account-secondary-button"
                         type="button"
+                        aria-expanded={showFactForm}
                         onClick={() => setShowFactForm((visible) => !visible)}
                       >
-                        {showFactForm ? "Close new fact form" : "Create a new fact card"}
+                        {showFactForm ? "Cancel creating a fact" : "Or create a new fact card"}
                       </button>
                     </div>
 
