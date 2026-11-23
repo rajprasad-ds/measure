@@ -54,13 +54,13 @@ describe("slow-right feedback flow", () => {
     ).toBe("approach");
   });
 
-  it("routes wrong answers step by step from question photo to topics to solution to cause", () => {
+  it("routes failed answers through cause, question, solution, and topics", () => {
     expect(
       getStepAfterResult("wrong", false, false, "practice"),
-    ).toBe("question");
+    ).toBe("cause");
     expect(
-      getStepAfterResult("wrong", false, true, "practice"),
-    ).toBe("topics");
+      getStepAfterResult("couldnt_solve", false, false, "practice"),
+    ).toBe("cause");
     expect(
       getInitialFeedbackStep(
         {
@@ -88,8 +88,8 @@ describe("slow-right feedback flow", () => {
         "practice",
       ),
     ).toBe("cause");
-    expect(getStepAfterCause("missing_fact", 0)).toBe("topics");
-    expect(getStepAfterCause("missing_fact", 1)).toBe("fact");
+    expect(getStepAfterCause("missing_fact", 0)).toBe("question");
+    expect(getStepAfterCause("missing_fact", 1)).toBe("question");
     expect(getStepAfterCause("slip", 0)).toBe("slip");
     expect(getStepAfterCause("stuck_no_approach", 0)).toBe("complete");
     expect(getStepAfterCause("didnt_understand", 0)).toBe("complete");
