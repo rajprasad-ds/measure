@@ -24,6 +24,7 @@ import type {
   QuestionCard,
   QuestionCardInput,
   QuestionFactLink,
+  QuestionDifficulty,
 } from "../cards/types";
 
 import CardPicker from "../cards/CardPicker";
@@ -72,6 +73,7 @@ type Props = {
     questionNumber: number,
     input: Pick<QuestionCardInput, "solutionText" | "solutionImageId">,
   ) => Promise<void>;
+  onSaveDifficulty: (questionNumber: number, difficulty: QuestionDifficulty) => Promise<void>;
   onCreateFactCard: (
     questionNumber: number,
     input: Pick<
@@ -108,6 +110,7 @@ function getFallbackPreviousStep(
     return "result";
   }
   if (step === "solution") return "question";
+  if (step === "difficulty") return slowRight ? "approach" : "solution";
   if (step === "topics") return slowRight ? "approach" : "solution";
   if (step === "approach") return "question";
   if (step === "cause") return "result";
@@ -171,6 +174,7 @@ export default function SessionFeedbackScreen({
   onCreateQuestionCard,
   onSaveSmarterApproach,
   onSaveSolution,
+  onSaveDifficulty,
   onCreateFactCard,
   onUseFactCard,
   onSave,
@@ -364,7 +368,7 @@ export default function SessionFeedbackScreen({
         solutionText,
         solutionImageId,
       });
-      moveToStep("complete");
+      moveToStep("difficulty");
     } catch (error) {
       showError(error, "Could not save this approach.");
     }
@@ -389,9 +393,20 @@ export default function SessionFeedbackScreen({
         solutionText,
         solutionImageId,
       });
-      moveToStep("topics");
+      moveToStep("difficulty");
     } catch (error) {
       showError(error, "Could not save the solution.");
+    }
+  }
+
+  async function saveDifficulty(difficulty: QuestionDifficulty) {
+    if (!questionNumber) return;
+    setActionError(null);
+    try {
+      await onSaveDifficulty(questionNumber, difficulty);
+      moveToStep(slowRight ? "complete" : "topics");
+    } catch (error) {
+      showError(error, "Could not save question difficulty.");
     }
   }
 
