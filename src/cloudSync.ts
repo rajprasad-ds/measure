@@ -69,6 +69,7 @@ type CloudQuestion = {
   prompt_image_id: string | null;
   solution_text: string | null;
   solution_image_id: string | null;
+  solution_image_ids: string[];
   smarter_approach_text: string | null;
   smarter_approach_image_id: string | null;
   key_insight: string | null;
@@ -326,6 +327,7 @@ function toCloudQuestion(card: QuestionCard) {
     prompt_image_id: card.promptImageId ?? null,
     solution_text: card.solutionText ?? null,
     solution_image_id: card.solutionImageId ?? null,
+    solution_image_ids: card.solutionImageIds ?? (card.solutionImageId ? [card.solutionImageId] : []),
     smarter_approach_text: card.smarterApproachText ?? null,
     smarter_approach_image_id: card.smarterApproachImageId ?? null,
     key_insight: card.keyInsight ?? null,
@@ -353,6 +355,7 @@ function fromCloudQuestion(row: CloudQuestion): QuestionCard {
     ...(row.prompt_image_id ? { promptImageId: row.prompt_image_id } : {}),
     ...(row.solution_text ? { solutionText: row.solution_text } : {}),
     ...(row.solution_image_id ? { solutionImageId: row.solution_image_id } : {}),
+    solutionImageIds: row.solution_image_ids ?? (row.solution_image_id ? [row.solution_image_id] : []),
     ...(row.smarter_approach_text
       ? { smarterApproachText: row.smarter_approach_text }
       : {}),
