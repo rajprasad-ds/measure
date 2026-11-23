@@ -18,8 +18,6 @@ import {
   buildFactCardRecord,
   buildQuestionCardRecord,
   createFactCard,
-  createFactCardAndLink,
-  createQuestionCard,
   linkQuestionAndFact,
   recordQuestionSeen,
   softDeleteFactCard,
@@ -986,30 +984,12 @@ function App() {
     const feedback = session.feedback[questionNumber];
     if (!feedback) throw new Error("The attempt is no longer available.");
 
-    if (!feedback.questionId) {
-      const attemptId = feedback.attemptId ?? globalThis.crypto.randomUUID();
-      const card = await createQuestionCard(
-        {
-          subjectId: session.subjectId,
-          chapterId: session.chapterId,
-          topicIds: feedback.topics.map((topic) => topic.id),
-          ...input,
-          createdFromAttemptId: attemptId,
-        },
-        { userId: authUser?.id },
-      );
-      updateFeedbackForQuestion(questionNumber, (current) => ({
-        ...current,
-        attemptId,
-        questionId: card.id,
-        questionDraft: { ...current.questionDraft, ...input },
-      }));
-      await refreshCardData();
-      return;
-    }
-
+    // Question capture remains a session draft. Replacing its photo or text
+    // therefore never mutates a persisted question card before session save.
+    const attemptId = feedback.attemptId ?? globalThis.crypto.randomUUID();
     updateFeedbackForQuestion(questionNumber, (current) => ({
       ...current,
+      attemptId,
       questionDraft: { ...current.questionDraft, ...input },
     }));
   }
@@ -1097,11 +1077,12 @@ function App() {
       throw new Error("Add text or an image to both sides of the fact card.");
     }
     const feedback = session.feedback[questionNumber];
-    if (!feedback?.questionId) {
-      throw new Error("Save or select the question card before linking a fact card.");
-    }
+    if (!feedback) throw new Error("The attempt is no longer available.");
     const attemptId = feedback.attemptId ?? globalThis.crypto.randomUUID();
-    const card = await createFactCardAndLink(
+
+    // A fact is a first-class card: persist it independently, regardless of
+    // whether this attempt's question is still a draft or already exists.
+    const card = await createFactCard(
       {
         ...input,
         subjectId: session.subjectId,
@@ -1109,7 +1090,6 @@ function App() {
         topicIds: feedback.topics.map((topic) => topic.id),
         createdFromAttemptId: attemptId,
       },
-      feedback.questionId,
       { userId: authUser?.id },
     );
     updateFeedbackForQuestion(questionNumber, (current) => ({
@@ -1118,6 +1098,14 @@ function App() {
       factDraft: undefined,
       linkedFactIds: Array.from(new Set([...(current.linkedFactIds ?? []), card.id])),
     }));
+
+    // Existing questions can be linked now. For a draft question, linkedFactIds
+    // records the intended relationship and saveSession creates it atomically
+    // when it creates the question card.
+    if (feedback.questionId) {
+      await linkQuestionAndFact(feedback.questionId, card.id, { userId: authUser?.id });
+    }
+    await queueImagesForUpload([input.promptImageId, input.contentImageId].filter((id): id is string => Boolean(id)));
     await refreshCardData();
   }
 
