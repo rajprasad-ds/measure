@@ -1058,7 +1058,7 @@ export default function SessionFeedbackScreen({
                         )}
                         <div className="form-button-row">
                           <button className="account-action-button" type="submit">
-                            Save and link fact card
+                            {feedback.questionId ? "Save and link fact card" : "Save fact card; link on session save"}
                           </button>
                           <button
                             className="account-secondary-button"
