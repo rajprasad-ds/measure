@@ -6,12 +6,6 @@ import {
   resetImageUpload,
   saveImageFile,
 } from "./imageRepository";
-import {
-  driveImageStore,
-  isUploadQueueRunning,
-  processUploadQueue,
-  prepareDriveConnection,
-} from "./driveImageStore";
 
 type Props = {
   label: string;
@@ -68,10 +62,6 @@ export default function ImageInput({
   }, [imageId]);
 
   useEffect(() => {
-    void prepareDriveConnection().catch(() => undefined);
-  }, []);
-
-  useEffect(() => {
     refreshRecord();
     // Re-check status every few seconds while an upload is in flight.
     const timer = setInterval(refreshRecord, 3000);
@@ -122,8 +112,6 @@ export default function ImageInput({
       const nextId = await saveImageFile(file, ownerUserId);
       setImageId(nextId);
       onChange?.(nextId);
-      await processUploadQueue();
-      onUploadComplete?.();
     } catch (saveError) {
       setError(
         saveError instanceof Error
@@ -171,6 +159,8 @@ export default function ImageInput({
 
   const statusLabel = (() => {
     switch (record?.status) {
+      case "local":
+        return "Saved on this device";
       case "pending":
         return "Waiting to upload";
       case "uploading":
@@ -200,7 +190,7 @@ export default function ImageInput({
       ) : (
         <p className="image-input-hint">
           Take a photo or choose one. It’s stored offline on this device;
-          uploads to Google Drive in the background.
+          it stays on this device until you submit the session.
         </p>
       )}
       <div className="image-input-actions">
