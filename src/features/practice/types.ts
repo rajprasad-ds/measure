@@ -23,9 +23,10 @@ export type QuestionFeedback = {
   solutionSaved?: boolean;
   attemptId?: string;
   questionId?: string;
-  /** Reversible capture data; permanent cards are created only when the session is submitted. */
+  /** Additional question-card fields captured during feedback and applied on session submission. */
   questionDraft?: Pick<QuestionCardInput, "promptText" | "promptImageId" | "solutionText" | "solutionImageId" | "solutionImageIds" | "difficulty">;
   smarterApproachDraft?: Pick<QuestionCardInput, "solutionText" | "solutionImageId" | "solutionImageIds">;
+  /** Legacy snapshots may still contain a fact draft; new cards are persisted immediately. */
   factDraft?: Pick<FactCardInput, "kind" | "promptText" | "promptImageId" | "contentText" | "contentImageId" | "wrongBelief">;
   linkedFactIds?: string[];
 };
