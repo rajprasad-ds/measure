@@ -322,7 +322,7 @@ export default function FactCardCreator({
             <button
               className="account-action-button"
               type="button"
-              disabled={!promptImageId}
+              disabled={!promptImageId && !promptText.trim()}
               onClick={() => go("answer")}
             >
               Continue →
@@ -363,7 +363,7 @@ export default function FactCardCreator({
             <button
               className="account-action-button"
               type="button"
-              disabled={!contentImageId}
+              disabled={!contentImageId && !contentText.trim()}
               onClick={() =>
                 go(kind === "misconception" ? "belief" : "link")
               }
