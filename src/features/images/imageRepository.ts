@@ -133,3 +133,19 @@ function canvasToJpeg(canvas: HTMLCanvasElement, quality: number) {
     );
   });
 }
+
+export async function queueImagesForUpload(imageIds: string[]): Promise<void> {
+  const ids = Array.from(new Set(imageIds.filter(Boolean)));
+  if (ids.length === 0) return;
+  await database.transaction("rw", database.localImages, async () => {
+    for (const id of ids) {
+      const image = await database.localImages.get(id);
+      if (!image || image.status === "uploaded") continue;
+      await database.localImages.update(id, {
+        status: "pending",
+        syncStatus: "local",
+        lastError: undefined,
+      });
+    }
+  });
+}
