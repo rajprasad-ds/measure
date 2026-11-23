@@ -56,7 +56,7 @@ import { SMARTER_APPROACH_THRESHOLD_MS } from "./features/practice/feedbackFlow"
 import {
   formatStopwatch,
 } from "./features/practice/TimerDisplay";
-import { processUploadQueue } from "./features/images/driveImageStore";
+import { driveImageStore, prepareDriveConnection, processUploadQueue, retryFailedUploads } from "./features/images/driveImageStore";
 import { queueImagesForUpload } from "./features/images/imageRepository";
 import { validateAttempt } from "./lib/causes";
 import type { Cause, SlipSubtype } from "./lib/causes";
@@ -108,6 +108,8 @@ function App() {
     "idle" | "syncing" | "synced" | "offline" | "error"
   >("idle");
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [driveConnectionStatus, setDriveConnectionStatus] = useState<"loading" | "idle" | "connecting" | "connected" | "error">("loading");
+  const [driveConnectionError, setDriveConnectionError] = useState<string | null>(null);
   const [unassignedSessionCount, setUnassignedSessionCount] = useState(0);
   const [unassignedCardCount, setUnassignedCardCount] = useState(0);
   const syncInProgress = useRef(false);
@@ -303,6 +305,19 @@ function App() {
       document.removeEventListener("keydown", markInteraction);
     };
   }, [session?.phase]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void prepareDriveConnection()
+      .then(() => { if (!cancelled) setDriveConnectionStatus("idle"); })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setDriveConnectionStatus("error");
+          setDriveConnectionError(error instanceof Error ? error.message : "Could not load Google Drive authorization.");
+        }
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (!supabase) return;
@@ -542,6 +557,21 @@ function App() {
         error instanceof Error ? error.message : "Google sign-in failed.",
       );
       setIsSubmittingAuth(false);
+    }
+  }
+
+  async function connectGoogleDrive() {
+    if (!authUser || driveConnectionStatus === "connecting") return;
+    setDriveConnectionStatus("connecting");
+    setDriveConnectionError(null);
+    try {
+      await driveImageStore.reconnect();
+      setDriveConnectionStatus("connected");
+      await retryFailedUploads();
+      await performSync(authUser);
+    } catch (error) {
+      setDriveConnectionStatus("error");
+      setDriveConnectionError(error instanceof Error ? error.message : "Could not connect Google Drive.");
     }
   }
 
@@ -1706,6 +1736,9 @@ function App() {
           onSyncNow={() => {
             if (authUser) void performSync(authUser);
           }}
+          driveConnectionStatus={driveConnectionStatus}
+          driveConnectionError={driveConnectionError}
+          onConnectGoogleDrive={() => void connectGoogleDrive()}
         />
 
         <p className="storage-note">
