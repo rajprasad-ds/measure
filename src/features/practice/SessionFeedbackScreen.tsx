@@ -102,31 +102,23 @@ function getFallbackPreviousStep(
 ): FeedbackStep | undefined {
   if (step === "reflection") return "result";
   if (step === "question") {
-    return slowRight && feedback?.smarterApproach === "found"
-      ? "reflection"
-      : "result";
+    if (slowRight && feedback?.smarterApproach === "found") return "reflection";
+    if (feedback?.cause === "slip") return "slip";
+    if (feedback?.cause) return "cause";
+    return "result";
   }
+  if (step === "solution") return "question";
   if (step === "topics") return slowRight ? "approach" : "solution";
   if (step === "approach") return "question";
-  if (step === "solution") return "question";
-  if (step === "cause") {
-    return feedback?.result !== "right" ? "solution" : "topics";
-  }
+  if (step === "cause") return "result";
   if (step === "slip") return "cause";
-  if (step === "fact") return "cause";
+  if (step === "fact") return "topics";
   if (step === "complete") {
-    if (slowRight) {
-      return feedback?.smarterApproach === "found" ? "approach" : "reflection";
-    }
-    if (feedback?.result === "right") return "result";
+    if (slowRight) return feedback?.smarterApproach === "found" ? "approach" : "reflection";
+    if (feedback?.result === "right" || feedback?.result === "wrong_question") return "result";
+    if (feedback?.cause === "missing_fact") return "fact";
     if (feedback?.cause === "slip") return "slip";
-    if (
-      feedback?.cause === "missing_fact" ||
-      feedback?.cause === "wrong_concept"
-    ) {
-      return "fact";
-    }
-    return "cause";
+    return "topics";
   }
   return undefined;
 }
