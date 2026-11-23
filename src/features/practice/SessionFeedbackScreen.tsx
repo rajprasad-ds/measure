@@ -143,7 +143,8 @@ function getStepTitle(
       : "Step 2: Attach topics";
   }
   if (step === "approach") return "Step 3 of 3: Smarter approach";
-  if (step === "solution") return "Step 3: Solution photo";
+  if (step === "solution") return "Step 3: Solution";
+  if (step === "difficulty") return slowRight ? "Step 3 of 3: Difficulty" : "Step 4: Difficulty";
   if (step === "cause") {
     return "Step 1: Primary cause";
   }
@@ -846,6 +847,26 @@ export default function SessionFeedbackScreen({
                     </form>
 
                     
+                  </section>
+                )}
+
+                {step === "difficulty" && (
+                  <section className="feedback-step difficulty-step">
+                    <h3>How difficult was this question intrinsically?</h3>
+                    <p>Classify the question itself, not how difficult it felt to you today.</p>
+                    <div className="result-options" role="group" aria-label="Intrinsic question difficulty">
+                      {(["easy", "medium", "hard"] as const).map((difficulty) => (
+                        <button
+                          className={feedback.difficulty === difficulty ? "result-option selected" : "result-option"}
+                          key={difficulty}
+                          type="button"
+                          aria-pressed={feedback.difficulty === difficulty}
+                          onClick={() => void saveDifficulty(difficulty)}
+                        >
+                          {difficulty[0].toUpperCase() + difficulty.slice(1)}
+                        </button>
+                      ))}
+                    </div>
                   </section>
                 )}
 
