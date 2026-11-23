@@ -71,6 +71,7 @@ export default function CardsScreen(props: Props) {
   const [editorSubjectId, setEditorSubjectId] = useState(jeeSyllabus.subjects[0].id);
   const [editorChapterId, setEditorChapterId] = useState("");
   const [editorTopicIds, setEditorTopicIds] = useState<string[]>([]);
+  const [solutionImageCount, setSolutionImageCount] = useState(1);
   const [typeFilter, setTypeFilter] = useState<"all" | "question" | "fact">("all");
 
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +82,7 @@ export default function CardsScreen(props: Props) {
     setEditorSubjectId(card?.subjectId || subjectFilter || jeeSyllabus.subjects[0].id);
     setEditorChapterId(card?.chapterId ?? chapterFilter);
     setEditorTopicIds(card?.topicIds ?? []);
+    setSolutionImageCount(Math.max(1, card?.solutionImageIds?.length ?? (card?.solutionImageId ? 1 : 0)));
   }
 
   const activeQuestions = questions.filter((card) => !card.deletedAt);
@@ -133,6 +135,7 @@ export default function CardsScreen(props: Props) {
     const form = new FormData(event.currentTarget);
     const topicIds = form.getAll("topicIds").map(String);
     const linkedFactId = String(form.get("linkedFactId") ?? "");
+    const solutionImageIds = form.getAll("solutionImageIds").map(String).filter(Boolean);
     const input: QuestionCardInput = {
       subjectId: String(form.get("subjectId")),
       chapterId: String(form.get("chapterId")),
@@ -141,7 +144,8 @@ export default function CardsScreen(props: Props) {
       promptImageId: String(form.get("promptImageId") ?? "") || undefined,
       difficulty: String(form.get("difficulty") ?? "") as QuestionCardInput["difficulty"],
       solutionText: String(form.get("solutionText") ?? ""),
-      solutionImageId: String(form.get("solutionImageId") ?? "") || undefined,
+      solutionImageId: solutionImageIds[0],
+      solutionImageIds,
       smarterApproachText: String(form.get("smarterApproachText") ?? ""),
       smarterApproachImageId: String(form.get("smarterApproachImageId") ?? "") || undefined,
       keyInsight: String(form.get("keyInsight")),
@@ -337,7 +341,7 @@ export default function CardsScreen(props: Props) {
               <>
                 {currentQuestion.difficulty && <p><strong>Intrinsic difficulty:</strong> {currentQuestion.difficulty[0].toUpperCase() + currentQuestion.difficulty.slice(1)}</p>}
                 {currentQuestion.solutionText && <p>{currentQuestion.solutionText}</p>}
-                {currentQuestion.solutionImageId && <CardImage imageId={currentQuestion.solutionImageId} alt="Saved solution" />}
+                {(currentQuestion.solutionImageIds ?? (currentQuestion.solutionImageId ? [currentQuestion.solutionImageId] : [])).map((imageId, index) => <CardImage key={imageId} imageId={imageId} alt={`Saved solution ${index + 1}`} />)}
                 {(currentQuestion.smarterApproachText || currentQuestion.smarterApproachImageId) && (
                   <section className="card-approach">
                     <h3>Smarter approach</h3>
@@ -423,7 +427,7 @@ export default function CardsScreen(props: Props) {
                 <label>Chapter<select name="chapterId" value={editorChapterId} onChange={(e) => { setEditorChapterId(e.target.value); setEditorTopicIds([]); }} required><option value="" disabled>Choose chapter</option>{jeeSyllabus.subjects.find((s) => s.id === editorSubjectId)?.chapters.map((c) => <option value={c.id} key={c.id}>{c.name}</option>)}</select></label>
                 <ImageInput label="Question photo" name="promptImageId" value={editorQuestion?.promptImageId} required />
                 <label>Question label (optional)<textarea name="promptText" rows={3} defaultValue={editorQuestion?.promptText} /></label><label>Intrinsic difficulty<select name="difficulty" defaultValue={editorQuestion?.difficulty ?? ""} required><option value="" disabled>Choose difficulty</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
-                <ImageInput label="Solution photo" name="solutionImageId" value={editorQuestion?.solutionImageId} />
+                {Array.from({ length: solutionImageCount }, (_, index) => <ImageInput key={`editor-solution-${index}`} label={`Solution image ${index + 1}`} name="solutionImageIds" value={editorQuestion?.solutionImageIds?.[index] ?? (index === 0 ? editorQuestion?.solutionImageId : undefined)} />)}<button className="account-secondary-button" type="button" onClick={() => setSolutionImageCount((count) => count + 1)}>Add another solution image</button>
                 <label>Solution or approach <span className="optional-label">optional</span><textarea name="solutionText" rows={4} defaultValue={editorQuestion?.solutionText} /></label>
                 <ImageInput label="Smarter approach photo" name="smarterApproachImageId" value={editorQuestion?.smarterApproachImageId} />
                 <label>Smarter approach note <span className="optional-label">optional</span><textarea name="smarterApproachText" rows={3} defaultValue={editorQuestion?.smarterApproachText} /></label>
