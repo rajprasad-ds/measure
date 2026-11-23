@@ -51,8 +51,8 @@ export function getInitialFeedbackStep(
 export function getStepAfterResult(
   result: QuestionResult,
   slowRight: boolean,
-  hasQuestion: boolean,
-  sessionKind: "practice" | "question_revision",
+  _hasQuestion: boolean,
+  _sessionKind: "practice" | "question_revision",
 ): FeedbackStep {
   if (result === "right") return slowRight ? "reflection" : "complete";
   if (result === "wrong_question") return "complete";
@@ -60,7 +60,7 @@ export function getStepAfterResult(
 }
 
 export function getStepAfterCause(
-  cause: Cause,
+  _cause: Cause,
   _topicCount: number,
 ): FeedbackStep {
   return "question";
