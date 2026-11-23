@@ -64,6 +64,7 @@ type CloudQuestion = {
   subject_id: string;
   chapter_id: string;
   topic_ids: string[];
+  difficulty: "easy" | "medium" | "hard" | null;
   prompt_text: string | null;
   prompt_image_id: string | null;
   solution_text: string | null;
@@ -320,6 +321,7 @@ function toCloudQuestion(card: QuestionCard) {
     subject_id: card.subjectId,
     chapter_id: card.chapterId,
     topic_ids: card.topicIds,
+    difficulty: card.difficulty ?? null,
     prompt_text: card.promptText,
     prompt_image_id: card.promptImageId ?? null,
     solution_text: card.solutionText ?? null,
@@ -346,6 +348,7 @@ function fromCloudQuestion(row: CloudQuestion): QuestionCard {
     subjectId: row.subject_id,
     chapterId: row.chapter_id,
     topicIds: row.topic_ids,
+    ...(row.difficulty ? { difficulty: row.difficulty } : {}),
     promptText: row.prompt_text ?? "",
     ...(row.prompt_image_id ? { promptImageId: row.prompt_image_id } : {}),
     ...(row.solution_text ? { solutionText: row.solution_text } : {}),
