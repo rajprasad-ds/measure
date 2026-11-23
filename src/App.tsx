@@ -1335,9 +1335,6 @@ function App() {
           <AccountPanel
             configured={supabaseConfigured}
             email={undefined}
-            authMode="sign_in"
-            authEmail=""
-            authPassword=""
             authMessage={authMessage}
             authError={authError}
             isSubmittingAuth={isSubmittingAuth}
@@ -1345,11 +1342,7 @@ function App() {
             syncError={syncError}
             unassignedSessionCount={unassignedSessionCount}
             unassignedCardCount={unassignedCardCount}
-            onAuthEmailChange={() => undefined}
-            onAuthPasswordChange={() => undefined}
-            onSubmitAuth={(event) => event.preventDefault()}
             onGoogleSignIn={() => void signInWithGoogle()}
-            onToggleAuthMode={() => undefined}
             onSignOut={() => undefined}
             onImportLocalSessions={() => undefined}
             onSyncNow={() => undefined}
@@ -1568,11 +1561,7 @@ function App() {
           syncError={syncError}
           unassignedSessionCount={unassignedSessionCount}
           unassignedCardCount={unassignedCardCount}
-          onAuthEmailChange={() => undefined}
-          onAuthPasswordChange={() => undefined}
-          onSubmitAuth={(event) => event.preventDefault()}
           onGoogleSignIn={() => void signInWithGoogle()}
-          onToggleAuthMode={() => undefined}
           onSignOut={() => void signOut()}
           onImportLocalSessions={() => void importLocalSessions()}
           onSyncNow={() => {
