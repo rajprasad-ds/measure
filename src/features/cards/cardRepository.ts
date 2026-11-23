@@ -41,9 +41,6 @@ export async function createQuestionCard(
   const promptText = input.promptText?.trim() ?? "";
   const solutionText = input.solutionText?.trim() ?? "";
   const keyInsight = input.keyInsight?.trim() ?? "";
-  if (!promptText) {
-    throw new Error("Add a short text label for the question.");
-  }
   if (!input.promptImageId) {
     throw new Error("Add a photo of the question to the question bank.");
   }
@@ -84,14 +81,11 @@ export async function createFactCard(
 function buildFactCard(input: FactCardInput, options: UserOptions): FactCard {
   const promptText = input.promptText?.trim() ?? "";
   const contentText = input.contentText?.trim() ?? "";
-  if (!promptText) {
-    throw new Error("Add a short text label for the fact card.");
+  if (!promptText && !input.promptImageId) {
+    throw new Error("Add text or an image for the fact-card front.");
   }
-  if (!input.promptImageId) {
-    throw new Error("Add a photo of the fact-card prompt.");
-  }
-  if (!input.contentImageId) {
-    throw new Error("Add a photo of the fact-card answer.");
+  if (!contentText && !input.contentImageId) {
+    throw new Error("Add text or an image for the fact-card back.");
   }
   validateLocation(input.subjectId, input.chapterId, input.topicIds);
 
@@ -239,9 +233,6 @@ export async function updateQuestionCard(
   const promptText = updates.promptText?.trim() ?? "";
   const solutionText = updates.solutionText?.trim() ?? "";
   const keyInsight = updates.keyInsight?.trim() ?? "";
-  if (!promptText) {
-    throw new Error("Add a short text label for the question.");
-  }
   if (!updates.promptImageId) {
     throw new Error("Add a photo of the question.");
   }
@@ -278,14 +269,11 @@ export async function updateFactCard(
 ): Promise<FactCard> {
   const promptText = updates.promptText?.trim() ?? "";
   const contentText = updates.contentText?.trim() ?? "";
-  if (!promptText) {
-    throw new Error("Add a short text label for the fact card.");
+  if (!promptText && !updates.promptImageId) {
+    throw new Error("Add text or an image for the fact-card front.");
   }
-  if (!updates.promptImageId) {
-    throw new Error("Add a photo of the fact-card prompt.");
-  }
-  if (!updates.contentImageId) {
-    throw new Error("Add a photo of the fact-card answer.");
+  if (!contentText && !updates.contentImageId) {
+    throw new Error("Add text or an image for the fact-card back.");
   }
   validateLocation(updates.subjectId, updates.chapterId, updates.topicIds);
   const updated: FactCard = {
