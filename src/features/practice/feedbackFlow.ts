@@ -32,9 +32,9 @@ export function getInitialFeedbackStep(
     if (!feedback.smarterApproach) return "reflection";
     if (feedback.smarterApproach === "not_found") return "complete";
     if (!feedback.questionId) return "question";
-    if (feedback.topics.length === 0) return "topics";
     if (!feedback.smarterApproachSaved) return "approach";
     if (!feedback.difficulty) return "difficulty";
+    if (feedback.topics.length === 0) return "topics";
     return "complete";
   }
 
