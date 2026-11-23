@@ -62,7 +62,7 @@ type Props = {
       | "solutionText"
       | "solutionImageId"
     >,
-  ) => Promise<QuestionCard>;
+  ) => Promise<void>;
   onUseQuestionCard: (
     questionNumber: number,
     card: QuestionCard,
@@ -87,7 +87,7 @@ type Props = {
       | "contentImageId"
       | "wrongBelief"
     >,
-  ) => Promise<FactCard>;
+  ) => Promise<void>;
   onUseFactCard: (questionNumber: number, card: FactCard) => Promise<void>;
   onSave: () => void;
 };
@@ -211,6 +211,7 @@ export default function SessionFeedbackScreen({
   const questionCard = feedback?.questionId
     ? questions.find((card) => card.id === feedback.questionId)
     : undefined;
+  const hasQuestionCapture = Boolean(questionCard || feedback?.questionDraft?.promptImageId);
   useEffect(() => {
     const existingCount = questionCard?.solutionImageIds?.length ?? (questionCard?.solutionImageId ? 1 : 0);
     setSolutionImageCount(Math.max(1, existingCount));
@@ -285,7 +286,7 @@ export default function SessionFeedbackScreen({
         feedback,
         slowRight,
         session.sessionKind,
-        linkedFacts.length,
+        linkedFacts.length + (feedback?.linkedFactIds?.length ?? 0),
       )
     : "result";
   const previousStep = questionNumber
@@ -365,7 +366,7 @@ export default function SessionFeedbackScreen({
 
   async function submitApproach(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!questionNumber || !questionCard) return;
+    if (!questionNumber || !hasQuestionCapture) return;
     const form = new FormData(event.currentTarget);
     const solutionImageIds = form.getAll("solutionImageIds").map(String).filter(Boolean);
     const solutionText = String(form.get("solutionText") ?? "").trim() || undefined;
