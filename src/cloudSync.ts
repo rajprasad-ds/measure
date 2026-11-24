@@ -672,7 +672,9 @@ async function syncPendingImages(userId: string): Promise<Set<string>> {
       .upsert(batch.map((row) => ({ ...toCloudImage(row), user_id: userId })), {
         onConflict: "id",
       });
-    if (error) throw new Error(`Could not sync images: ${error.message}`);
+    // A metadata-write failure keeps these images unresolved, but must not
+    // prevent independent sessions or cards from syncing in this pass.
+    if (error) continue;
     await Promise.all(
       batch.map((row) =>
         database.localImages.where("id").equals(row.id).modify((current) => {
@@ -683,11 +685,12 @@ async function syncPendingImages(userId: string): Promise<Set<string>> {
   }
   // Report unresolved images to the card-sync stage instead of failing the
   // entire account sync. Sessions and unrelated cards do not depend on Drive.
-  const finalRows = await database.localImages.bulkGet(Array.from(referencedImageIds));
+  const referencedIds = Array.from(referencedImageIds);
+  const finalRows = await database.localImages.bulkGet(referencedIds);
   const unresolvedImageIds = new Set<string>();
   finalRows.forEach((row, index) => {
     if (!row || row.syncStatus !== "synced" || !row.remoteId) {
-      unresolvedImageIds.add(Array.from(referencedImageIds)[index]);
+      unresolvedImageIds.add(referencedIds[index]);
     }
   });
   return unresolvedImageIds;
