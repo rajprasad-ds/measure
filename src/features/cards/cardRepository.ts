@@ -90,7 +90,7 @@ export async function createFactCard(
   await database.factCards.add(card);
   // Images are saved locally before the card is submitted. Explicitly enqueue
   // them only after the card is committed so the Drive worker can discover them.
-  await queueImagesForUpload(factCardImageIds(card));
+  if (card.ownerUserId) await queueImagesForUpload(card.ownerUserId, factCardImageIds(card));
   return card;
 }
 
@@ -319,7 +319,7 @@ export async function updateFactCard(
     syncStatus: card.ownerUserId ? "pending" : "local",
   };
   await database.factCards.put(updated);
-  await queueImagesForUpload(factCardImageIds(updated));
+  if (updated.ownerUserId) await queueImagesForUpload(updated.ownerUserId, factCardImageIds(updated));
   return updated;
 }
 
