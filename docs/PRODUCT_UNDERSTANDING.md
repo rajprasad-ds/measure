@@ -1132,3 +1132,31 @@ In this same round of testing, newly created session records for T1 and T2 remai
 **Status**
 
 This is a newly observed, unresolved account-isolation defect in the local pending-image queue/progress path. The session account-isolation test passed for the newly created T1/T2 sessions in this test, but the pending-photo isolation test failed. No code fix or successful cross-account upload-safety verification is claimed by this entry. Treat this as a blocker for considering two-account image backup reliable or merging the relevant work.
+
+
+## 17.6 Account-scoped photo queue implementation (24 Nov 2026)
+
+The cross-account pending-photo leak has now received a code-level fix on `phase-1b-cards`. The fix is intentionally conservative: it does not delete or reassign any existing photo blobs.
+
+### Changes made
+- Pending/failed/uploading photo queries require an explicit Measure owner ID and return only exact-owner rows.
+- Queueing, retrying, marking uploading, marking failed, and marking uploaded all verify the same owner before mutating a photo row.
+- App pending-photo counts and per-session/fact-card Drive progress now filter images and their related cards/attempts by the active account.
+- Legacy ownerless images are no longer automatically assigned to whichever account happens to sync. Bulk local-session import also leaves image ownership unchanged.
+- A Measure account ID is bound to each in-memory Drive authorization. Uploads require the Drive token to match the owner of the photo queue. If the account changes while a queue is running, the next upload cannot use the newly connected account's token for the previous account's photos.
+- Ownerless legacy photos remain on-device and unresolved rather than being silently uploaded. This preserves data while avoiding unsafe ownership guesses.
+
+### Commits
+- `6f0c1e9` — scope image queue operations to account owner
+- `3da540a` / `39ff09a` / `986eab7` — scope counts/progress and stop automatic ownership assignment
+- `0c57cfc` / `f4c5152` / `08c2bbb` / `61d8c9b` / `613377d` — bind Drive authorization to Measure account and remove remaining legacy image auto-claim
+
+### Verification still required
+This is a code-level correction, not yet a confirmed end-to-end pass. Retest with two fresh test accounts and separate sessions:
+1. T2 creates a session with two photos while Drive is not connected.
+2. Sign out of T2 and sign in to T1. T1 must show zero pending photos from T2, and T1's photo progress must not include T2's attachments.
+3. Sign out of T1 and return to T2. T2 must still show its two pending photos.
+4. Connect Drive only while signed in as T2. Only T2's two photos should upload and become associated with T2's records.
+5. Repeat the account switch while a queue is active if possible; a T2 queue must never use a Drive token authorized for T1.
+
+No automated workflow/status checks were reported for these commits at the time of this update. Do not merge or treat the fix as production-verified until the manual two-account test passes.
