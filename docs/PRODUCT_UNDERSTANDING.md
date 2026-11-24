@@ -1160,3 +1160,18 @@ This is a code-level correction, not yet a confirmed end-to-end pass. Retest wit
 5. Repeat the account switch while a queue is active if possible; a T2 queue must never use a Drive token authorized for T1.
 
 No automated workflow/status checks were reported for these commits at the time of this update. Do not merge or treat the fix as production-verified until the manual two-account test passes.
+
+## 17.7 Independent fact-card creation save failure (24 Nov 2026)
+
+An independent fact-card creation attempt exposed a save-flow bug on `phase-1b-cards`: the card record was committed to IndexedDB, then the image queue call used the old one-argument signature. The queue now requires the Measure owner ID, so the post-save queue step threw after the card had already been created. Because the creator's error was not rendered in its create-mode screen, the user could click Save repeatedly and create duplicate fact-card records while seeing no visible result. The sync list also labelled image-only cards "Untitled fact".
+
+### Changes made
+- Independent and linked fact-card creation now pass the card's exact `ownerUserId` to `queueImagesForUpload`; local-only cards do not attempt account-scoped Drive queueing.
+- Editing a fact card queues its images only under the card's existing owner ID.
+- The fact-card wizard uses a synchronous ref guard in addition to the disabled button to prevent rapid repeated submissions.
+- The "Skip linking and save" action now explicitly skips the selected question instead of relying on asynchronous state updates.
+- Save errors are displayed on the independent creation screen, and stale errors are cleared when a new save begins.
+- Image-only fact cards receive a meaningful "Photo fact card" label in the Sync screen.
+
+### Verification
+Code changes are committed to `phase-1b-cards`. Manual verification is still required: create one independent image-based fact card, confirm exactly one card appears, verify its photos are queued under the signed-in account, and confirm a failed save displays a visible error without creating repeated cards. Existing duplicate records are not automatically deleted by this fix.
