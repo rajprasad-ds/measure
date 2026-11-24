@@ -199,7 +199,7 @@ export async function createFactCardAndLink(
       await linkCardsInTransaction(questionId, card.id, options);
     },
   );
-  await queueImagesForUpload(factCardImageIds(card));
+  if (card.ownerUserId) await queueImagesForUpload(card.ownerUserId, factCardImageIds(card));
   return card;
 }
 
