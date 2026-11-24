@@ -696,7 +696,10 @@ async function syncPendingImages(userId: string): Promise<Set<string>> {
   return unresolvedImageIds;
 }
 
-export async function syncAccountSessions(user: User): Promise<SessionRecord[]> {
+export async function syncAccountSessions(
+  user: User,
+  onSessionProgress?: (record: SessionRecord, status: "syncing" | "synced") => void,
+): Promise<SessionRecord[]> {
   const client = requireSupabase();
   const unresolvedImageIds = await syncPendingImages(user.id);
   await syncPendingCards(user.id, unresolvedImageIds);
@@ -707,6 +710,7 @@ export async function syncAccountSessions(user: User): Promise<SessionRecord[]> 
   );
 
   for (const record of pendingRecords) {
+    onSessionProgress?.(record, "syncing");
     const weakTopics = record.weakTopics.map((topic) => ({
       topic_id: topic.topicId,
       topic_name: topic.topic,
@@ -723,6 +727,7 @@ export async function syncAccountSessions(user: User): Promise<SessionRecord[]> 
       throw new Error(`Could not sync a session: ${error.message}`);
     }
     await database.sessions.update(record.id, { syncStatus: "synced" });
+    onSessionProgress?.({ ...record, syncStatus: "synced" }, "synced");
   }
 
   const allPendingAttempts = await database.attempts
