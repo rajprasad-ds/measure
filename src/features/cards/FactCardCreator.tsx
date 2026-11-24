@@ -211,6 +211,7 @@ export default function FactCardCreator({
               <SearchSelect
                 label="Add topic"
                 value=""
+                showAllOnFocus
                 options={topics
                   .filter((t) => !topicIds.includes(t.id))
                   .map((t) => ({ id: t.id, label: t.name }))}
