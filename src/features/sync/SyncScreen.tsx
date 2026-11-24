@@ -5,7 +5,7 @@ import MainNavigation from "../navigation/MainNavigation";
 type SyncStatus = "idle" | "syncing" | "synced" | "offline" | "error";
 type DriveStatus = "loading" | "idle" | "connecting" | "connected" | "error";
 type SyncPhase = "sessions" | "photos" | "finalizing" | null;
-type PhotoUploadProgress = { completed: number; total: number; currentImageId: string | null };
+type PhotoUploadProgress = { completed: number; total: number; failed: number; currentImageId: string | null };
 
 type Props = {
   email?: string;
@@ -130,13 +130,13 @@ export default function SyncScreen({
             <div className="sync-live-progress-heading">
               <span>{syncPhase === "sessions" ? "Syncing practice data" : syncPhase === "photos" ? "Backing up photos" : "Finishing cloud backup"}</span>
               {syncPhase === "photos" && photoUploadProgress.total > 0 && (
-                <strong>{photoUploadProgress.completed} of {photoUploadProgress.total}</strong>
+                <strong>{photoUploadProgress.completed} processed · {photoUploadProgress.failed} failed</strong>
               )}
             </div>
             {syncPhase === "photos" && photoUploadProgress.total > 0 ? (
               <>
                 <progress value={photoUploadProgress.completed} max={photoUploadProgress.total} />
-                <small>{photoUploadProgress.currentImageId ? "Uploading a photo…" : "Preparing next photo…"}</small>
+                <small>{photoUploadProgress.currentImageId ? "Uploading a photo…" : photoUploadProgress.completed === photoUploadProgress.total ? "Photo queue pass finished." : "Preparing next photo…"}</small>
               </>
             ) : (
               <small>{syncPhase === "sessions" ? "Sessions, cards and their links are being checked and saved." : "Photo references are being added to your backup."}</small>
