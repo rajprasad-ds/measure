@@ -310,7 +310,7 @@ export default function CardsScreen(props: Props) {
           {searchStep === "topic" && (
             <div className="feedback-step">
               <h3>Which topic?</h3>
-              <SearchSelect label="Topic" value={topicFilter} options={searchTopics.map((t) => ({ id: t.id, label: t.name }))} placeholder="Search topics" emptyMessage="Choose a subject or chapter first, or skip this filter." onChange={(id) => { setTopicFilter(id); setSearchDirection("forward"); setSearchStep("keyword"); }} />
+              <SearchSelect label="Topic" value={topicFilter} showAllOnFocus options={searchTopics.map((t) => ({ id: t.id, label: t.name }))} placeholder="Search topics" emptyMessage="Choose a subject or chapter first, or skip this filter." onChange={(id) => { setTopicFilter(id); setSearchDirection("forward"); setSearchStep("keyword"); }} />
               <button className="account-secondary-button" type="button" onClick={() => { setTopicFilter(""); setSearchDirection("back"); setSearchStep("chapter"); }}>← Back</button>
               <button className="account-secondary-button" type="button" onClick={() => { setSearchDirection("forward"); setSearchStep("keyword"); }}>Skip topic →</button>
             </div>
