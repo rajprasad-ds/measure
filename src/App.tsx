@@ -56,7 +56,7 @@ import { SMARTER_APPROACH_THRESHOLD_MS } from "./features/practice/feedbackFlow"
 import {
   formatStopwatch,
 } from "./features/practice/TimerDisplay";
-import { driveImageStore, hasDriveAccessToken, prepareDriveConnection, processUploadQueue, retryFailedUploads } from "./features/images/driveImageStore";
+import { clearDriveAuthorization, driveImageStore, hasDriveAccessToken, prepareDriveConnection, processUploadQueue, retryFailedUploads } from "./features/images/driveImageStore";
 import { queueImagesForUpload } from "./features/images/imageRepository";
 import { validateAttempt } from "./lib/causes";
 import type { Cause, SlipSubtype } from "./lib/causes";
@@ -114,6 +114,8 @@ function App() {
   const [unassignedSessionCount, setUnassignedSessionCount] = useState(0);
   const [unassignedCardCount, setUnassignedCardCount] = useState(0);
   const [pendingPhotoCount, setPendingPhotoCount] = useState(0);
+  const [syncPhase, setSyncPhase] = useState<"sessions" | "photos" | "finalizing" | null>(null);
+  const [photoUploadProgress, setPhotoUploadProgress] = useState({ completed: 0, total: 0, currentImageId: null as string | null });
   const syncInProgress = useRef(false);
   const sessionRef = useRef<ActiveSession | null>(null);
   const recoveryCandidateRef = useRef<ActiveSessionSnapshot | null>(null);
@@ -415,10 +417,31 @@ function App() {
     setSyncStatus("syncing");
     setSyncError(null);
     try {
-      // Upload local photo blobs to Drive first. Only then can their remote IDs
-      // be written to the Supabase images table (remote_id is NOT NULL).
-      await processUploadQueue();
+      // Practice metadata is independent of Google Drive. Sync it first so a
+      // missing/expired Drive token can never block session backup.
+      setSyncPhase("sessions");
       await syncAccountSessions(user);
+
+      // Upload photos only when the user has explicitly connected Drive in
+      // this browser session. A Drive failure is isolated from metadata sync.
+      if (hasDriveAccessToken()) {
+        setSyncPhase("photos");
+        setPhotoUploadProgress({ completed: 0, total: 0, currentImageId: null });
+        try {
+          await processUploadQueue(driveImageStore, setPhotoUploadProgress);
+          setDriveConnectionStatus("connected");
+          // New Drive IDs are now available; register their metadata and allow
+          // dependent cards to sync in this second pass.
+          setSyncPhase("finalizing");
+          await syncAccountSessions(user);
+        } catch (photoError) {
+          setDriveConnectionStatus("error");
+          setDriveConnectionError(
+            photoError instanceof Error ? photoError.message : "Photo backup could not run.",
+          );
+        }
+      }
+
       const localRecords = await database.sessions.toArray();
       setSavedSessions(
         localRecords
@@ -450,7 +473,7 @@ function App() {
       if (pendingQuestions + pendingFacts + pendingLinks + pendingReviews + pendingAttempts > 0) {
         setSyncStatus("error");
         setSyncError(
-          "Your session data is backed up. Some cards or linked records are waiting for their required photos or parent cards, so they will sync when those dependencies are available.",
+          "Your practice sessions are backed up. Some cards are still waiting for their photos or linked records. They will sync when those are available.",
         );
       } else {
         setSyncStatus("synced");
@@ -463,6 +486,7 @@ function App() {
           : "Could not sync sessions. Please try again.",
       );
     } finally {
+      setSyncPhase(null);
       syncInProgress.current = false;
     }
   }
@@ -623,6 +647,9 @@ function App() {
       setAuthError(`Could not sign out: ${error.message}`);
       return;
     }
+    clearDriveAuthorization();
+    setDriveConnectionStatus("idle");
+    setDriveConnectionError(null);
     setAuthUser(null);
     setSavedSessions(
       (await database.sessions.toArray()).filter(
@@ -1639,6 +1666,8 @@ function App() {
         sessions={savedSessions}
         facts={factCards}
         pendingPhotoCount={pendingPhotoCount}
+        syncPhase={syncPhase}
+        photoUploadProgress={photoUploadProgress}
         onBack={() => setActiveTab("practice")}
         onNavigate={navigate}
         onSyncNow={() => { if (authUser) void performSync(authUser); }}
