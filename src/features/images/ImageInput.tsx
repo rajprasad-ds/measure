@@ -195,7 +195,8 @@ export default function ImageInput({
 
   async function reconnectDrive() {
     try {
-      const connection = driveImageStore.reconnect();
+      if (!ownerUserId) throw new Error("Sign in to back up this photo.");
+      const connection = driveImageStore.reconnect(ownerUserId);
       if (!ownerUserId) throw new Error("Sign in to back up this photo.");
       if (imageId) await resetImageUpload(imageId, ownerUserId);
       await connection; await processUploadQueue(ownerUserId); onUploadComplete?.();
