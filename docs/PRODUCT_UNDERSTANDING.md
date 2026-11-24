@@ -761,3 +761,52 @@ This section records decisions made after the 23 November handoff. Where this se
 - Use a clean, restrained visual hierarchy inspired by the supplied design references. Circular progress is a visual summary, not a substitute for clear textual status.
 - Keep the Home entry point and Sync screen concise; put technical breakdowns behind a future detail interaction rather than crowding the primary workflow.
 - These decisions define the intended product experience. They do not assert that the current implementation already supports token refresh/reconnection, durable upload retry, connectivity recovery, or accurate per-item progress; those capabilities must be verified and implemented as needed.
+
+
+### 16.6 Google Drive authorization, account isolation, and a simpler experience (decided 24 November 2026)
+
+**Product concern: Drive integration has become unnecessarily complex and opaque**
+
+- The current experience exposes too many technical actions and states (for example, **Connect Google Drive**, **Reconnect Google Drive**, and separate sync actions) without making it clear what the user actually needs to do.
+- This complexity has grown beyond the original purpose of Drive, which is simply to back up images reliably. The user should not have to understand OAuth tokens, authorization refresh, upload queues, or the distinction between connection and sync to use Measure.
+- Treat this as a product and reliability problem, not merely a button-label problem. Simplify the underlying authorization lifecycle and the interface together.
+- Do not ask the user to reconnect pre-emptively or merely because the app has opened. Ask for action only when a real pending operation requires Drive and the app has established that authorization is missing, expired, revoked, or otherwise unusable.
+
+**One quiet, accurate Drive status; action only when necessary**
+
+- Drive should normally operate in the background. Do not expose separate **Connect**, **Reconnect**, and **Sync now** controls as routine choices.
+- Keep the overall synchronization entry point and Sync screen defined in Section 16.5. Drive authorization is a dependency handled by that workflow, not a second competing workflow.
+- Determine and communicate the actual state accurately. At a minimum distinguish: no Drive work currently needs attention; Drive is ready; upload is waiting for internet; authorization is required; and a genuine Drive error needs attention.
+- If there are no images waiting for backup, do not interrupt the user to authorize Drive.
+- If images are waiting and authorization is already valid, upload without asking the user to reconnect.
+- If authorization is absent, expired, revoked, or fails a real authorization check, explain the specific action needed and provide one connect/re-authorize action. Do not label a valid connection as needing reconnection.
+- A page reload must not be treated as proof that Google authorization has been revoked. The implementation must deliberately restore or re-establish a usable authorization state, or report that authorization is unavailable; it must not infer revocation simply because an in-memory token is absent.
+- Do not show upload work as actively syncing while Drive authorization is unavailable. Preserve the queued work and show a truthful waiting/attention state.
+
+**Strict account isolation between Measure and Drive**
+
+- Google sign-in to Measure and Google Drive file authorization are separate permissions, even when both use Google.
+- Bind each Drive authorization to the authenticated Measure account and verify the Google identity associated with the Drive grant. Never assume that a token belongs to the current Measure user merely because a token exists.
+- On Measure sign-out, clear the active in-memory Drive token and all account-specific Drive authorization state before another account can use the app.
+- On Measure account change, invalidate the previous account's Drive session before loading or syncing data for the new account. Never upload one Measure user's photos to a different user's Drive.
+- If the Drive identity does not match the signed-in Measure identity, block the upload and require the user to resolve the mismatch. Do not silently continue with the previously authorized Drive account.
+- Provide an explicit **Disconnect Google Drive** action for a user who wants to disconnect it. Disconnecting must clear the app's active grant/token and stop queued uploads without deleting locally stored images or committed session data.
+- Distinguish disconnecting Drive inside Measure (clearing the app's active authorization) from revoking Measure's permission in the Google Account security settings. Signing out of Measure is not, by itself, proof that Google's grant has been revoked.
+- Preserve queued images and local committed data through sign-out, account switching, authorization expiry, and disconnection. Resume only after the correct Measure account has a valid matching Drive authorization.
+
+**Required reliability behavior before further Drive testing**
+
+- Missing or unusable Drive authorization must not block synchronization of independent session summaries or other records that do not depend on Drive images.
+- Process cloud/session metadata independently from image uploads. Image-dependent cards and their dependent records may wait for their own image/parent dependencies, but unrelated session data must continue.
+- A Drive authorization failure must be represented as a Drive-specific waiting/attention condition, not as a generic failure that makes all session synchronization appear broken.
+- Account switching, sign-out, refresh/reload, token expiry, revoked consent, offline recovery, and reconnect must be tested. Include a two-Google-account test proving that photos from one Measure account cannot be uploaded to the other account's Drive.
+- Do not ask the user to perform the Step A disconnected-Drive verification until the sync pipeline has been checked to ensure that a missing Drive token cannot abort independent session metadata sync.
+
+**Current implementation gap observed during code review (24 November 2026; not a product decision or claim of completed work)**
+
+- The current Drive token is held in module-level/in-memory state and is not restored as a usable token after a page reload. The UI can therefore show **Connect Google Drive** after reload even if Google still has a previously granted permission.
+- The current account `signOut()` path signs out of Supabase but does not explicitly clear the Drive token. This creates a potential cross-account upload risk if another Measure account signs in in the same page lifetime.
+- The current UI includes a **Reconnect Google Drive** label for its `connected` state, while an absent in-memory token after initialization leads to **Connect Google Drive**. The app does not yet provide a clear, verified distinction between valid authorization, missing in-memory token, expired authorization, and revoked Google consent.
+- The current sync path was observed to process the upload queue before account-session synchronization. If upload processing throws because Drive authorization is unavailable, independent session metadata synchronization may be skipped. This must be verified and corrected before the disconnected-Drive test.
+- These are findings from source inspection, not browser-verified reproduction results. Do not describe the account-mismatch upload as confirmed to have happened; it is a risk that must be closed and tested.
+
