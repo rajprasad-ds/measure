@@ -2536,3 +2536,14 @@ h1 {
 .sync-live-progress progress::-webkit-progress-value { border-radius: 999px; background: #a5d4a8; }
 .sync-live-progress progress::-moz-progress-bar { border-radius: 999px; background: #a5d4a8; }
 .sync-live-progress small { display: block; margin-top: 0.4rem; color: #c4d1c6; font-size: 0.72rem; }
+
+
+.sync-ring.is-active .sync-ring-progress {
+  stroke: #789b80;
+  stroke-dasharray: 26 107;
+  animation: sync-ring-spin 1.15s linear infinite;
+}
+@keyframes sync-ring-spin {
+  from { transform: rotate(-90deg); }
+  to { transform: rotate(270deg); }
+}
