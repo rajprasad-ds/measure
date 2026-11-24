@@ -65,3 +65,14 @@ Also verify:
 1. Attempt to save a session with a timed question missing its result, cause, question card, solution, difficulty, required topic, or forgotten-fact link. Confirm the session is not committed.
 2. After all required feedback is complete, save the session and confirm exactly one attempt record exists per timed question.
 3. Repeat sync and confirm no duplicate sessions, attempts, cards, links, or image metadata are created.
+
+## 7. Feedback navigation and independent fact links (regression checks)
+
+1. Start a normal practice session with at least two timed questions. For a right-but-slow question, choose **Yes, save my approach**.
+2. Upload a question photo and enter a question label. Continue to the solution/approach step, upload a solution photo and enter solution text.
+3. Press **Back** to return to question capture. Confirm the original question photo preview and label are still present without re-uploading. Continue again and confirm the solution photo and text are still present.
+4. Repeat the Back/Next round trip more than once. Confirm neither side loses its selected image or text.
+5. For a Wrong/Couldn't solve question with cause **Missing fact or formula**, create a new fact card before saving the session. Confirm the fact card appears in the fact library/search independently of the question card.
+6. Press the **×** beside the linked fact. Confirm the link disappears from this question, but the fact card remains in the fact library/search and can be linked again.
+7. Link an existing fact card, unlink it, navigate Back/Next, and confirm the relationship state remains correct.
+8. Save the session with the fact linked. Confirm exactly one active question–fact link exists. Repeat with the fact unlinked and confirm the fact remains but no active link exists.
