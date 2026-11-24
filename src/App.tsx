@@ -427,7 +427,32 @@ function App() {
         localRecords.filter((record) => !record.ownerUserId).length,
       );
       await refreshCardData();
-      setSyncStatus("synced");
+      const [
+        pendingQuestions,
+        pendingFacts,
+        pendingLinks,
+        pendingReviews,
+        pendingAttempts,
+      ] = await Promise.all([
+        database.questions.where("ownerUserId").equals(user.id)
+          .filter((row) => row.syncStatus !== "synced").count(),
+        database.factCards.where("ownerUserId").equals(user.id)
+          .filter((row) => row.syncStatus !== "synced").count(),
+        database.questionFactLinks.where("ownerUserId").equals(user.id)
+          .filter((row) => row.syncStatus !== "synced").count(),
+        database.factReviews.where("ownerUserId").equals(user.id)
+          .filter((row) => row.syncStatus !== "synced").count(),
+        database.attempts.where("ownerUserId").equals(user.id)
+          .filter((row) => row.syncStatus !== "synced").count(),
+      ]);
+      if (pendingQuestions + pendingFacts + pendingLinks + pendingReviews + pendingAttempts > 0) {
+        setSyncStatus("error");
+        setSyncError(
+          "Your session data is backed up. Some cards or linked records are waiting for their required photos or parent cards, so they will sync when those dependencies are available.",
+        );
+      } else {
+        setSyncStatus("synced");
+      }
     } catch (error) {
       setSyncStatus("error");
       setSyncError(
