@@ -452,7 +452,12 @@ function App() {
         setPhotoUploadProgress({ completed: 0, total: 0, currentImageId: null });
         try {
           await processUploadQueue(driveImageStore, setPhotoUploadProgress);
-          setDriveConnectionStatus("connected");
+          if (hasDriveAccessToken()) {
+            setDriveConnectionStatus("connected");
+          } else {
+            setDriveConnectionStatus("error");
+            setDriveConnectionError("Google Drive authorization expired. Reconnect Drive to continue photo backup. Your practice data is safe.");
+          }
           // New Drive IDs are now available; register their metadata and allow
           // dependent cards to sync in this second pass.
           setSyncPhase("finalizing");
@@ -475,6 +480,11 @@ function App() {
         localRecords.filter((record) => !record.ownerUserId).length,
       );
       await refreshCardData();
+      const remainingPhotos = await database.localImages
+        .where("status")
+        .anyOf(["pending", "uploading", "failed"])
+        .count();
+      setPendingPhotoCount(remainingPhotos);
       const [
         pendingQuestions,
         pendingFacts,
