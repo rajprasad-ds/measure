@@ -1837,7 +1837,7 @@ function App() {
 
         <section className="home-sync-card" aria-label="Sync status">
           <button type="button" className="home-sync-open" onClick={() => setActiveTab("sync")}>
-            <span className="home-sync-icon" aria-hidden="true">↗</span>
+            <span className="home-sync-icon" aria-hidden="true">↻</span>
             <span className="home-sync-copy">
               <strong>{!authUser ? "Back up your practice" : syncStatus === "syncing" ? "Syncing your data…" : syncStatus === "error" ? "Sync needs attention" : pendingPhotoCount > 0 ? "Photos waiting for backup" : syncStatus === "synced" ? "Everything is backed up" : "Check your backup"}</strong>
               <span>{!authUser ? "See what stays on this device and how to back it up" : pendingPhotoCount > 0 ? `${pendingPhotoCount} photo${pendingPhotoCount === 1 ? "" : "s"} waiting · View sync details` : "View sessions, cards and photo backup"}</span>
