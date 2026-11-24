@@ -242,6 +242,7 @@ export default function CardsScreen(props: Props) {
             <button type="button" onClick={() => setMode("search")}>← Back to search</button>
           </div>
         </header>
+        {error && <p className="database-error" role="alert">{error}</p>}
         <section className="card-creator-panel">
           <FactCardCreator
             userId={userId}
