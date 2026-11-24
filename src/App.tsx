@@ -343,7 +343,14 @@ function App() {
     let cancelled = false;
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, authSession) => {
+    } = supabase.auth.onAuthStateChange((event, authSession) => {
+      // A Supabase sign-in starts a new app account session. Never carry a
+      // Google Drive access token across that boundary, even in the same tab.
+      if (event === "SIGNED_IN") {
+        clearDriveAuthorization();
+        setDriveConnectionStatus("idle");
+        setDriveConnectionError(null);
+      }
       setAuthUser(authSession?.user ?? null);
       setIsAuthLoading(false);
       setAuthError(null);
