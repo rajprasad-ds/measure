@@ -89,6 +89,7 @@ type Props = {
     >,
   ) => Promise<void>;
   onUseFactCard: (questionNumber: number, card: FactCard) => Promise<void>;
+  onUnlinkFactCard: (questionNumber: number, factId: string) => Promise<void>;
   onSave: () => void;
 };
 
@@ -180,6 +181,7 @@ export default function SessionFeedbackScreen({
   onSaveDifficulty,
   onCreateFactCard,
   onUseFactCard,
+  onUnlinkFactCard,
   onSave,
 }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -728,12 +730,13 @@ export default function SessionFeedbackScreen({
                         : "Take or choose a clear photo of the question so you can review it later."}
                     </p>
                     <form className="inline-card-form" onSubmit={(event) => void submitQuestionCapture(event)}>
-                      <ImageInput label="Question photo" name="promptImageId" ownerUserId={userId} onUploadComplete={onImageUploadComplete} required />
+                      <ImageInput label="Question photo" name="promptImageId" ownerUserId={userId} onUploadComplete={onImageUploadComplete} value={feedback.questionDraft?.promptImageId} required />
                       <label>
                         Question label
                         <textarea
                           name="promptText"
                           rows={2}
+                          defaultValue={feedback.questionDraft?.promptText ?? ""}
                           placeholder="Optional short label to help identify this question"
                         />
                       </label>
@@ -986,8 +989,21 @@ export default function SessionFeedbackScreen({
                     {linkedFacts.length > 0 && (
                       <div className="linked-facts-list">
                         {linkedFacts.map((fact) => (
-                          <p className="attempt-card-status" key={fact.id}>
-                            Linked: <strong>{fact.promptText || fact.contentText || "Photo fact card"}</strong>
+                          <p className="attempt-card-status linked-fact-item" key={fact.id}>
+                            <span>Linked: <strong>{fact.promptText || fact.contentText || "Photo fact card"}</strong></span>
+                            <button
+                              className="account-secondary-button linked-fact-remove"
+                              type="button"
+                              aria-label={`Unlink ${fact.promptText || fact.contentText || "fact card"}`}
+                              title="Unlink fact card"
+                              onClick={() => {
+                                void onUnlinkFactCard(questionNumber, fact.id).catch((error) =>
+                                  showError(error, "Could not unlink this fact card."),
+                                );
+                              }}
+                            >
+                              ×
+                            </button>
                           </p>
                         ))}
                       </div>
