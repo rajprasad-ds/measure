@@ -115,7 +115,15 @@ export default function SyncScreen({
       </header>
       <section className={allComplete ? "sync-overview is-complete" : "sync-overview"}>
         <div className="sync-overview-top">
-          <div><p className="sync-overline">BACKUP STATUS</p><h2>{allComplete ? "All caught up" : headline}</h2><p>{description}</p></div>
+          <div className="sync-overview-copy">
+            <p className="sync-overline">BACKUP STATUS</p><h2>{allComplete ? "All caught up" : headline}</h2><p>{description}</p>
+            {signedIn && pendingPhotoCount > 0 && driveStatus !== "connected" && (
+              <button className="sync-drive-connect-inline" type="button" onClick={onConnectDrive}
+                disabled={driveStatus === "loading" || driveStatus === "connecting"}>
+                {driveStatus === "connecting" ? "Connecting…" : driveStatus === "error" ? "Reconnect Google Drive" : "Connect Google Drive"}
+              </button>
+            )}
+          </div>
           <div className="sync-overview-ring"><RingPair cloudComplete={allComplete}
             driveProgress={{ completed: photoUploadProgress.completed, total: pendingPhotoCount, failed: photoUploadProgress.failed }}
             label={allComplete ? "All data backed up" : "Backup not yet complete"} /></div>
@@ -159,11 +167,14 @@ export default function SyncScreen({
       </section>
       <section className="sync-section sync-drive-section">
         <div className="sync-section-heading"><div><p className="sync-overline">PHOTO BACKUP</p><h2>Google Drive</h2></div>
-          <span>{driveStatus === "connected" ? "Connected" : driveStatus === "error" ? "Needs attention" : pendingPhotoCount > 0 ? "Waiting for connection" : "No action needed"}</span></div>
-        {pendingPhotoCount === 0 ? <p className="sync-empty">No photos are waiting to upload. Google Drive access is not needed right now.</p>
-          : driveStatus === "connected" ? <p className="sync-muted">{pendingPhotoCount} photo{pendingPhotoCount === 1 ? "" : "s"} waiting for backup. Drive is connected.</p>
-            : <><p className="sync-muted">{driveStatus === "connecting" ? "Connecting to Google Drive…" : driveStatus === "error" ? "Photo backup needs attention. Your photos remain stored on this device." : "Photos are safely stored on this device. Connect Drive when you're ready to back them up."}</p>
-              <button className="sync-secondary-button" type="button" onClick={onConnectDrive} disabled={driveStatus === "loading" || driveStatus === "connecting"}>{driveStatus === "connecting" ? "Connecting…" : "Connect Google Drive"}</button></>}
+          <span>{driveStatus === "connected" ? "Connected" : driveStatus === "error" ? "Needs attention" : pendingPhotoCount > 0 ? "Waiting for connection" : "Not needed"}</span></div>
+        {pendingPhotoCount === 0
+          ? <p className="sync-empty">No photos are waiting to upload. Google Drive access is not needed right now.</p>
+          : <p className="sync-muted">{driveStatus === "connected"
+              ? (photoUploadProgress.total > 0 ? photoUploadProgress.completed + " of " + photoUploadProgress.total + " photos processed in the latest upload pass." : pendingPhotoCount + " photos are waiting for backup.")
+              : driveStatus === "connecting"
+                ? "Connecting to Google Drive…"
+                : "Photos remain safely stored on this device. Connect Drive using the button in the backup status area above."}</p>}
         {driveError && <p className="sync-alert" role="alert">{driveError}</p>}
       </section>
       <div className="sync-ring-legend" aria-label="Progress ring legend">
