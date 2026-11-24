@@ -40,6 +40,8 @@ export default function ImageInput({
   const [editorUrl, setEditorUrl] = useState("");
   const [rotation, setRotation] = useState(0);
   const [zoom, setZoom] = useState(1);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
   const [cropAspect, setCropAspect] = useState<CropAspect>("original");
   const [isPreparingPreview, setIsPreparingPreview] = useState(false);
   const [record, setRecord] = useState<{
@@ -105,8 +107,8 @@ export default function ImageInput({
         if (cropHeight > rotatedHeight) { cropHeight = rotatedHeight; cropWidth = cropHeight * aspect; }
         cropWidth /= zoom;
         cropHeight /= zoom;
-        const sx = (rotatedWidth - cropWidth) / 2;
-        const sy = (rotatedHeight - cropHeight) / 2;
+        const sx = (rotatedWidth - cropWidth) * (panX + 1) / 2;
+        const sy = (rotatedHeight - cropHeight) * (panY + 1) / 2;
         const outputWidth = 960;
         const outputHeight = Math.max(1, Math.round(outputWidth / aspect));
         const canvas = editorCanvasRef.current;
@@ -125,7 +127,7 @@ export default function ImageInput({
     }
     void drawPreview();
     return () => { cancelled = true; };
-  }, [selectedFile, rotation, zoom, cropAspect]);
+  }, [selectedFile, rotation, zoom, panX, panY, cropAspect]);
 
   function openEditor(file?: File) {
     if (!file) return;
@@ -137,6 +139,8 @@ export default function ImageInput({
     setEditorUrl(URL.createObjectURL(file));
     setRotation(0);
     setZoom(1);
+    setPanX(0);
+    setPanY(0);
     setCropAspect("original");
   }
 
@@ -146,6 +150,8 @@ export default function ImageInput({
     setSelectedFile(null);
     setRotation(0);
     setZoom(1);
+    setPanX(0);
+    setPanY(0);
     setCropAspect("original");
   }
 
@@ -243,6 +249,14 @@ export default function ImageInput({
                 <label htmlFor={`image-zoom-${name}`}>Crop</label>
                 <input id={`image-zoom-${name}`} type="range" min="1" max="3" step="0.05" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} />
                 <span>{zoom.toFixed(1)}×</span>
+              </div>
+              <div className="image-editor-control-row">
+                <label htmlFor={`image-pan-x-${name}`}>Horizontal</label>
+                <input id={`image-pan-x-${name}`} type="range" min="-1" max="1" step="0.05" value={panX} onChange={(event) => setPanX(Number(event.target.value))} />
+              </div>
+              <div className="image-editor-control-row">
+                <label htmlFor={`image-pan-y-${name}`}>Vertical</label>
+                <input id={`image-pan-y-${name}`} type="range" min="-1" max="1" step="0.05" value={panY} onChange={(event) => setPanY(Number(event.target.value))} />
               </div>
             </div>
             <div className="image-editor-actions">
