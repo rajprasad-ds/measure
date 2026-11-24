@@ -675,15 +675,9 @@ async function syncPendingImages(userId: string): Promise<Set<string>> {
     if (card.promptImageId) referencedImageIds.add(card.promptImageId);
     if (card.contentImageId) referencedImageIds.add(card.contentImageId);
   });
-  if (referencedImageIds.size > 0) {
-    const imageRows = await database.localImages.bulkGet(Array.from(referencedImageIds));
-    const newlyOwned = imageRows.filter((row): row is LocalImageRecord => Boolean(row && !row.ownerUserId)).map((row) => ({
-      ...row,
-      ownerUserId: userId,
-      syncStatus: "pending" as const,
-    }));
-    if (newlyOwned.length > 0) await database.localImages.bulkPut(newlyOwned);
-  }
+  // Never infer ownership for ownerless image rows from card references.
+  // In a shared browser database, a reference alone cannot establish which
+  // Measure account originally created the photo.
   const pending = await database.localImages
     .where("ownerUserId")
     .equals(userId)
