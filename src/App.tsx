@@ -469,15 +469,11 @@ function App() {
 
   useEffect(() => {
     let cancelled = false;
-    const refreshPendingPhotos = () => {
-      void database.localImages.where("status").anyOf(["pending", "uploading", "failed"]).count()
-        .then((count) => { if (!cancelled) setPendingPhotoCount(count); })
-        .catch(() => undefined);
-    };
-    refreshPendingPhotos();
-    const interval = window.setInterval(refreshPendingPhotos, 3000);
-    return () => { cancelled = true; window.clearInterval(interval); };
-  }, [syncStatus, driveConnectionStatus]);
+    void database.localImages.where("status").anyOf(["pending", "uploading", "failed"]).count()
+      .then((count) => { if (!cancelled) setPendingPhotoCount(count); })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [syncStatus, driveConnectionStatus, authUser]);
 
   useEffect(() => {
     if (!authUser) {
@@ -1644,6 +1640,7 @@ function App() {
         facts={factCards}
         pendingPhotoCount={pendingPhotoCount}
         onBack={() => setActiveTab("practice")}
+        onNavigate={navigate}
         onSyncNow={() => { if (authUser) void performSync(authUser); }}
         onConnectDrive={() => void connectGoogleDrive()}
         onSignIn={() => void signInWithGoogle()}
