@@ -539,7 +539,7 @@ function App() {
       )));
       const attachedFactImages = await database.localImages.bulkGet(attachedFactImageIds);
       const locallySavedFactImageIds = attachedFactImages.flatMap((image) =>
-        image?.status === "local" ? [image.id] : [],
+        image?.ownerUserId === user.id && image.status === "local" ? [image.id] : [],
       );
       await queueImagesForUpload(user.id, locallySavedFactImageIds);
 
@@ -641,7 +641,7 @@ function App() {
 
   useEffect(() => {
     void refreshSyncDriveProgress();
-  }, [savedSessions, questionCards, factCards, photoUploadProgress]);
+  }, [savedSessions, questionCards, factCards, photoUploadProgress, authUser]);
 
   useEffect(() => {
     let cancelled = false;
