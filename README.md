@@ -20,26 +20,42 @@ npm install
 npm run dev
 ```
 
+Keep the development server running while editing. Vite applies React changes
+through hot reload in the open browser; ordinary edits do not need a production
+build. Use `npm run build` to verify the app before deployment.
+
 ## Supabase setup
 
 1. In the Supabase Dashboard, open **SQL Editor** and run
    `supabase/migrations/20261109230000_initial_schema.sql`.
    If you already ran the original migration before the session-sync function
    fix, also run `supabase/migrations/20261109232000_fix_upsert_session_function.sql`.
-2. In **Authentication → URL Configuration**, add the local redirect URL
+2. Run `supabase/migrations/20261110194500_attempts.sql` to add per-question
+   attempts and the transaction-safe session-and-attempt sync RPC.
+3. Run `supabase/migrations/20261110201500_cards.sql` to add question cards,
+   fact cards, card links, review history, and card-level RLS policies.
+4. Run `supabase/migrations/20261110213000_practice_image_cards.sql` to allow
+   image-only question prompts and optional question solutions.
+5. Run `supabase/migrations/20261110220000_image_required_cards.sql` to require
+   a photo on every question prompt and on both sides of every fact card.
+6. Run `supabase/migrations/20261110230000_images_table.sql` to add the
+   `images` metadata table, image-level RLS, and card→image foreign keys.
+7. In **Authentication → URL Configuration**, add the local redirect URL
    `http://localhost:5173/**` (and `http://127.0.0.1:5173/**` if using that
    address) to the redirect allow list.
-3. Keep email/password authentication enabled. With email confirmation
+6. Keep email/password authentication enabled. With email confirmation
    enabled, new users must confirm the email before signing in.
-4. Start the app locally, create an account, and test a session. Existing
+7. Start the app locally, create an account, and test a session. Existing
    device-only sessions are not uploaded automatically; while signed in, use
-   **Import local sessions to this account** to opt into uploading them.
+   **Import local data to this account** to opt into uploading it.
 
-The migration creates `sessions` and `session_weak_topics`, enables Row Level
-Security, and adds a transaction-safe RPC for saving a session with its weak
-topics. Each account can only access its own session data. The syllabus catalog
-remains in `syllabus.json`; session records store stable IDs and display names.
-Individual question numbers and attempts are not stored.
+The migrations create `sessions`, `session_weak_topics`, `attempts`, `questions`,
+`fact_cards`, `question_fact_links`, and `fact_reviews`, enable Row Level
+Security, and add transaction-safe RPCs for syncing sessions and attempts.
+Each account can only access its own data. The syllabus catalog remains in
+`syllabus.json`; session records store stable IDs and display names. Attempts
+do not store live question numbers. Existing saved sessions remain unchanged
+and do not receive fabricated attempt records.
 
 ## Data and offline behavior
 
@@ -52,15 +68,36 @@ chooses to import them into an account.
 
 The average time per question is active time divided by the number of timed
 questions; skipped questions are not included. Session summaries also store
-outcome counts and weak-topic counts aggregated per session. Lifetime weak-topic
-totals can be derived by summing those session records.
+outcome counts and weak-topic counts aggregated per session. Each timed
+question's result, cause, optional slip subtype, topics, and time is also saved
+as an attempt on this device and synced when online. Lifetime weak-topic totals
+can be derived by summing those session records.
 
-An unfinished session is currently held in memory and will be lost if the page
-is reloaded or closed before feedback is saved.
+Question and fact cards are stored locally first and sync in dependency order.
+Cards and links use soft deletion so deletions can sync to other devices.
+Question source metadata is intentionally not collected. A question card needs
+an image of the question. A fact card needs images for both prompt and answer.
+Optional text helps search and recall. Photos are compressed and kept offline
+on the device.
+Cloud metadata can sync their IDs, but photo backup/download is not enabled yet;
+Google Drive upload is still planned.
+
+The current in-progress session and feedback are saved locally in IndexedDB.
+After a reload or reopen, the app offers **Resume session** or **Discard
+session**. Timers resume from timestamps; if the planned end has passed, the
+session resumes at feedback and a running question is closed at the planned end.
+
+If a question stopwatch reaches eight minutes, it pauses and asks whether you
+are still solving. Confirm within one minute to keep the session open; the
+stopwatch stays paused until you press Start. When the stopwatch is stopped,
+ten minutes without interaction triggers a one-minute confirmation before the
+app moves the session to feedback. Only question stopwatch durations count as
+active time.
 
 ## Validate and build
 
 ```sh
+npm test
 npm run build
 npm run preview
 ```
@@ -85,11 +122,29 @@ Configure the Cloudflare build settings:
 
 Git deployments publish `main` to production and create branch/PR preview
 deployments when enabled for the Worker. GitHub Actions independently runs the
-type-check and production build on pushes and pull requests. In the GitHub
-repository's **Settings → Branches**, protect `main` and require the **Type
-check and production build** status check before merging.
+unit tests, type-check, and production build on pushes and pull requests. In
+the GitHub repository's **Settings → Branches**, protect `main` and require the
+**Type check and production build** status check before merging.
 
 After the first successful deployment, add the HTTPS production hostname to
 Supabase **Authentication → URL Configuration** as the site URL and an allowed
 redirect URL. Add a preview hostname to the allow list only if you intend to
 test email confirmation from that preview.
+
+## Google Drive setup (photo backup)
+
+Photos are uploaded to your own Google Drive account through the
+`drive.file` scope only (files the app creates; never public links).
+
+1. Create a Google Cloud project, enable the **Google Drive API**, and
+   configure the OAuth consent screen (publish it to production; testing-mode
+   consents expire after seven days).
+2. Create an **OAuth Web client ID**. Authorized JavaScript origins:
+   `http://localhost:5173` and your production hostname.
+3. Add `VITE_GOOGLE_CLIENT_ID` to `.env.local` (local) and as a Cloudflare
+   build variable (production). Never commit it.
+4. The app creates a folder named **JEE Practice** in your Drive on first
+   upload and reuses it on every device.
+
+Set up Supabase first (the app syncs card metadata there; Drive only holds the
+photo files).

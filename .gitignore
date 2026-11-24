@@ -4,3 +4,5 @@ dist/
 .env
 .env.*
 !.env.example
+client_secret_*.json
+design asset/supabase.txt
