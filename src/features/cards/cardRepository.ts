@@ -1,4 +1,5 @@
 import { database } from "../../database";
+import { queueImagesForUpload } from "../images/imageRepository";
 import { getChapter } from "../../syllabus";
 import type {
   FactCard,
@@ -75,12 +76,21 @@ export async function createQuestionCard(
   return card;
 }
 
+function factCardImageIds(card: FactCard): string[] {
+  return [card.promptImageId, card.contentImageId].filter(
+    (id): id is string => Boolean(id),
+  );
+}
+
 export async function createFactCard(
   input: FactCardInput,
   options: UserOptions = {},
 ): Promise<FactCard> {
   const card = buildFactCardRecord(input, options);
   await database.factCards.add(card);
+  // Images are saved locally before the card is submitted. Explicitly enqueue
+  // them only after the card is committed so the Drive worker can discover them.
+  await queueImagesForUpload(factCardImageIds(card));
   return card;
 }
 
@@ -189,6 +199,7 @@ export async function createFactCardAndLink(
       await linkCardsInTransaction(questionId, card.id, options);
     },
   );
+  await queueImagesForUpload(factCardImageIds(card));
   return card;
 }
 
@@ -308,6 +319,7 @@ export async function updateFactCard(
     syncStatus: card.ownerUserId ? "pending" : "local",
   };
   await database.factCards.put(updated);
+  await queueImagesForUpload(factCardImageIds(updated));
   return updated;
 }
 
