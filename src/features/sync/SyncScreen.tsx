@@ -139,7 +139,7 @@ export default function SyncScreen({
             {completedSessions.length > 0 && <details className="sync-completed">
               <summary>Completed · {completedSessions.length}</summary>
               <ul className="sync-item-list">
-                {completedSessions.map((item) => <ItemRow key={item.id} title={item.chapter} detail={`${item.subject} · ${new Date(item.endedAt).toLocaleDateString()}`} complete />)}
+                {completedSessions.map((item) => <ItemRow key={item.id} title={`${item.subject} · ${item.chapter}`} detail={`${new Date(item.endedAt).toLocaleDateString()} · Practice session`} complete />)}
               </ul>
             </details>}
           </>
@@ -151,7 +151,7 @@ export default function SyncScreen({
           <div><p className="sync-overline">INDEPENDENT NOTES</p><h2>Fact cards</h2></div>
           <span>{pendingFacts.length} waiting</span>
         </div>
-        {facts.length === 0 ? <p className="sync-empty">Fact cards you save will appear here.</p> : (
+        {independentFacts.length === 0 ? <p className="sync-empty">Independent fact cards you save will appear here.</p> : (
           <>
             <ul className="sync-item-list">
               {pendingFacts.map((item) => <ItemRow key={item.id} title={item.promptText || "Untitled fact"} detail={item.kind.charAt(0).toUpperCase() + item.kind.slice(1)} complete={false} />)}
