@@ -12,6 +12,7 @@ type SearchSelectProps = {
   options: SearchOption[];
   placeholder: string;
   emptyMessage: string;
+  showAllOnFocus?: boolean;
   onChange: (id: string) => void;
 };
 
@@ -23,6 +24,7 @@ function SearchSelect({
   options,
   placeholder,
   emptyMessage,
+  showAllOnFocus = false,
   onChange,
 }: SearchSelectProps) {
   const id = useId();
@@ -36,8 +38,10 @@ function SearchSelect({
     ? options.filter((option) =>
         option.label.toLocaleLowerCase().includes(normalizedQuery),
       )
-    : [];
-  const visibleOptions = matchingOptions.slice(0, RESULT_LIMIT);
+    : showAllOnFocus && isOpen ? options : [];
+  const visibleOptions = showAllOnFocus && !normalizedQuery
+    ? matchingOptions
+    : matchingOptions.slice(0, RESULT_LIMIT);
   const listId = `${id}-options`;
 
   function choose(option: SearchOption) {
@@ -91,7 +95,7 @@ function SearchSelect({
           value={isOpen ? query : selectedOption?.label ?? ""}
           placeholder={placeholder}
           aria-autocomplete="list"
-          aria-expanded={isOpen && normalizedQuery.length > 0}
+          aria-expanded={isOpen && (normalizedQuery.length > 0 || showAllOnFocus)}
           aria-controls={listId}
           aria-activedescendant={
             isOpen && visibleOptions[activeIndex]
@@ -119,7 +123,7 @@ function SearchSelect({
         <span className="search-select-icon" aria-hidden="true">
           ⌕
         </span>
-        {isOpen && normalizedQuery.length > 0 && (
+        {isOpen && (normalizedQuery.length > 0 || showAllOnFocus) && (
           <div className="search-select-menu" id={listId} role="listbox">
             {visibleOptions.length > 0 ? (
               <>
@@ -143,7 +147,7 @@ function SearchSelect({
                     {option.detail && <small>{option.detail}</small>}
                   </button>
                 ))}
-                {matchingOptions.length > RESULT_LIMIT && (
+                {!showAllOnFocus && matchingOptions.length > RESULT_LIMIT && (
                   <p className="search-select-hint">
                     Showing {RESULT_LIMIT} of {matchingOptions.length} matches.
                     Refine your search.
