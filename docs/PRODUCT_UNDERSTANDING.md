@@ -820,3 +820,14 @@ This section records decisions made after the 23 November handoff. Where this se
 - Google Drive photo backup is shown as a dependency within the Sync screen. When no photos are waiting, the UI explains that Drive authorization is not currently needed.
 - The session ring currently communicates completion versus waiting only. It deliberately does not invent a percentage or imply measured sub-task progress. Real per-session progress and precise states (preparing, uploading, waiting for connection, needs attention) require sync-pipeline instrumentation and are a follow-up reliability step.
 - This is a first implementation pass, not yet a verified end-to-end sync experience. Browser verification, accessibility/responsive review, and the underlying Drive/session pipeline fixes remain outstanding.
+
+
+### 16.8 Sync pipeline and live progress (24 November 2026)
+
+- Practice metadata sync is now attempted before Google Drive photo uploads. A missing or expired Drive token must not block session summaries and independent cloud records.
+- When Drive authorization is already available in the current browser session, the app uploads queued photos and then runs a second metadata pass so newly created Drive IDs can be registered and photo-dependent cards can sync.
+- Drive upload errors are isolated from the practice metadata sync. Photo blobs remain in the local queue for retry; the Sync screen distinguishes photo work from cloud metadata work.
+- The Sync screen receives per-session and per-independent-fact-card syncing/completed callbacks from the cloud sync pipeline. Active items show an animated ring; completed items show a check.
+- Photo queue progress reports processed items, failures, and the currently uploading photo. This is queue-item progress, not byte-level network progress; the UI must not describe it as a percentage of bytes transferred.
+- Drive authorization is cleared on explicit Measure sign-out and when the authenticated Measure account changes, preventing an in-memory Drive token from being carried across account changes.
+- Remaining verification: exercise successful and failed Drive uploads, expired authorization, photo-dependent card retry, account switching, offline recovery, and confirm session metadata still reaches Supabase when Drive is unavailable. No end-to-end browser test has yet been run for this implementation.
