@@ -536,7 +536,7 @@ function App() {
       const locallySavedFactImageIds = attachedFactImages.flatMap((image) =>
         image?.status === "local" ? [image.id] : [],
       );
-      await queueImagesForUpload(locallySavedFactImageIds);
+      await queueImagesForUpload(user.id, locallySavedFactImageIds);
 
       // Upload photos only when the user has explicitly connected Drive in
       // this browser session. A Drive failure is isolated from metadata sync.
@@ -545,7 +545,7 @@ function App() {
         setPhotoUploadProgress({ completed: 0, total: 0, failed: 0, currentImageId: null });
         setDriveConnectionError(null);
         try {
-          await processUploadQueue(driveImageStore, (progress) => {
+          await processUploadQueue(user.id, driveImageStore, (progress) => {
             setPhotoUploadProgress(progress);
             if (progress.failed > 0) {
               setDriveConnectionError("Some photos could not be uploaded yet. They remain on this device and can be retried.");
@@ -774,7 +774,7 @@ function App() {
     try {
       await driveImageStore.reconnect();
       setDriveConnectionStatus("connected");
-      await retryFailedUploads();
+      await retryFailedUploads(authUser.id);
       await performSync(authUser);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not connect Google Drive.";
@@ -1304,7 +1304,7 @@ function App() {
     // Existing questions can be linked now. For a draft question, linkedFactIds
     // records the intended relationship and saveSession creates it atomically
     // when it creates the question card.
-    await queueImagesForUpload([input.promptImageId, input.contentImageId].filter((id): id is string => Boolean(id)));
+    if (authUser) await queueImagesForUpload(authUser.id, [input.promptImageId, input.contentImageId].filter((id): id is string => Boolean(id)));
     if (feedback.questionId) {
       await linkQuestionAndFact(feedback.questionId, card.id, { userId: authUser?.id });
     }
@@ -1682,7 +1682,7 @@ function App() {
         );
       }
       try {
-        await queueImagesForUpload(Array.from(finalizedImageIds));
+        if (authUser) await queueImagesForUpload(authUser.id, Array.from(finalizedImageIds));
       } catch (imageQueueError) {
         setSyncError(
           imageQueueError instanceof Error
@@ -1825,7 +1825,7 @@ function App() {
         onNavigate={navigate}
         onSyncNow={() => {
           if (authUser) {
-            void retryFailedUploads()
+            void retryFailedUploads(authUser.id)
               .then(() => performSync(authUser))
               .catch((error: unknown) => {
                 setSyncStatus("error");
@@ -1960,7 +1960,8 @@ function App() {
         questionFactLinks={questionFactLinks}
         syncStatus={syncStatus}
         syncError={syncError}
-        onRetrySync={() => { if (!authUser) return; void (async () => { const pending = await database.localImages.where("status").anyOf(["pending", "uploading", "failed"]).count(); if (pending > 0 && !hasDriveAccessToken()) { await connectGoogleDrive(); return; } await performSync(authUser, true); })().catch((error: unknown) => { setSyncStatus("error"); setSyncError(error instanceof Error ? error.message : "Could not retry sync."); }); }}
+        onRetrySync={() => { if (!authUser) return; void (async () => { const pending = await database.localImages.where("ownerUserId").equals(authUser.id)
+            .filter((image) => ["pending", "uploading", "failed"].includes(image.status)).count(); if (pending > 0 && !hasDriveAccessToken()) { await connectGoogleDrive(); return; } await performSync(authUser, true); })().catch((error: unknown) => { setSyncStatus("error"); setSyncError(error instanceof Error ? error.message : "Could not retry sync."); }); }}
         onNewSession={() => void startNewSession()}
       />
     );
