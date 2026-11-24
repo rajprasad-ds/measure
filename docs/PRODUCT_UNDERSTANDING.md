@@ -178,7 +178,6 @@ Expected scheduling behavior:
 The governing rule is:
 
 > A session is meaningful to the revision history only after its required feedback has been submitted.
-
 - Feedback appears at the end of the session workflow.
 - Saving/submitting feedback completes the session.
 - Cancelling or leaving without submission discards the session.
@@ -189,7 +188,13 @@ The governing rule is:
 
 This implies that the implementation needs a clear distinction between temporary session state and committed records, with atomic/transactional commit behavior where appropriate.
 
-**Still to clarify later:** The new discussion explicitly defines the non-resumable behavior for question revision and resumable behavior for fact revision. It does not fully revisit the interruption/reload policy for normal question-practice sessions. The current repository does preserve active practice sessions across reloads (see Section 9), so that behavior must not be silently changed without deciding it.
+**Normal question-practice interruption behavior (decided 24 November 2026):**
+- Normal practice cannot be intentionally paused and resumed later.
+- If the app is closed or interrupted while the student is solving questions, the next launch must take the student to that session's feedback workflow rather than back into question-solving. The captured work is recovered for feedback; solving does not continue.
+- Time while the app is closed is downtime and must not be counted as question-solving or practice duration. Preserve the active time/question durations accumulated before interruption.
+- If the app closes while feedback is in progress, restore the feedback workflow exactly where the student left it, including completed feedback, in-progress drafts, text, selected images, and the current question/step.
+- Feedback remains temporary draft state until the student submits the complete session. If feedback is not completed by the end of the originating study day (defined by the end of that day's final configured study interval), discard the unfinished practice session and its uncommitted attempt/card/link drafts. It must not affect history, metrics, scheduling, or streaks.
+- Independently saved fact cards are separate records and must survive discarding an unfinished session.
 
 ---
 
@@ -199,7 +204,11 @@ Measure must understand the student's configured study schedule, not just a dail
 
 ### 5.1 Study intervals
 
-- The student can configure different study intervals for different days of the week.
+- The student configures a recurring weekly schedule by selecting which weekdays are **OFF** and configuring one or more study intervals for each non-OFF weekday.
+- An OFF day has no study intervals: no study activity may be started and no study activity/time is recorded for that day.
+- The weekly schedule is the single source of truth; the app fetches the applicable weekday's intervals when a new calendar day begins (after midnight).
+- That day's fetched intervals are fixed for the remainder of that day. Editing the weekly schedule during the day does not change today's intervals; the updated schedule takes effect from the next calendar day.
+- Past days and their actual activity records are never rewritten by later schedule changes. There is no need to create separate daily copies of the recurring schedule merely to preserve it; the day uses the schedule values established at its start.
 - Example schedule:
   - 08:00–12:00
   - 13:00–18:00
@@ -357,8 +366,7 @@ No final weights, score formula, scheduler, or interval table has been approved.
 - Active practice session persistence in IndexedDB and a recovery screen offering Resume/Discard.
 - Inactivity/long-question prompts are present in the practice UI and lifecycle module.
 
-**Question and fact bank foundation**
-- Question cards and fact cards are stored locally and can sync.
+**Question and fact bank foundation**- Question cards and fact cards are stored locally and can sync.
 - Cards carry subject, chapter, topic IDs, timestamps, and soft-delete metadata.
 - Question cards support prompt/solution content and image references.
 - Fact cards support kinds such as fact, formula, reaction, misconception, and trap.
@@ -406,7 +414,7 @@ The new product discussion makes the session types different:
 - A session is committed only when feedback is submitted.
 - Question revision has a special early-end feedback screen containing every selected question; zero-duration items are unattempted and must not update question metrics.
 
-The existing generic practice-session recovery must therefore not be treated as the final lifecycle design for all future session types. The normal practice-session interruption policy should be confirmed before changing its existing behavior.
+The existing generic practice-session recovery must therefore not be treated as the final lifecycle design for all session types. The normal-practice interruption policy is now decided in Section 4: unexpected closure sends the student to recoverable feedback, not back to question-solving; closed-app downtime is excluded from practice duration.
 
 The current fact-review database outcome is binary (`recalled` / `forgot`), whereas the agreed fact feedback has three outcomes. This requires a schema/domain update, not just a UI label change.
 
@@ -452,9 +460,8 @@ These are intentionally not guessed:
 - Exact time-estimation model for questions/facts when generating sessions.
 - Exact question-selection and fact-scheduling formulas.
 - Exact behavior if a generated plan cannot be filled from the available card bank.
-- Whether normal practice sessions retain their current reload/recovery behavior.
 - Whether a normal practice session and a revision session can ever overlap (the current agreed rule is one active session at a time, with a paused fact session blocking another session).
-- Timezone/day-boundary details for schedules and streaks.
+- Timezone/day-boundary details for schedules and streaks (the schedule day boundary is midnight in the user's configured/local timezone; the authoritative timezone implementation still needs verification).
 - Exact fact-session completion/feedback commit mechanics and end-of-day cleanup behavior.
 - Whether the user may explicitly adjust revision allocation during a refresh; the current direction is yes.
 
@@ -675,3 +682,44 @@ The cleanup must preserve the Google/Supabase account, OAuth/Drive authorization
 5. Fix any confirmed Stage 1 defects and update the testing checklist alongside behavior changes.
 6. Do not implement adaptive revision planning, spaced repetition, Home/Analytics dashboards, or other Stage 2 features as part of this handoff.
 7. Do not clean test data or merge to `main` without the owner's explicit approval.
+
+---
+
+## 16. Product decisions from the 24 November 2026 discovery session
+
+This section records decisions made after the 23 November handoff. Where this section conflicts with older wording above, this section is authoritative.
+
+### 16.1 Normal question-practice session recovery and duration
+
+- A normal question-practice session cannot be intentionally paused and resumed.
+- Unexpected app closure ends the solving phase. On the next launch, recover the session into its feedback workflow; do not return the student to active question-solving.
+- Preserve the question attempts and active durations captured before closure. Time while the app is closed is downtime and must not inflate question-solving or practice duration.
+- If closure occurs during feedback, restore the feedback workflow exactly where it was left, including completed answers, current draft, text, selected images, and current question/step.
+- A practice session is committed only after the complete feedback workflow is submitted.
+- If feedback remains incomplete at the end of the originating study day, discard the unsubmitted session and its uncommitted attempts, question-card drafts, and links. No session history, stats, scheduling, or streak changes result.
+- Fact cards that were independently saved immediately are independent records and must not be deleted when an unfinished practice session is discarded.
+
+### 16.2 Weekly schedule, OFF days, and daily interval freezing
+
+- The user configures a recurring weekly schedule: each weekday is either **OFF** or has one or more study intervals.
+- An OFF day means no study intervals, no permitted study activity, and no recorded study activity/time for that day.
+- For a non-OFF day, the app fetches the intervals for that weekday from the current weekly schedule when the calendar day begins (after midnight). The fetched intervals are fixed for that day.
+- A weekly schedule edit made during the day does not alter that day's intervals. The updated weekly schedule is used from the next calendar day.
+- Past days and historical activity are not changed by later schedule edits.
+- The weekly schedule remains the single source of truth for future days. The product does not require a separately persisted copy of every future day's schedule.
+- The deadline for completing normal-practice feedback is the end of the last study interval on the originating study day, not midnight.
+- An OFF day has no intervals and permits no activity. It does not create an alternate carryover window for unfinished practice feedback.
+
+### 16.3 Attempt timing and analytics data sufficiency
+
+- Store session-level start/end timing and each question's duration/order.
+- A separate exact wall-clock timestamp for every question attempt is not currently required for the planned analytics or future revision decisions. Session date/time plus question order and duration are sufficient for the discussed needs, including last-practiced date and time-trend analytics.
+- Do not add per-question timestamp fields speculatively. Revisit only if a concrete future feature requires distinguishing exact within-session attempt times (for example, independently timestamped repeated attempts).
+
+### 16.4 Session-type boundaries remain explicit
+
+- These decisions above apply to **normal question practice** only.
+- Question revision remains a separate workflow and cannot be paused/resumed; its early-end and zero-duration rules remain as specified in Section 3.2.
+- Fact revision remains a separate workflow and can be paused/resumed across study intervals; its unfinished-session end-of-day behavior remains as specified in Section 3.3.
+- Do not generalize normal-practice recovery, feedback expiry, or timing rules to either revision workflow without a separate product decision.
+
