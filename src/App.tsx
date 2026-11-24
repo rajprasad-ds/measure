@@ -1642,7 +1642,6 @@ function App() {
         driveError={driveConnectionError}
         sessions={savedSessions}
         facts={factCards}
-        questions={questionCards}
         pendingPhotoCount={pendingPhotoCount}
         onBack={() => setActiveTab("practice")}
         onSyncNow={() => { if (authUser) void performSync(authUser); }}
