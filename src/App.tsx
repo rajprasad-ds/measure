@@ -499,6 +499,19 @@ function App() {
       setSyncPhase("sessions");
       await syncAccountSessions(user, handleSessionSyncProgress, handleFactCardSyncProgress);
 
+      // Older fact cards may already contain image IDs whose image records were
+      // left in the initial "local" state. Enqueue those existing attachments
+      // as part of sync too, so this fix also recovers cards created previously.
+      const ownedFacts = await database.factCards.where("ownerUserId").equals(user.id).toArray();
+      const attachedFactImageIds = Array.from(new Set(ownedFacts.flatMap((card) =>
+        [card.promptImageId, card.contentImageId].filter((id): id is string => Boolean(id)),
+      )));
+      const attachedFactImages = await database.localImages.bulkGet(attachedFactImageIds);
+      const locallySavedFactImageIds = attachedFactImages.flatMap((image) =>
+        image?.status === "local" ? [image.id] : [],
+      );
+      await queueImagesForUpload(locallySavedFactImageIds);
+
       // Upload photos only when the user has explicitly connected Drive in
       // this browser session. A Drive failure is isolated from metadata sync.
       if (hasDriveAccessToken()) {
