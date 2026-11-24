@@ -128,6 +128,7 @@ function App() {
   const activeSessionWriteTimeout = useRef<number | null>(null);
   const activeSessionWriteQueue = useRef<Promise<void>>(Promise.resolve());
   const previousAuthUserId = useRef<string | null>(null);
+  const accountDataLoadVersion = useRef(0);
 
   useEffect(() => {
     const nextUserId = authUser?.id ?? null;
@@ -139,7 +140,7 @@ function App() {
     previousAuthUserId.current = nextUserId;
   }, [authUser?.id]);
 
-  async function refreshCardData() {
+  async function refreshCardData(expectedVersion?: number) {
     const [questions, facts, links, attempts, reviews] = await Promise.all([
       database.questions.toArray(),
       database.factCards.toArray(),
@@ -147,31 +148,21 @@ function App() {
       database.attempts.toArray(),
       database.factReviews.toArray(),
     ]);
-    setQuestionCards(
-      questions.filter(
-        (card) => !authUser || !card.ownerUserId || card.ownerUserId === authUser.id,
-      ),
-    );
-    setFactCards(
-      facts.filter(
-        (card) => !authUser || !card.ownerUserId || card.ownerUserId === authUser.id,
-      ),
-    );
-    setQuestionFactLinks(
-      links.filter(
-        (link) => !authUser || !link.ownerUserId || link.ownerUserId === authUser.id,
-      ),
-    );
-    setAttemptRecords(
-      attempts.filter(
-        (attempt) => !authUser || !attempt.ownerUserId || attempt.ownerUserId === authUser.id,
-      ),
-    );
-    setFactReviews(
-      reviews.filter(
-        (review) => !authUser || !review.ownerUserId || review.ownerUserId === authUser.id,
-      ),
-    );
+    if (
+      expectedVersion !== undefined &&
+      expectedVersion !== accountDataLoadVersion.current
+    ) {
+      return;
+    }
+    // Signed-in accounts must never see unassigned records or records owned
+    // by another account. Anonymous mode is limited to unassigned local data.
+    const belongsToCurrentAccount = (ownerUserId?: string) =>
+      authUser ? ownerUserId === authUser.id : !ownerUserId;
+    setQuestionCards(questions.filter((card) => belongsToCurrentAccount(card.ownerUserId)));
+    setFactCards(facts.filter((card) => belongsToCurrentAccount(card.ownerUserId)));
+    setQuestionFactLinks(links.filter((link) => belongsToCurrentAccount(link.ownerUserId)));
+    setAttemptRecords(attempts.filter((attempt) => belongsToCurrentAccount(attempt.ownerUserId)));
+    setFactReviews(reviews.filter((review) => belongsToCurrentAccount(review.ownerUserId)));
     setUnassignedCardCount(
       questions.filter((card) => !card.ownerUserId).length +
         facts.filter((card) => !card.ownerUserId).length +
@@ -343,7 +334,24 @@ function App() {
     let cancelled = false;
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, authSession) => {
+    } = supabase.auth.onAuthStateChange((event, authSession) => {
+      // A Supabase sign-in starts a new app account session. Never carry a
+      // Google Drive access token across that boundary, even in the same tab.
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+        // Clear account-scoped UI immediately so the previous account's local
+        // records are never visible while the next account's records load.
+        setSavedSessions([]);
+        setQuestionCards([]);
+        setFactCards([]);
+        setQuestionFactLinks([]);
+        setAttemptRecords([]);
+        setFactReviews([]);
+      }
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+        clearDriveAuthorization();
+        setDriveConnectionStatus("idle");
+        setDriveConnectionError(null);
+      }
       setAuthUser(authSession?.user ?? null);
       setIsAuthLoading(false);
       setAuthError(null);
@@ -379,6 +387,17 @@ function App() {
 
   useEffect(() => {
     let cancelled = false;
+    // Do not treat records as anonymous while Supabase is still restoring the
+    // signed-in account. That can briefly expose another account's local view.
+    setSavedSessions([]);
+    setIsLoadingSessions(true);
+    if (isAuthLoading) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const requestedUserId = authUser?.id ?? null;
     database.sessions
       .toArray()
       .then((records) => {
@@ -386,8 +405,8 @@ function App() {
         const unassigned = records.filter((record) => !record.ownerUserId);
         setUnassignedSessionCount(unassigned.length);
         setSavedSessions(
-          authUser
-            ? records.filter((record) => record.ownerUserId === authUser.id)
+          requestedUserId
+            ? records.filter((record) => record.ownerUserId === requestedUserId)
             : unassigned,
         );
       })
@@ -407,22 +426,34 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [authUser]);
+  }, [authUser, isAuthLoading]);
 
   useEffect(() => {
-    void refreshCardData().catch((error: unknown) => {
+    const requestVersion = ++accountDataLoadVersion.current;
+    setQuestionCards([]);
+    setFactCards([]);
+    setQuestionFactLinks([]);
+    setAttemptRecords([]);
+    setFactReviews([]);
+    if (isAuthLoading) return;
+    void refreshCardData(requestVersion).catch((error: unknown) => {
       setDatabaseError(
         error instanceof Error
           ? `Could not load cards: ${error.message}`
           : "Could not load cards.",
       );
     });
-  }, [authUser]);
+  }, [authUser, isAuthLoading]);
 
   async function refreshSyncDriveProgress() {
+    const ownerFilter = (ownerUserId?: string) => authUser
+      ? ownerUserId === authUser.id
+      : !ownerUserId;
     const [attempts, questions, facts, images] = await Promise.all([
-      database.attempts.toArray(), database.questions.toArray(),
-      database.factCards.toArray(), database.localImages.toArray(),
+      database.attempts.filter((row) => ownerFilter(row.ownerUserId)).toArray(),
+      database.questions.filter((row) => ownerFilter(row.ownerUserId)).toArray(),
+      database.factCards.filter((row) => ownerFilter(row.ownerUserId)).toArray(),
+      database.localImages.filter((row) => ownerFilter(row.ownerUserId)).toArray(),
     ]);
     const sessionByAttempt = new Map(attempts.map((attempt) => [attempt.id, attempt.sessionId]));
     const imageById = new Map(images.map((image) => [image.id, image]));
@@ -508,24 +539,24 @@ function App() {
       )));
       const attachedFactImages = await database.localImages.bulkGet(attachedFactImageIds);
       const locallySavedFactImageIds = attachedFactImages.flatMap((image) =>
-        image?.status === "local" ? [image.id] : [],
+        image?.ownerUserId === user.id && image.status === "local" ? [image.id] : [],
       );
-      await queueImagesForUpload(locallySavedFactImageIds);
+      await queueImagesForUpload(user.id, locallySavedFactImageIds);
 
       // Upload photos only when the user has explicitly connected Drive in
       // this browser session. A Drive failure is isolated from metadata sync.
-      if (hasDriveAccessToken()) {
+      if (hasDriveAccessToken(user.id)) {
         setSyncPhase("photos");
         setPhotoUploadProgress({ completed: 0, total: 0, failed: 0, currentImageId: null });
         setDriveConnectionError(null);
         try {
-          await processUploadQueue(driveImageStore, (progress) => {
+          await processUploadQueue(user.id, driveImageStore, (progress) => {
             setPhotoUploadProgress(progress);
             if (progress.failed > 0) {
               setDriveConnectionError("Some photos could not be uploaded yet. They remain on this device and can be retried.");
             }
           });
-          if (hasDriveAccessToken()) {
+          if (hasDriveAccessToken(user.id)) {
             setDriveConnectionStatus("connected");
           } else {
             setDriveConnectionStatus("error");
@@ -558,8 +589,9 @@ function App() {
       );
       await refreshCardData();
       const remainingPhotos = await database.localImages
-        .where("status")
-        .anyOf(["pending", "uploading", "failed"])
+        .where("ownerUserId")
+        .equals(user.id)
+        .filter((image) => ["pending", "uploading", "failed"].includes(image.status))
         .count();
       setPendingPhotoCount(remainingPhotos);
       const [
@@ -609,11 +641,16 @@ function App() {
 
   useEffect(() => {
     void refreshSyncDriveProgress();
-  }, [savedSessions, questionCards, factCards, photoUploadProgress]);
+  }, [savedSessions, questionCards, factCards, photoUploadProgress, authUser]);
 
   useEffect(() => {
     let cancelled = false;
-    void database.localImages.where("status").anyOf(["pending", "uploading", "failed"]).count()
+    const pendingQuery = authUser
+      ? database.localImages.where("ownerUserId").equals(authUser.id)
+          .filter((image) => ["pending", "uploading", "failed"].includes(image.status))
+      : database.localImages.filter((image) =>
+          !image.ownerUserId && ["pending", "uploading", "failed"].includes(image.status));
+    void pendingQuery.count()
       .then((count) => { if (!cancelled) setPendingPhotoCount(count); })
       .catch(() => undefined);
     return () => { cancelled = true; };
@@ -746,9 +783,9 @@ function App() {
     setSyncStatus("syncing");
     setSyncError(null);
     try {
-      await driveImageStore.reconnect();
+      await driveImageStore.reconnect(authUser.id);
       setDriveConnectionStatus("connected");
-      await retryFailedUploads();
+      await retryFailedUploads(authUser.id);
       await performSync(authUser);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not connect Google Drive.";
@@ -1278,7 +1315,7 @@ function App() {
     // Existing questions can be linked now. For a draft question, linkedFactIds
     // records the intended relationship and saveSession creates it atomically
     // when it creates the question card.
-    await queueImagesForUpload([input.promptImageId, input.contentImageId].filter((id): id is string => Boolean(id)));
+    if (authUser) await queueImagesForUpload(authUser.id, [input.promptImageId, input.contentImageId].filter((id): id is string => Boolean(id)));
     if (feedback.questionId) {
       await linkQuestionAndFact(feedback.questionId, card.id, { userId: authUser?.id });
     }
@@ -1656,7 +1693,7 @@ function App() {
         );
       }
       try {
-        await queueImagesForUpload(Array.from(finalizedImageIds));
+        if (authUser) await queueImagesForUpload(authUser.id, Array.from(finalizedImageIds));
       } catch (imageQueueError) {
         setSyncError(
           imageQueueError instanceof Error
@@ -1799,7 +1836,7 @@ function App() {
         onNavigate={navigate}
         onSyncNow={() => {
           if (authUser) {
-            void retryFailedUploads()
+            void retryFailedUploads(authUser.id)
               .then(() => performSync(authUser))
               .catch((error: unknown) => {
                 setSyncStatus("error");
@@ -1934,7 +1971,8 @@ function App() {
         questionFactLinks={questionFactLinks}
         syncStatus={syncStatus}
         syncError={syncError}
-        onRetrySync={() => { if (!authUser) return; void (async () => { const pending = await database.localImages.where("status").anyOf(["pending", "uploading", "failed"]).count(); if (pending > 0 && !hasDriveAccessToken()) { await connectGoogleDrive(); return; } await performSync(authUser, true); })().catch((error: unknown) => { setSyncStatus("error"); setSyncError(error instanceof Error ? error.message : "Could not retry sync."); }); }}
+        onRetrySync={() => { if (!authUser) return; void (async () => { const pending = await database.localImages.where("ownerUserId").equals(authUser.id)
+            .filter((image) => ["pending", "uploading", "failed"].includes(image.status)).count(); if (pending > 0 && !hasDriveAccessToken(authUser.id)) { await connectGoogleDrive(); return; } await performSync(authUser, true); })().catch((error: unknown) => { setSyncStatus("error"); setSyncError(error instanceof Error ? error.message : "Could not retry sync."); }); }}
         onNewSession={() => void startNewSession()}
       />
     );

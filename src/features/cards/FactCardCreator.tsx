@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { getChapter, jeeSyllabus } from "../../syllabus";
 import SearchSelect from "../../SearchSelect";
 import ImageInput from "../images/ImageInput";
@@ -17,7 +17,7 @@ type Props = {
     questionId: string,
   ) => Promise<FactCard>;
   onDone: (card: FactCard) => void;
-  onError: (message: string) => void;
+  onError: (message: string | null) => void;
 };
 
 const KINDS: FactCardKind[] = ["fact", "formula", "reaction", "misconception", "trap"];
@@ -57,6 +57,7 @@ export default function FactCardCreator({
   const [wrongBelief, setWrongBelief] = useState("");
   const [linkedQuestionId, setLinkedQuestionId] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const isSavingRef = useRef(false);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
 
   const chapter = getChapter(subjectId, chapterId);
@@ -102,8 +103,11 @@ export default function FactCardCreator({
     setStep(next);
   }
 
-  async function submit() {
+  async function submit(skipLink = false) {
+    if (isSavingRef.current) return;
+    isSavingRef.current = true;
     setIsSaving(true);
+    onError(null);
     try {
       const input: FactCardInput = {
         subjectId,
@@ -116,13 +120,15 @@ export default function FactCardCreator({
         contentImageId,
         wrongBelief: wrongBelief.trim() || undefined,
       };
-      const card = linkedQuestionId
-        ? await onCreateLinked(input, linkedQuestionId)
+      const questionId = skipLink ? "" : linkedQuestionId;
+      const card = questionId
+        ? await onCreateLinked(input, questionId)
         : await onCreate(input);
       onDone(card);
     } catch (error) {
       onError(error instanceof Error ? error.message : "Could not save this fact card.");
     } finally {
+      isSavingRef.current = false;
       setIsSaving(false);
     }
   }
@@ -211,6 +217,7 @@ export default function FactCardCreator({
               <SearchSelect
                 label="Add topic"
                 value=""
+                showAllOnFocus
                 options={topics
                   .filter((t) => !topicIds.includes(t.id))
                   .map((t) => ({ id: t.id, label: t.name }))}
@@ -446,8 +453,7 @@ export default function FactCardCreator({
             type="button"
             style={{ marginTop: "0.5rem", width: "100%" }}
             onClick={() => {
-              setLinkedQuestionId("");
-              void submit();
+              void submit(true);
             }}
             disabled={isSaving}
           >

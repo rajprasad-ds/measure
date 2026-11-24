@@ -101,7 +101,7 @@ export default function SyncScreen({
       : (item as FactCard).kind.charAt(0).toUpperCase() + (item as FactCard).kind.slice(1);
     const title = isSession
       ? (item as SessionRecord).subject + " · " + (item as SessionRecord).chapter
-      : (item as FactCard).promptText || "Untitled fact";
+      : (item as FactCard).promptText || ((item as FactCard).promptImageId ? "Photo fact card" : `${(item as FactCard).kind} fact card`);
     return <ItemRow key={item.id} title={title} detail={detail} cloudComplete={item.syncStatus === "synced"}
       driveProgress={drive} active={active}
       driveActive={syncPhase === "photos" && Boolean(drive?.total && drive.completed < drive.total)}

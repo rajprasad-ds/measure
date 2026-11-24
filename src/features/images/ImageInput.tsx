@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
 import { driveImageStore, isUploadQueueRunning, processUploadQueue } from "./driveImageStore";
 import {
   getImageRecord,
@@ -18,6 +18,8 @@ type Props = {
   onChange?: (imageId: string) => void;
 };
 
+type CropAspect = "original" | "square" | "landscape";
+
 export default function ImageInput({
   label,
   name,
@@ -29,10 +31,22 @@ export default function ImageInput({
 }: Props) {
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
+  const editorCanvasRef = useRef<HTMLCanvasElement>(null);
+  const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const activePointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{ distance: number; zoom: number } | null>(null);
   const [imageId, setImageId] = useState(value ?? "");
   const [previewUrl, setPreviewUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [editorUrl, setEditorUrl] = useState("");
+  const [rotation, setRotation] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
+  const [cropAspect, setCropAspect] = useState<CropAspect>("original");
+  const [isPreparingPreview, setIsPreparingPreview] = useState(false);
   const [record, setRecord] = useState<{
     status: string;
     remoteId?: string;
@@ -40,31 +54,17 @@ export default function ImageInput({
     attempts?: number;
   } | null>(null);
 
-  useEffect(() => {
-    setImageId(value ?? "");
-  }, [value]);
+  useEffect(() => { setImageId(value ?? ""); }, [value]);
 
   const refreshRecord = useCallback(async () => {
-    if (!imageId) {
-      setRecord(null);
-      return;
-    }
+    if (!imageId) { setRecord(null); return; }
     const rec = await getImageRecord(imageId);
-    if (rec) {
-      setRecord({
-        status: rec.status,
-        remoteId: rec.remoteId,
-        lastError: rec.lastError,
-        attempts: rec.attempts,
-      });
-    } else {
-      setRecord(null);
-    }
+    if (rec) setRecord({ status: rec.status, remoteId: rec.remoteId, lastError: rec.lastError, attempts: rec.attempts });
+    else setRecord(null);
   }, [imageId]);
 
   useEffect(() => {
     refreshRecord();
-    // Re-check status every few seconds while an upload is in flight.
     const timer = setInterval(refreshRecord, 3000);
     return () => clearInterval(timer);
   }, [imageId, refreshRecord]);
@@ -72,53 +72,152 @@ export default function ImageInput({
   useEffect(() => {
     let cancelled = false;
     let objectUrl = "";
-    if (!imageId) {
-      setPreviewUrl("");
-      return;
-    }
-    void getLocalImageBlob(imageId)
-      .then((blob) => {
-        if (cancelled) return;
-        if (blob) {
-          objectUrl = URL.createObjectURL(blob);
-          setPreviewUrl(objectUrl);
-        } else if (record?.remoteId) {
-          // Blob not local yet but uploaded to Drive: preview will load
-          // through CardImage's download path; show nothing here.
-          setPreviewUrl("");
-        } else {
-          setPreviewUrl("");
-        }
-      })
-      .catch((loadError: unknown) => {
-        if (!cancelled) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Could not load this image.",
-          );
-        }
-      });
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
+    if (!imageId) { setPreviewUrl(""); return; }
+    void getLocalImageBlob(imageId).then((blob) => {
+      if (cancelled) return;
+      if (blob) { objectUrl = URL.createObjectURL(blob); setPreviewUrl(objectUrl); }
+      else setPreviewUrl("");
+    }).catch((loadError: unknown) => {
+      if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Could not load this image.");
+    });
+    return () => { cancelled = true; if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [imageId, record?.remoteId]);
 
-  async function chooseFile(file?: File) {
+  useEffect(() => {
+    let cancelled = false;
+    async function drawPreview() {
+      if (!selectedFile || !editorCanvasRef.current) return;
+      setIsPreparingPreview(true);
+      try {
+        const bitmap = await createImageBitmap(selectedFile);
+        if (cancelled) { bitmap.close(); return; }
+        const quarterTurn = ((rotation % 360) + 360) % 360;
+        const rotatedWidth = quarterTurn % 180 === 0 ? bitmap.width : bitmap.height;
+        const rotatedHeight = quarterTurn % 180 === 0 ? bitmap.height : bitmap.width;
+        const rotated = document.createElement("canvas");
+        rotated.width = rotatedWidth;
+        rotated.height = rotatedHeight;
+        const rotatedContext = rotated.getContext("2d");
+        if (!rotatedContext) throw new Error("Could not prepare this image.");
+        rotatedContext.translate(rotatedWidth / 2, rotatedHeight / 2);
+        rotatedContext.rotate((quarterTurn * Math.PI) / 180);
+        rotatedContext.drawImage(bitmap, -bitmap.width / 2, -bitmap.height / 2);
+        bitmap.close();
+
+        const aspect = cropAspect === "square" ? 1 : cropAspect === "landscape" ? 4 / 3 : rotatedWidth / rotatedHeight;
+        let cropWidth = rotatedWidth;
+        let cropHeight = cropWidth / aspect;
+        if (cropHeight > rotatedHeight) { cropHeight = rotatedHeight; cropWidth = cropHeight * aspect; }
+        cropWidth /= zoom;
+        cropHeight /= zoom;
+        const sx = (rotatedWidth - cropWidth) * (panX + 1) / 2;
+        const sy = (rotatedHeight - cropHeight) * (panY + 1) / 2;
+        const outputWidth = 960;
+        const outputHeight = Math.max(1, Math.round(outputWidth / aspect));
+        const canvas = editorCanvasRef.current;
+        canvas.width = outputWidth;
+        canvas.height = outputHeight;
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Could not prepare this image.");
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, outputWidth, outputHeight);
+        context.drawImage(rotated, sx, sy, cropWidth, cropHeight, 0, 0, outputWidth, outputHeight);
+      } catch (previewError) {
+        if (!cancelled) setError(previewError instanceof Error ? previewError.message : "Could not preview this image.");
+      } finally {
+        if (!cancelled) setIsPreparingPreview(false);
+      }
+    }
+    void drawPreview();
+    return () => { cancelled = true; };
+  }, [selectedFile, rotation, zoom, panX, panY, cropAspect]);
+
+  function openEditor(file?: File) {
     if (!file) return;
+    if (!file.type.startsWith("image/")) { setError("Choose an image file."); return; }
+    if (file.size > 20 * 1024 * 1024) { setError("Choose an image smaller than 20 MB."); return; }
+    if (typeof createImageBitmap !== "function") { setError("This browser cannot edit images. Try a newer browser."); return; }
+    setError(null);
+    setSelectedFile(file);
+    setEditorUrl(URL.createObjectURL(file));
+    setRotation(0);
+    setZoom(1);
+    setPanX(0);
+    setPanY(0);
+    setCropAspect("original");
+  }
+
+  function closeEditor() {
+    if (editorUrl) URL.revokeObjectURL(editorUrl);
+    setEditorUrl("");
+    setSelectedFile(null);
+    setRotation(0);
+    setZoom(1);
+    setPanX(0);
+    setPanY(0);
+    setCropAspect("original");
+  }
+
+  function handleCropPointerDown(event: PointerEvent<HTMLCanvasElement>) {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const pointers = activePointersRef.current;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size === 2) {
+      const [first, second] = [...pointers.values()];
+      pinchRef.current = { distance: Math.hypot(second.x - first.x, second.y - first.y), zoom };
+      dragRef.current = null;
+    } else if (pointers.size === 1 && (zoom > 1 || cropAspect !== "original")) {
+      dragRef.current = { x: event.clientX, y: event.clientY, panX, panY };
+    }
+  }
+
+  function handleCropPointerMove(event: PointerEvent<HTMLCanvasElement>) {
+    const pointers = activePointersRef.current;
+    if (!pointers.has(event.pointerId)) return;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size >= 2 && pinchRef.current) {
+      const [first, second] = [...pointers.values()];
+      const distance = Math.hypot(second.x - first.x, second.y - first.y);
+      setZoom(Math.max(1, Math.min(3, pinchRef.current.zoom * distance / Math.max(1, pinchRef.current.distance))));
+      return;
+    }
+    const start = dragRef.current;
+    const canvas = editorCanvasRef.current;
+    if (!start || !canvas) return;
+    const bounds = canvas.getBoundingClientRect();
+    const maxPan = zoom > 1 ? 1 - 1 / zoom : 1;
+    setPanX(Math.max(-1, Math.min(1, start.panX - ((event.clientX - start.x) / bounds.width) * 2 * maxPan)));
+    setPanY(Math.max(-1, Math.min(1, start.panY - ((event.clientY - start.y) / bounds.height) * 2 * maxPan)));
+  }
+
+  function handleCropPointerUp(event: PointerEvent<HTMLCanvasElement>) {
+    const pointers = activePointersRef.current;
+    pointers.delete(event.pointerId);
+    pinchRef.current = null;
+    dragRef.current = null;
+    if (pointers.size === 1 && (zoom > 1 || cropAspect !== "original")) {
+      const remaining = [...pointers.values()][0];
+      dragRef.current = { x: remaining.x, y: remaining.y, panX, panY };
+    }
+  }
+
+  async function applyEdit() {
+    const canvas = editorCanvasRef.current;
+    if (!canvas || !selectedFile) return;
     setIsSaving(true);
     setError(null);
     try {
-      const nextId = await saveImageFile(file, ownerUserId);
+      const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((result) => {
+        if (result) resolve(result);
+        else reject(new Error("Could not prepare this image."));
+      }, "image/jpeg", 0.92));
+      const editedFile = new File([blob], selectedFile.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg", lastModified: Date.now() });
+      const nextId = await saveImageFile(editedFile, ownerUserId);
       setImageId(nextId);
       onChange?.(nextId);
+      closeEditor();
     } catch (saveError) {
-      setError(
-        saveError instanceof Error
-          ? saveError.message
-          : "Could not save this image.",
-      );
+      setError(saveError instanceof Error ? saveError.message : "Could not save this image.");
     } finally {
       setIsSaving(false);
     }
@@ -128,139 +227,118 @@ export default function ImageInput({
     if (!imageId || !record) return;
     setError(null);
     try {
-      await resetImageUpload(imageId);
-      await processUploadQueue();
+      if (!ownerUserId) throw new Error("Sign in to back up this photo.");
+      await resetImageUpload(imageId, ownerUserId);
+      await processUploadQueue(ownerUserId);
       onUploadComplete?.();
-    } catch (queueError) {
-      const message =
-        queueError instanceof Error
-          ? queueError.message
-          : "Retry failed.";
+    }
+    catch (queueError) {
+      const message = queueError instanceof Error ? queueError.message : "Retry failed.";
       setError(message);
-      await markImageFailed(imageId, message);
+      if (ownerUserId) await markImageFailed(imageId, ownerUserId, message);
     }
   }
 
   async function reconnectDrive() {
     try {
-      // Start the OAuth popup before any await so the browser recognizes the click.
-      const connection = driveImageStore.reconnect();
-      if (imageId) await resetImageUpload(imageId);
-      await connection;
-      await processUploadQueue();
-      onUploadComplete?.();
+      if (!ownerUserId) throw new Error("Sign in to back up this photo.");
+      const connection = driveImageStore.reconnect(ownerUserId);
+      if (!ownerUserId) throw new Error("Sign in to back up this photo.");
+      if (imageId) await resetImageUpload(imageId, ownerUserId);
+      await connection; await processUploadQueue(ownerUserId); onUploadComplete?.();
     } catch (reconnectError) {
-      setError(
-        reconnectError instanceof Error
-          ? reconnectError.message
-          : "Could not reconnect Google Drive.",
-      );
+      setError(reconnectError instanceof Error ? reconnectError.message : "Could not reconnect Google Drive.");
     }
   }
 
   const statusLabel = (() => {
     switch (record?.status) {
-      case "local":
-        return "Saved on this device";
-      case "pending":
-        return "Waiting to upload";
-      case "uploading":
-        return "Uploading photo…";
-      case "uploaded":
-        return record.remoteId ? "Uploaded" : "Uploaded";
-      case "failed":
-        return "Upload failed";
-      default:
-        return "Ready";
+      case "local": return "Saved on this device";
+      case "pending": return "Waiting to upload";
+      case "uploading": return "Uploading photo…";
+      case "uploaded": return "Uploaded";
+      case "failed": return "Upload failed";
+      default: return "Ready";
     }
   })();
 
   return (
     <div className="image-input">
-      <span className="image-input-label">
-        {label}
-        {required && <span> · required</span>}
-      </span>
+      <span className="image-input-label">{label}{required && <span> · required</span>}</span>
       <input type="hidden" name={name} value={imageId} />
       {previewUrl ? (
         <img className="image-input-preview" src={previewUrl} alt={`${label} preview`} />
       ) : imageId ? (
-        <p className="image-input-missing">
-          {record?.remoteId ? "Stored in Google Drive." : "Photo isn’t downloaded on this device yet."}
-        </p>
+        <p className="image-input-missing">{record?.remoteId ? "Stored in Google Drive." : "Photo isn’t downloaded on this device yet."}</p>
       ) : (
-        <p className="image-input-hint">
-          Take a photo or choose one. It’s stored offline on this device;
-          It stays on this device until you submit the session.
-        </p>
+        <p className="image-input-hint">Take a photo or choose one. You can rotate and crop it before it is saved on this device.</p>
       )}
       <div className="image-input-actions">
-        <button type="button" onClick={() => cameraRef.current?.click()} disabled={isSaving}>
-          {isSaving ? "Saving photo…" : "Take photo"}
-        </button>
-        <button type="button" onClick={() => galleryRef.current?.click()} disabled={isSaving}>
-          Choose photo
-        </button>
-        {imageId && (
-          <button
-            type="button"
-            onClick={() => {
-              setImageId("");
-              setPreviewUrl("");
-              setError(null);
-              setRecord(null);
-              onChange?.("");
-            }}
-          >
-            Remove
-          </button>
-        )}
+        <button type="button" onClick={() => cameraRef.current?.click()} disabled={isSaving}>{isSaving ? "Saving photo…" : "Take photo"}</button>
+        <button type="button" onClick={() => galleryRef.current?.click()} disabled={isSaving}>Choose photo</button>
+        {imageId && <button type="button" onClick={() => { setImageId(""); setPreviewUrl(""); setError(null); setRecord(null); onChange?.(""); }}>Remove</button>}
       </div>
-      <input
-        ref={cameraRef}
-        className="image-input-file"
-        type="file"
-        accept="image/*"
-        capture="environment"
-        aria-label={`Take ${label.toLowerCase()}`}
-        style={{ display: "none" }}
-        onChange={(event) => {
-          void chooseFile(event.target.files?.[0]);
-          event.target.value = "";
-        }}
-      />
-      <input
-        ref={galleryRef}
-        className="image-input-file"
-        type="file"
-        accept="image/*"
-        aria-label={`Choose ${label.toLowerCase()} from gallery`}
-        style={{ display: "none" }}
-        onChange={(event) => {
-          void chooseFile(event.target.files?.[0]);
-          event.target.value = "";
-        }}
-      />
+      <input ref={cameraRef} className="image-input-file" type="file" accept="image/*" capture="environment" aria-label={`Take ${label.toLowerCase()}`} style={{ display: "none" }} onChange={(event) => { openEditor(event.target.files?.[0]); event.target.value = ""; }} />
+      <input ref={galleryRef} className="image-input-file" type="file" accept="image/*" aria-label={`Choose ${label.toLowerCase()} from gallery`} style={{ display: "none" }} onChange={(event) => { openEditor(event.target.files?.[0]); event.target.value = ""; }} />
+
+      {editorUrl && (
+        <div className="image-editor-backdrop" role="presentation">
+          <section className="image-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="image-editor-title">
+            <header className="image-editor-header">
+              <div>
+                <span className="image-editor-kicker">PHOTO EDITOR</span>
+                <h3 id="image-editor-title">Adjust your photo</h3>
+              </div>
+              <button className="image-editor-close" type="button" onClick={closeEditor} disabled={isSaving} aria-label="Close photo editor">×</button>
+            </header>
+            <div className="image-editor-stage">
+              <canvas
+                ref={editorCanvasRef}
+                className={`image-editor-preview${zoom > 1 ? " is-draggable" : ""}`}
+                aria-label="Edited photo preview. Drag to reposition when zoomed in."
+                onPointerDown={handleCropPointerDown}
+                onPointerMove={handleCropPointerMove}
+                onPointerUp={handleCropPointerUp}
+                onPointerCancel={handleCropPointerUp}
+                onLostPointerCapture={handleCropPointerUp}
+              />
+              <span className="image-editor-stage-hint">{zoom > 1 ? "Drag to reposition" : "Pinch or zoom to crop"}</span>
+            </div>
+            <div className="image-editor-toolbar">
+              <div className="image-editor-tool-group">
+                <span className="image-editor-tool-label">Crop ratio</span>
+                <div className="image-editor-ratios" role="group" aria-label="Crop aspect ratio">
+                  <button type="button" aria-pressed={cropAspect === "original"} onClick={() => setCropAspect("original")}>Original</button>
+                  <button type="button" aria-pressed={cropAspect === "square"} onClick={() => setCropAspect("square")}>1:1</button>
+                  <button type="button" aria-pressed={cropAspect === "landscape"} onClick={() => setCropAspect("landscape")}>4:3</button>
+                </div>
+              </div>
+              <div className="image-editor-tool-group">
+                <div className="image-editor-zoom-heading">
+                  <label htmlFor={`image-zoom-${name}`}>Zoom</label>
+                  <span>{zoom.toFixed(1)}×</span>
+                </div>
+                <input className="image-editor-zoom" id={`image-zoom-${name}`} type="range" min="1" max="3" step="0.05" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} />
+              </div>
+              <div className="image-editor-rotate-row">
+                <button type="button" onClick={() => setRotation((value) => (value + 270) % 360)}><span aria-hidden="true">↶</span> Rotate left</button>
+                <button type="button" onClick={() => setRotation((value) => (value + 90) % 360)}><span aria-hidden="true">↷</span> Rotate right</button>
+                <button type="button" onClick={() => { setRotation(0); setZoom(1); setPanX(0); setPanY(0); setCropAspect("original"); }}>Reset</button>
+              </div>
+            </div>
+            <footer className="image-editor-actions">
+              <button type="button" onClick={closeEditor} disabled={isSaving}>Cancel</button>
+              <button type="button" onClick={() => void applyEdit()} disabled={isSaving || isPreparingPreview}>{isSaving ? "Saving…" : "Use photo"}</button>
+            </footer>
+          </section>
+        </div>
+      )}
+
       {record && record.status !== "uploaded" && (
         <div className="image-status">
-          <span className={`image-status-badge status-${record.status}`}>
-            {statusLabel}
-          </span>
-          {record.status === "failed" && (
-            <>
-              <button className="image-status-button" type="button" onClick={retryUpload} disabled={isUploadQueueRunning()}>
-                Retry upload
-              </button>
-              {record.lastError && (
-                <span className="image-status-error">{record.lastError}</span>
-              )}
-            </>
-          )}
-          {record.status !== "local" && !record.remoteId && (
-            <button className="image-status-button" type="button" onClick={reconnectDrive}>
-              {record.status === "failed" ? "Reconnect Google Drive" : "Connect Google Drive"}
-            </button>
-          )}
+          <span className={`image-status-badge status-${record.status}`}>{statusLabel}</span>
+          {record.status === "failed" && <><button className="image-status-button" type="button" onClick={retryUpload} disabled={isUploadQueueRunning()}>Retry upload</button>{record.lastError && <span className="image-status-error">{record.lastError}</span>}</>}
+          {record.status !== "local" && !record.remoteId && <button className="image-status-button" type="button" onClick={reconnectDrive}>{record.status === "failed" ? "Reconnect Google Drive" : "Connect Google Drive"}</button>}
         </div>
       )}
       {error && <p className="database-error" role="alert">{error}</p>}

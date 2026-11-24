@@ -492,6 +492,7 @@ export default function SessionFeedbackScreen({
         <SearchSelect
           label={label}
           value=""
+          showAllOnFocus
           options={(chapter?.topics ?? [])
             .filter(
               (topic) =>
