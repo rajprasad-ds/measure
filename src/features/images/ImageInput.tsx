@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
 import { driveImageStore, isUploadQueueRunning, processUploadQueue } from "./driveImageStore";
 import {
   getImageRecord,
@@ -33,6 +33,8 @@ export default function ImageInput({
   const galleryRef = useRef<HTMLInputElement>(null);
   const editorCanvasRef = useRef<HTMLCanvasElement>(null);
   const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const activePointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{ distance: number; zoom: number } | null>(null);
   const [imageId, setImageId] = useState(value ?? "");
   const [previewUrl, setPreviewUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -156,13 +158,29 @@ export default function ImageInput({
     setCropAspect("original");
   }
 
-  function handleCropPointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
-    if (zoom <= 1) return;
+  function handleCropPointerDown(event: PointerEvent<HTMLCanvasElement>) {
     event.currentTarget.setPointerCapture(event.pointerId);
-    dragRef.current = { x: event.clientX, y: event.clientY, panX, panY };
+    const pointers = activePointersRef.current;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size === 2) {
+      const [first, second] = [...pointers.values()];
+      pinchRef.current = { distance: Math.hypot(second.x - first.x, second.y - first.y), zoom };
+      dragRef.current = null;
+    } else if (pointers.size === 1 && zoom > 1) {
+      dragRef.current = { x: event.clientX, y: event.clientY, panX, panY };
+    }
   }
 
-  function handleCropPointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
+  function handleCropPointerMove(event: PointerEvent<HTMLCanvasElement>) {
+    const pointers = activePointersRef.current;
+    if (!pointers.has(event.pointerId)) return;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size >= 2 && pinchRef.current) {
+      const [first, second] = [...pointers.values()];
+      const distance = Math.hypot(second.x - first.x, second.y - first.y);
+      setZoom(Math.max(1, Math.min(3, pinchRef.current.zoom * distance / Math.max(1, pinchRef.current.distance))));
+      return;
+    }
     const start = dragRef.current;
     const canvas = editorCanvasRef.current;
     if (!start || !canvas) return;
@@ -172,7 +190,16 @@ export default function ImageInput({
     setPanY(Math.max(-1, Math.min(1, start.panY - ((event.clientY - start.y) / bounds.height) * 2 * maxPan)));
   }
 
-  function handleCropPointerUp() { dragRef.current = null; }
+  function handleCropPointerUp(event: PointerEvent<HTMLCanvasElement>) {
+    const pointers = activePointersRef.current;
+    pointers.delete(event.pointerId);
+    pinchRef.current = null;
+    dragRef.current = null;
+    if (pointers.size === 1 && zoom > 1) {
+      const remaining = [...pointers.values()][0];
+      dragRef.current = { x: remaining.x, y: remaining.y, panX, panY };
+    }
+  }
 
   async function applyEdit() {
     const canvas = editorCanvasRef.current;
