@@ -20,7 +20,24 @@ export interface ImageStore {
 
 let gsiLoadPromise: Promise<void> | null = null;
 let accessToken: string | null = null;
+let accessTokenExpiresAt = 0;
 let tokenPromise: Promise<string> | null = null;
+
+const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 60_000;
+
+function clearAccessToken() {
+  accessToken = null;
+  accessTokenExpiresAt = 0;
+}
+
+function handleUnauthorizedResponse(response: Response, operation: string) {
+  if (response.status === 401 || response.status === 403) {
+    clearAccessToken();
+    throw new Error(
+      `Google Drive authorization expired or was revoked during ${operation}. Reconnect Google Drive to continue. Your local data is safe.`,
+    );
+  }
+}
 
 function loadGSI(): Promise<void> {
   if (typeof window === "undefined") return Promise.reject(new Error("No browser window."));
@@ -62,9 +79,13 @@ function requestAccessToken(forceConsent = false): Promise<string> {
         tokenPromise = null;
         if (resp.error) {
           reject(new Error(resp.error_description || resp.error || "Google Drive access was cancelled."));
+        } else if (!resp.access_token) {
+          clearAccessToken();
+          reject(new Error("Google did not return a Drive access token. Please reconnect."));
         } else {
           accessToken = resp.access_token;
-          resolve(accessToken as string);
+          accessTokenExpiresAt = Date.now() + Math.max(0, Number(resp.expires_in ?? 0)) * 1_000;
+          resolve(accessToken);
         }
       },
     });
@@ -75,10 +96,21 @@ function requestAccessToken(forceConsent = false): Promise<string> {
 }
 
 async function ensureAccessToken(): Promise<string> {
-  if (accessToken) return accessToken;
+  if (
+    accessToken &&
+    accessTokenExpiresAt - Date.now() > TOKEN_EXPIRY_SAFETY_WINDOW_MS
+  ) return accessToken;
+  if (accessToken) clearAccessToken();
   if (tokenPromise) return tokenPromise;
   if (!(window as any).google?.accounts?.oauth2) await loadGSI();
-  throw new Error("Connect Google Drive to enable photo uploads.");
+  throw new Error("Google Drive needs to be connected. Reconnect Google Drive to upload photos. Your local data is safe.");
+}
+
+export function hasDriveAccessToken(): boolean {
+  return Boolean(
+    accessToken &&
+    accessTokenExpiresAt - Date.now() > TOKEN_EXPIRY_SAFETY_WINDOW_MS,
+  );
 }
 
 export function prepareDriveConnection(): Promise<void> {
@@ -93,7 +125,10 @@ async function getOrCreateFolderId(token: string): Promise<string> {
     `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,createdTime)&orderBy=createdTime`,
     { headers: { Authorization: `Bearer ${token}` } },
   );
-  if (!res.ok) throw new Error(`Drive folder search failed: ${res.status}`);
+  if (!res.ok) {
+    handleUnauthorizedResponse(res, "folder lookup");
+    throw new Error(`Drive folder search failed: ${res.status}`);
+  }
   const data = await res.json();
   const files: Array<{ id: string; createdTime: string }> = data.files ?? [];
   if (files.length > 0) return files[0].id;
@@ -109,7 +144,10 @@ async function getOrCreateFolderId(token: string): Promise<string> {
       mimeType: "application/vnd.google-apps.folder",
     }),
   });
-  if (!createRes.ok) throw new Error(`Drive folder create failed: ${createRes.status}`);
+  if (!createRes.ok) {
+    handleUnauthorizedResponse(createRes, "folder creation");
+    throw new Error(`Drive folder create failed: ${createRes.status}`);
+  }
   const created = await createRes.json();
   return created.id as string;
 }
@@ -143,6 +181,7 @@ export class DriveImageStore implements ImageStore {
       },
     );
     if (!res.ok) {
+      handleUnauthorizedResponse(res, "photo upload");
       const text = await res.text().catch(() => "");
       throw new Error(`Drive upload failed: ${res.status} ${text}`);
     }
@@ -156,7 +195,10 @@ export class DriveImageStore implements ImageStore {
       `https://www.googleapis.com/drive/v3/files/${remoteId}?alt=media`,
       { headers: { Authorization: `Bearer ${token}` } },
     );
-    if (!res.ok) throw new Error(`Drive download failed: ${res.status}`);
+    if (!res.ok) {
+      handleUnauthorizedResponse(res, "photo download");
+      throw new Error(`Drive download failed: ${res.status}`);
+    }
     return res.blob();
   }
 
@@ -169,11 +211,14 @@ export class DriveImageStore implements ImageStore {
         headers: { Authorization: `Bearer ${token}` },
       },
     );
-    if (!res.ok) throw new Error(`Drive delete failed: ${res.status}`);
+    if (!res.ok) {
+      handleUnauthorizedResponse(res, "photo deletion");
+      throw new Error(`Drive delete failed: ${res.status}`);
+    }
   }
 
   reconnect(): Promise<void> {
-    accessToken = null;
+    clearAccessToken();
     tokenPromise = null;
     if ((window as any).google?.accounts?.oauth2) {
       return requestAccessToken(true).then(() => undefined);
@@ -214,6 +259,10 @@ export async function processUploadQueue(
   if (running) return;
   running = true;
   try {
+    // Do not turn every queued photo into a failed upload just because this
+    // page load has no in-memory Google token. Require an explicit connection
+    // before changing any queue records.
+    if (store === driveImageStore) await ensureAccessToken();
     const pending = await getPendingImages();
     const now = Date.now();
 
