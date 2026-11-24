@@ -257,6 +257,7 @@ export async function retryFailedUploads(): Promise<void> {
 export type UploadQueueProgress = {
   completed: number;
   total: number;
+  failed: number;
   currentImageId: string | null;
 };
 
@@ -271,7 +272,7 @@ export async function processUploadQueue(
     // No queued photos means Drive authorization is irrelevant. This lets
     // session/card metadata sync without requiring a Drive token unnecessarily.
     if (pending.length === 0) {
-      onProgress?.({ completed: 0, total: 0, currentImageId: null });
+      onProgress?.({ completed: 0, total: 0, failed: 0, currentImageId: null });
       return;
     }
     // Do not turn queued photos into failed uploads just because this page load
@@ -284,7 +285,8 @@ export async function processUploadQueue(
         (image.attempts ?? 0) < MAX_ATTEMPTS;
     });
     let completed = 0;
-    onProgress?.({ completed, total: eligible.length, currentImageId: null });
+    let failed = 0;
+    onProgress?.({ completed, total: eligible.length, failed, currentImageId: null });
 
     for (const image of pending) {
       const lastTry = lastAttemptAtById.get(image.id) ?? 0;
@@ -292,12 +294,13 @@ export async function processUploadQueue(
       if (now < nextRetry) continue;
       if ((image.attempts ?? 0) >= MAX_ATTEMPTS) continue;
 
-      onProgress?.({ completed, total: eligible.length, currentImageId: image.id });
+      onProgress?.({ completed, total: eligible.length, failed, currentImageId: image.id });
       const blob = await getLocalImageBlob(image.id);
       if (!blob) {
         await markImageFailed(image.id, "Local photo is no longer available.");
         completed += 1;
-        onProgress?.({ completed, total: eligible.length, currentImageId: null });
+        failed += 1;
+        onProgress?.({ completed, total: eligible.length, failed, currentImageId: null });
         continue;
       }
       lastAttemptAtById.set(image.id, Date.now());
@@ -310,13 +313,14 @@ export async function processUploadQueue(
         await markImageUploaded(image.id, remoteId);
         lastAttemptAtById.delete(image.id);
         completed += 1;
-        onProgress?.({ completed, total: eligible.length, currentImageId: null });
+        onProgress?.({ completed, total: eligible.length, failed, currentImageId: null });
       } catch (error) {
         await markImageFailed(
           image.id,
           error instanceof Error ? error.message : "Upload failed.",
         );
         completed += 1;
+        failed += 1;
         onProgress?.({ completed, total: eligible.length, currentImageId: null });
         // An authorization failure invalidates the shared token. Stop here so
         // the remaining queue entries stay pending instead of being marked as
