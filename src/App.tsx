@@ -705,6 +705,10 @@ function App() {
 
   async function signOut() {
     if (!supabase) return;
+    if (syncInProgress.current) {
+      setAuthError("Wait for the current backup to finish before signing out.");
+      return;
+    }
     setAuthError(null);
     const { error } = await supabase.auth.signOut();
     if (error) {
