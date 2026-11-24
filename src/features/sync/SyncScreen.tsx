@@ -40,16 +40,16 @@ function Ring({ complete, label }: { complete: boolean; label: string }) {
   );
 }
 
-function ItemRow({ title, detail, complete }: { title: string; detail: string; complete: boolean }) {
+function ItemRow({ title, detail, complete, waitingLabel = "Waiting" }: { title: string; detail: string; complete: boolean; waitingLabel?: string }) {
   return (
     <li className="sync-item">
-      <Ring complete={complete} label={complete ? "Backed up" : "Waiting to sync"} />
+      <Ring complete={complete} label={complete ? "Backed up" : waitingLabel} />
       <span className="sync-item-copy">
         <strong>{title}</strong>
         <span>{detail}</span>
       </span>
       <span className={complete ? "sync-item-state is-complete" : "sync-item-state"}>
-        {complete ? "Backed up" : "Waiting"}
+        {complete ? "Backed up" : waitingLabel}
       </span>
     </li>
   );
@@ -127,7 +127,7 @@ export default function SyncScreen({
         ) : !signedIn ? (
           <button className="sync-primary-button" type="button" onClick={onSignIn}>Sign in to enable backup</button>
         ) : (
-          <p className="sync-muted">Cloud backup is not configured yet.</p>
+          <p className="sync-muted">{syncStatus === "syncing" ? "Measure is updating your cloud backup." : "Cloud backup is available. Measure will keep your practice data in sync."}</p>
         )}
         {syncError && <p className="sync-alert" role="alert">{syncError}</p>}
       </section>
@@ -140,7 +140,7 @@ export default function SyncScreen({
         {sessions.length === 0 ? <p className="sync-empty">Your completed practice sessions will appear here.</p> : (
           <>
             <ul className="sync-item-list">
-              {pendingSessions.map((item) => <ItemRow key={item.id} title={`${item.subject} · ${item.chapter}`} detail={`${new Date(item.endedAt).toLocaleDateString()} · ${item.sessionKind === "question_revision" ? "Question revision" : "Practice session"}`} complete={false} />)}
+              {pendingSessions.map((item) => <ItemRow key={item.id} title={`${item.subject} · ${item.chapter}`} detail={`${new Date(item.endedAt).toLocaleDateString()} · ${item.sessionKind === "question_revision" ? "Question revision" : "Practice session"}`} complete={false} waitingLabel={configured ? "Waiting" : "On device"} />)}
             </ul>
             {completedSessions.length > 0 && <details className="sync-completed">
               <summary>Completed · {completedSessions.length}</summary>
