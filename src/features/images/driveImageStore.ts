@@ -90,6 +90,7 @@ function requestAccessToken(forceConsent: boolean, ownerUserId: string): Promise
           return;
         }
         tokenPromise = null;
+        tokenPromiseOwnerUserId = null;
         if (resp.error) {
           reject(new Error(resp.error_description || resp.error || "Google Drive access was cancelled."));
         } else if (!resp.access_token) {
