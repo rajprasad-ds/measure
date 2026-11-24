@@ -1,5 +1,5 @@
 import type { SessionRecord } from "../../database";
-import type { FactCard, QuestionCard } from "../cards/types";
+import type { FactCard } from "../cards/types";
 
 type SyncStatus = "idle" | "syncing" | "synced" | "offline" | "error";
 type DriveStatus = "loading" | "idle" | "connecting" | "connected" | "error";
@@ -13,7 +13,6 @@ type Props = {
   driveError: string | null;
   sessions: SessionRecord[];
   facts: FactCard[];
-  questions: QuestionCard[];
   pendingPhotoCount: number;
   onBack: () => void;
   onSyncNow: () => void;
@@ -72,7 +71,6 @@ export default function SyncScreen({
   driveError,
   sessions,
   facts,
-  questions,
   pendingPhotoCount,
   onBack,
   onSyncNow,
@@ -84,12 +82,11 @@ export default function SyncScreen({
   const orderedSessions = [...sessions].sort((a, b) => b.endedAt.localeCompare(a.endedAt));
   const pendingSessions = orderedSessions.filter((item) => item.syncStatus !== "synced");
   const completedSessions = orderedSessions.filter((item) => item.syncStatus === "synced");
-  const pendingFacts = facts.filter((item) => item.syncStatus !== "synced");
-  const completedFacts = facts.filter((item) => item.syncStatus === "synced");
-  const pendingQuestions = questions.filter((item) => item.syncStatus !== "synced");
-  const completedQuestions = questions.filter((item) => item.syncStatus === "synced");
-  const pendingCount = pendingSessions.length + pendingFacts.length + pendingQuestions.length;
-  const totalCount = sessions.length + facts.length + questions.length;
+  const independentFacts = facts.filter((item) => !item.createdFromAttemptId);
+  const pendingFacts = independentFacts.filter((item) => item.syncStatus !== "synced");
+  const completedFacts = independentFacts.filter((item) => item.syncStatus === "synced");
+  const pendingCount = pendingSessions.length + pendingFacts.length;
+  const totalCount = sessions.length + independentFacts.length;
   const allComplete = signedIn && pendingCount === 0 && pendingPhotoCount === 0 && syncStatus === "synced";
 
   return (
@@ -137,7 +134,7 @@ export default function SyncScreen({
         {sessions.length === 0 ? <p className="sync-empty">Your completed practice sessions will appear here.</p> : (
           <>
             <ul className="sync-item-list">
-              {pendingSessions.map((item) => <ItemRow key={item.id} title={item.chapter} detail={`${item.subject} · ${new Date(item.endedAt).toLocaleDateString()}`} complete={false} />)}
+              {pendingSessions.map((item) => <ItemRow key={item.id} title={`${item.subject} · ${item.chapter}`} detail={`${new Date(item.endedAt).toLocaleDateString()} · Practice session`} complete={false} />)}
             </ul>
             {completedSessions.length > 0 && <details className="sync-completed">
               <summary>Completed · {completedSessions.length}</summary>
@@ -163,26 +160,6 @@ export default function SyncScreen({
               <summary>Completed · {completedFacts.length}</summary>
               <ul className="sync-item-list">
                 {completedFacts.map((item) => <ItemRow key={item.id} title={item.promptText || "Untitled fact"} detail={item.kind.charAt(0).toUpperCase() + item.kind.slice(1)} complete />)}
-              </ul>
-            </details>}
-          </>
-        )}
-      </section>
-
-      <section className="sync-section">
-        <div className="sync-section-heading">
-          <div><p className="sync-overline">QUESTION LIBRARY</p><h2>Question cards</h2></div>
-          <span>{pendingQuestions.length} waiting</span>
-        </div>
-        {questions.length === 0 ? <p className="sync-empty">Question cards saved from practice will appear here.</p> : (
-          <>
-            <ul className="sync-item-list">
-              {pendingQuestions.map((item) => <ItemRow key={item.id} title={item.promptText || "Untitled question"} detail="Question card" complete={false} />)}
-            </ul>
-            {completedQuestions.length > 0 && <details className="sync-completed">
-              <summary>Completed · {completedQuestions.length}</summary>
-              <ul className="sync-item-list">
-                {completedQuestions.map((item) => <ItemRow key={item.id} title={item.promptText || "Untitled question"} detail="Question card" complete />)}
               </ul>
             </details>}
           </>
