@@ -17,7 +17,7 @@ type Props = {
     questionId: string,
   ) => Promise<FactCard>;
   onDone: (card: FactCard) => void;
-  onError: (message: string) => void;
+  onError: (message: string | null) => void;
 };
 
 const KINDS: FactCardKind[] = ["fact", "formula", "reaction", "misconception", "trap"];
