@@ -61,10 +61,11 @@ function ItemRow({ title, detail, complete, active = false, waitingLabel = "Wait
   );
 }
 
-function statusCopy(status: SyncStatus, signedIn: boolean, configured: boolean) {
+function statusCopy(status: SyncStatus, signedIn: boolean, configured: boolean, pendingPhotoCount: number) {
   if (!configured) return ["On this device", "Cloud backup isn't configured in this app right now. Your practice data remains stored on this device."];
   if (!signedIn) return ["On this device", "Sign in to back up your practice data across devices."];
   if (status === "syncing") return ["Syncing your data", "Measure is updating your cloud backup."];
+  if (status === "synced" && pendingPhotoCount > 0) return ["Practice data backed up", "Your sessions and available cards are backed up. Photos are still waiting for Google Drive."];
   if (status === "synced") return ["Everything is up to date", "Your available practice data is backed up."];
   if (status === "offline") return ["You're offline", "Your data stays on this device and will sync when you're back online."];
   if (status === "error") return ["Some items need attention", "Your local data is safe. Check the details below."];
@@ -92,7 +93,7 @@ export default function SyncScreen({
   onSignIn,
 }: Props) {
   const signedIn = Boolean(email);
-  const [headline, description] = statusCopy(syncStatus, signedIn, configured);
+  const [headline, description] = statusCopy(syncStatus, signedIn, configured, pendingPhotoCount);
   const orderedSessions = [...sessions].sort((a, b) => b.endedAt.localeCompare(a.endedAt));
   const pendingSessions = orderedSessions.filter((item) => !configured || item.syncStatus !== "synced");
   const completedSessions = configured ? orderedSessions.filter((item) => item.syncStatus === "synced") : [];
