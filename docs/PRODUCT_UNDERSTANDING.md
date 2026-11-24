@@ -1,9 +1,9 @@
 # Measure — Product Understanding & Current-State Gap Analysis
 
-**Prepared:** 23 November 2026  
+**Updated:** 24 November 2026  
 **Repository:** [rajprasad-ds/measure](https://github.com/rajprasad-ds/measure)  
-**Reviewed branch:** `phase-1b-cards`  
-**Purpose:** Capture the product direction established in the product-discovery discussion and compare it with the implementation currently present in the repository. This is a product-alignment document, not an implementation specification or a claim that every detail is finalized.
+**Current baseline:** `main` (Phase 1B merged)  
+**Purpose:** Preserve the product direction, settled decisions, implementation context, known limitations, and current handoff state. This is the living product-understanding document; it distinguishes product requirements from implementation status and items that still need verification.
 
 ---
 
@@ -577,6 +577,8 @@ Selecting an image is not consent to upload it to Google Drive. During feedback 
 
 ### 14.3 Feedback must be draft-first and reversible
 
+**Scope clarification:** This draft-first rule applies to question/fact capture inside an unfinished normal-practice feedback workflow. It does not apply to a fact card deliberately created and saved independently from a session in the Cards/fact-bank workflow. Independent fact cards are committed local records immediately; their text and image backup lifecycle is described in Section 16.10. Session-created cards remain staged with the session and are committed with the session's final feedback submission.
+
 Live testing exposed a data-integrity bug: submitting a question photo creates a QuestionCard immediately and assigns its ID to the attempt. If the user navigates backward and changes the outcome, that old question ID can remain attached to the new outcome.
 
 Required behavior:
@@ -614,9 +616,9 @@ Verification: GitHub Actions completed successfully for the draft-flow and local
 
 ---
 
-## 15. Current handoff status — 23 November 2026 (latest)
+## 15. Historical handoff status — 23 November 2026 (superseded)
 
-This section supersedes any older status statements above where they conflict. It is intended as the pickup point for another coding agent.
+This section records the handoff state before the Phase 1B merge. Its branch instructions, test-data instructions, and outstanding-work list are historical and are superseded by the current handoff in Section 16.10.
 
 ### 15.1 Branch and workflow constraints
 
@@ -852,3 +854,82 @@ This section supersedes the **one overall ring per session** visual rule in Sect
 - The overall Sync summary may continue to communicate account-wide state, but per-session cards use the two distinct rings above.
 
 Implementation note: session-to-image association is derived through attempts and cards created from those attempts. The Drive ring is calculated from locally persisted image upload records (status and remoteId); refresh it during upload progress and after sync data changes. Browser verification is required to confirm that this mapping covers every supported image-creation workflow.
+
+
+### 16.10 Phase 1B completion, fact-card image lifecycle, and current project baseline (24 November 2026)
+
+This section is the current handoff and supersedes the pre-merge branch instructions and test-data status in Section 15, as well as any earlier implementation-status statements that conflict with it.
+
+#### Phase 1B product boundary and data behavior
+
+- Phase 1B's normal-practice feedback, question/fact capture, question–fact linking, local persistence, and synchronization foundation has been merged into `main`.
+- Normal-practice feedback remains draft-first and reversible until the student submits the complete session. Session-created question cards, session-created fact cards, attempts, and links are committed together in the final local transaction.
+- A fact card created independently from the Cards/fact-bank workflow is a separate, immediately saved record. It is not a temporary session draft and must not depend on a practice session being submitted.
+- Independent fact cards must be searchable and usable without a session. They can have their own image attachments and their own synchronization work.
+- A fact card created as part of a session's feedback belongs to that session's synchronization work. Do not also list it as an independent fact-card sync item.
+- Fact-card text/metadata and its photo backup are separate responsibilities. A text record should be able to synchronize to Supabase even when its photo is still queued, waiting for Drive authorization, offline, or retrying.
+- Selecting or replacing a photo must preserve a local copy and a stable association with the intended card. Do not discard the local image or lose its reference because Drive is unavailable.
+- Image upload must be queued for both independently created fact cards and session-created cards after their relevant local commit. Upload only images that are still referenced by the final saved card; replacing/removing an image must not leave an abandoned upload associated with the card.
+- A successful photo upload must persist the remote Drive identifier/reference and update the corresponding local image/card metadata. A later pull/reload must preserve deferred or already-uploaded image references rather than replacing them with an empty image state.
+- Retry must be safe and idempotent: previously completed uploads should not be needlessly duplicated, and failed/pending blobs must remain available locally.
+
+#### Sync experience and architecture baseline
+
+- Local IndexedDB/Dexie is the working copy and must preserve committed application records and image blobs.
+- Supabase is the remote store for structured application records and relationships.
+- Google Drive is the remote backup location for photo files; it is not a second application database.
+- Sync metadata that does not depend on Drive must proceed independently of Drive authorization or photo-upload failures.
+- The sync flow attempts application/session metadata synchronization, processes eligible Drive photo uploads when authorization is available, then performs a follow-up metadata pass where needed to register the resulting Drive references and unblock dependent records.
+- A Drive failure must not make unrelated session metadata appear unsynchronized or cause local committed data to be rolled back.
+- The Home screen has one persistent Sync status entry point leading to the dedicated Sync screen. Avoid separate routine Home actions for connecting Drive and starting sync.
+- Drive authorization is requested only when pending image work actually requires it and the app has established that authorization is unavailable. Do not prompt when there are no images waiting, and do not treat a missing in-memory token after reload as proof that Google's grant was revoked.
+- The Sync screen separates session work from independently created fact-card work. Session-created fact cards are not double-counted in the independent group.
+- Session cards use two concentric rings: outer green for Supabase practice data and inner blue for Google Drive photos. The rings represent only these two top-level responsibilities.
+- Supabase progress must be based on confirmed sync state; do not invent intermediate progress. Drive progress may use the count of associated images successfully uploaded divided by the total associated images. It is file-count progress, not byte-transfer progress.
+- If no images are associated with an item, show Drive as **Not needed**, not as a completed 100% upload. Failed or waiting work must retain truthful text status; colour and animation alone are insufficient.
+- Completed work belongs in a visually secondary, collapsible Completed section. Pending, active, and attention-needed work should remain the primary focus.
+- The detailed per-session sync view remains future scope; do not expand the current work into that feature without a new product decision.
+
+#### Recent implementation and testing observations
+
+- The initial Phase 1B sync UI and pipeline changes were merged into `main`, including the unified Home sync entry point, dedicated Sync screen, separate independent fact-card sync grouping, completed sections, photo queue handling, deferred photo-reference preservation, and the two-ring visual model.
+- The sync pipeline reports queue-item progress and failures. It must not describe this as byte-level transfer progress.
+- A live test found that three previously created fact cards displayed **No photos**, while a newly created independent fact card subsequently worked. Treat this as evidence that the new independent-card path worked in that test, but that older affected records may already have lost or lack usable image references. Do not claim that the old photos can be recovered unless their local blobs or valid Drive references are found.
+- When investigating older cards, distinguish a missing UI preview from a genuinely missing local blob or remote file. Verify the stored image metadata, local blob, remote Drive ID, and card association before deciding whether recovery is possible.
+- The owner cleared the old Supabase test rows, manually deleted the old Google Drive photos folder, and cleared the local `jee-practice` IndexedDB database to start fresh. These were deliberate test-data cleanup actions, not routine app behavior.
+- The owner has since reported that the deployed app is available for continued practice. Treat this as user-reported deployment availability; do not infer that every sync edge case has passed end-to-end verification.
+
+#### Repository and deployment baseline
+
+- Repository: `rajprasad-ds/measure`.
+- Phase 1B branch was merged into `main` through PR #1.
+- Merge commit: `e1507c7db5f1e2b59db5383ca40495639578e3a2`.
+- A subsequent TypeScript build-fix commit was made directly on `main`: `ead50b16e92ff05a6ea40b19d76fac2fb9d73383` (`fix: resolve Drive token and report failed upload progress`).
+- That fix explicitly narrows the Drive token to a string before resolving the token promise and includes the required `failed` count in upload progress callbacks.
+- The owner subsequently reported being able to continue practicing. Do not assume a particular Cloudflare build SHA or claim fresh browser/build verification unless separately checked.
+- `main` is the current deployment baseline because Cloudflare Pages deploys from `main`. Do not give the old instruction to continue implementation on `phase-1b-cards` or to avoid merging into `main`; that instruction is obsolete.
+- For future implementation, inspect the current `main` state first. Use a focused working branch and a pull request for substantial changes unless the owner explicitly asks for a different workflow.
+
+#### Current Phase 1B acceptance criteria
+
+Before treating the foundation as fully reliable, continue to verify with fresh, meaningful data:
+
+1. Complete a new normal-practice session and confirm session, attempts, question cards, fact cards, and links are persisted correctly.
+2. Confirm feedback navigation and outcome changes do not leave abandoned cards, stale links, or stale attempt references.
+3. Create an independent fact card, reload, and confirm its text, image preview, local blob, and card association remain intact.
+4. Create an independent fact card with an image while Drive is unavailable; confirm the card text is saved and syncable, the image remains locally queued, and the UI reports the correct waiting state.
+5. Restore valid Drive authorization and confirm the queued image uploads, its remote reference is saved, and the image remains visible after reload and cloud pull.
+6. Repeat the image lifecycle for a fact card created through session feedback, confirming it is counted under its session and not duplicated as independent work.
+7. Confirm a session with no images reports Drive as **Not needed**.
+8. Confirm Supabase session/metadata synchronization succeeds when Drive is unavailable or an image upload fails.
+9. Confirm retry does not duplicate already uploaded images and that failures remain visible until genuinely resolved.
+10. Test sign-out, account switching, reload, authorization expiry/revocation, and offline recovery. Verify that one Measure account's images can never be uploaded to another account's Drive.
+11. Check the two concentric rings against actual persisted sync state, including partial image completion, failed images, no-image sessions, and completed work.
+12. Continue to run automated tests and a production build for code changes, then verify the relevant flows in the browser. A successful build alone is not end-to-end proof.
+
+#### Product scope discipline
+
+- Phase 1B is the current reliability baseline; the next design discussion should use the owner's prepared mockup rather than inventing a new visual direction in advance.
+- Review the mockup against the established product rules, identify only genuine ambiguities or conflicts, and settle those before implementation.
+- Do not start the adaptive revision planner, new scheduling algorithms, or unrelated feature expansion merely because the underlying card data has scheduling fields. Those remain separate product scope and require their own approved design.
+- Preserve the core principles: one source of truth for study intervals; OFF days permit no study activity; honest metrics and sync states; local committed data is never destroyed by cloud failure; low-friction UX; and no unnecessary technical controls exposed to the student.
