@@ -125,6 +125,17 @@ function App() {
   const pendingWarningRef = useRef<InactivityWarning | null>(null);
   const activeSessionWriteTimeout = useRef<number | null>(null);
   const activeSessionWriteQueue = useRef<Promise<void>>(Promise.resolve());
+  const previousAuthUserId = useRef<string | null>(null);
+
+  useEffect(() => {
+    const nextUserId = authUser?.id ?? null;
+    if (previousAuthUserId.current && previousAuthUserId.current !== nextUserId) {
+      clearDriveAuthorization();
+      setDriveConnectionStatus("idle");
+      setDriveConnectionError(null);
+    }
+    previousAuthUserId.current = nextUserId;
+  }, [authUser?.id]);
 
   async function refreshCardData() {
     const [questions, facts, links, attempts, reviews] = await Promise.all([
