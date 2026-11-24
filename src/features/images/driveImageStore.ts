@@ -28,6 +28,7 @@ const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 60_000;
 export function clearDriveAuthorization() {
   accessToken = null;
   accessTokenExpiresAt = 0;
+  tokenPromise = null;
 }
 
 function handleUnauthorizedResponse(response: Response, operation: string) {
@@ -291,13 +292,14 @@ export async function processUploadQueue(
       if (now < nextRetry) continue;
       if ((image.attempts ?? 0) >= MAX_ATTEMPTS) continue;
 
+      onProgress?.({ completed, total: eligible.length, currentImageId: image.id });
       const blob = await getLocalImageBlob(image.id);
       if (!blob) {
         await markImageFailed(image.id, "Local photo is no longer available.");
+        completed += 1;
+        onProgress?.({ completed, total: eligible.length, currentImageId: null });
         continue;
       }
-
-      onProgress?.({ completed, total: eligible.length, currentImageId: image.id });
       lastAttemptAtById.set(image.id, Date.now());
       await markImageUploading(image.id);
       try {
