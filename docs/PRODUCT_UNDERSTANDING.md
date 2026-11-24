@@ -1083,3 +1083,52 @@ A Drive access token acquired while one Measure account is active must not remai
 - The production OAuth account chooser / origin configuration investigation is deliberately not specified here; it is separate from the crop/editor and account-isolation product requirements.
 - Cross-account session visibility and two-account Drive upload safety still require explicit browser verification. Do not report either as fully resolved solely because the code changes have been committed.
 - Before further changes, inspect the current branch and working tree/remote state rather than assuming this handoff SHA is still the branch head.
+
+
+### 17.5 Pending Drive photo queue appears shared across Measure accounts (observed 24 November 2026)
+
+**Observed behavior**
+
+A controlled test using two separate new testing identities (T1 and T2) on the latest local development build showed that session records appeared separated between the accounts, but pending photo work did not:
+
+1. While signed into T2, the owner created a practice session containing one question marked wrong.
+2. Two photos were attached to that question: one question photo and one solution photo.
+3. The app displayed that Google Drive needed to be connected. The owner did not connect Drive, so the two photos remained pending locally.
+4. The owner signed out of T2 and signed into T1 in the same browser profile.
+5. T1 displayed **“2 photos awaiting sync”**, even though those photos had been added while T2 was active.
+6. The owner explicitly clarified that both photos were indeed shown as awaiting sync under T1; this was not a question or an unverified possibility.
+
+In this same round of testing, newly created session records for T1 and T2 remained separated. This suggests the session-list/account filtering behavior and the pending-image queue/progress behavior have different account-isolation outcomes.
+
+**What this proves—and what it does not**
+
+- It proves that the pending-photo count/status shown to T1 included photo work created under T2, or otherwise included shared local pending work not scoped to T1.
+- It strongly indicates that pending image queue visibility/progress is not adequately scoped to the active Measure account.
+- It does **not yet prove** that T1 can or did upload T2's photos to T1's Google Drive. The owner did not authorize Drive or initiate an upload under T1 during this observation.
+- It does not establish whether the queue records lack owner IDs, whether owner IDs are present but ignored by the count query, or whether a different shared queue aggregation path is responsible. This requires code and local data-model inspection.
+
+**Required product behavior**
+
+- A Measure account must see only pending photo work that belongs to that exact authenticated Supabase user ID.
+- T1 must not see T2's pending photo count, photo previews, upload prompts, retry actions, or sync status.
+- T1's sync worker must never select, upload, retry, register, or otherwise mutate T2's queued photos.
+- The queue item must retain an immutable originating Measure owner ID and stable association to its session/card/image record.
+- Scope the pending count, queue selection, upload execution, retries, failure state, and post-upload metadata registration by the active account—not merely the UI display.
+- Re-check that the queued item's owner matches the currently authenticated Measure user at the point of queue selection and immediately before upload. If ownership is missing or ambiguous, preserve the local image safely and block cross-account upload; do not silently assign it to the active account.
+- Signing out or switching accounts must not delete pending photos. When the originating account signs back in, its pending work should remain available to that account.
+- No Drive authorization prompt should be shown to an account solely because another account has pending photos.
+
+**Investigation and verification required**
+
+1. Inspect the IndexedDB/Dexie schema and every image/queue record written by session feedback, independent fact-card creation, image replacement, and cloud pull. Determine whether each record stores an immutable Measure owner ID.
+2. Trace all pending-photo count/progress queries and confirm they filter by exact active owner ID.
+3. Trace every queue selection, upload, retry, and remote-reference registration path. Enforce ownership in the data-access/sync layer, not only in the UI.
+4. Check whether the session/card association can be used to validate image ownership, and ensure it cannot accidentally inherit the currently active account when the image was created under another account.
+5. Keep T2's two pending photos untouched during investigation. Do not connect Drive or start sync under T1 as a diagnostic test.
+6. After a fix, repeat the exact T2-to-T1 test: T2 creates two pending photos without Drive authorization; T1 must show zero photos awaiting sync and must not prompt for Drive because of T2's queue; T2 must still see its two pending photos after switching back.
+7. If safe, test upload under T2 and verify that only T2-owned images upload to the Drive destination authorized while T2 is active. Then switch to T1 and verify no T2 work is selected or altered.
+8. Repeat with reloads, sign-out/sign-in, server restart, offline/online transitions, and retry after a simulated upload failure.
+
+**Status**
+
+This is a newly observed, unresolved account-isolation defect in the local pending-image queue/progress path. The session account-isolation test passed for the newly created T1/T2 sessions in this test, but the pending-photo isolation test failed. No code fix or successful cross-account upload-safety verification is claimed by this entry. Treat this as a blocker for considering two-account image backup reliable or merging the relevant work.
