@@ -84,9 +84,10 @@ function requestAccessToken(forceConsent = false): Promise<string> {
           clearDriveAuthorization();
           reject(new Error("Google did not return a Drive access token. Please reconnect."));
         } else {
-          accessToken = resp.access_token;
+          const token = resp.access_token as string;
+          accessToken = token;
           accessTokenExpiresAt = Date.now() + Math.max(0, Number(resp.expires_in ?? 0)) * 1_000;
-          resolve(accessToken);
+          resolve(token);
         }
       },
     });
@@ -321,7 +322,7 @@ export async function processUploadQueue(
         );
         completed += 1;
         failed += 1;
-        onProgress?.({ completed, total: eligible.length, currentImageId: null });
+        onProgress?.({ completed, total: eligible.length, failed, currentImageId: null });
         // An authorization failure invalidates the shared token. Stop here so
         // the remaining queue entries stay pending instead of being marked as
         // failed one by one without a usable connection.
