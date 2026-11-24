@@ -32,6 +32,7 @@ export default function ImageInput({
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const editorCanvasRef = useRef<HTMLCanvasElement>(null);
+  const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const [imageId, setImageId] = useState(value ?? "");
   const [previewUrl, setPreviewUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -155,6 +156,24 @@ export default function ImageInput({
     setCropAspect("original");
   }
 
+  function handleCropPointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (zoom <= 1) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = { x: event.clientX, y: event.clientY, panX, panY };
+  }
+
+  function handleCropPointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
+    const start = dragRef.current;
+    const canvas = editorCanvasRef.current;
+    if (!start || !canvas) return;
+    const bounds = canvas.getBoundingClientRect();
+    const maxPan = Math.max(0.001, 1 - 1 / zoom);
+    setPanX(Math.max(-1, Math.min(1, start.panX - ((event.clientX - start.x) / bounds.width) * 2 * maxPan)));
+    setPanY(Math.max(-1, Math.min(1, start.panY - ((event.clientY - start.y) / bounds.height) * 2 * maxPan)));
+  }
+
+  function handleCropPointerUp() { dragRef.current = null; }
+
   async function applyEdit() {
     const canvas = editorCanvasRef.current;
     if (!canvas || !selectedFile) return;
@@ -238,39 +257,52 @@ export default function ImageInput({
       {editorUrl && (
         <div className="image-editor-backdrop" role="presentation">
           <section className="image-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="image-editor-title">
-            <h3 id="image-editor-title">Adjust photo</h3>
-            <p>Rotate the image or choose a crop shape. Zoom in to trim the edges before saving.</p>
-            <canvas ref={editorCanvasRef} className="image-editor-preview" aria-label="Edited photo preview" />
-            <div className="image-editor-controls">
-              <div className="image-editor-control-row">
-                <label>Rotate</label>
-                <button type="button" onClick={() => setRotation((value) => (value + 270) % 360)}>↶ 90°</button>
-                <button type="button" onClick={() => setRotation((value) => (value + 90) % 360)}>↷ 90°</button>
+            <header className="image-editor-header">
+              <div>
+                <span className="image-editor-kicker">PHOTO EDITOR</span>
+                <h3 id="image-editor-title">Adjust your photo</h3>
               </div>
-              <div className="image-editor-control-row">
-                <label>Crop shape</label>
-                <button type="button" aria-pressed={cropAspect === "original"} onClick={() => setCropAspect("original")}>Original</button>
-                <button type="button" aria-pressed={cropAspect === "square"} onClick={() => setCropAspect("square")}>Square</button>
-                <button type="button" aria-pressed={cropAspect === "landscape"} onClick={() => setCropAspect("landscape")}>4:3</button>
+              <button className="image-editor-close" type="button" onClick={closeEditor} disabled={isSaving} aria-label="Close photo editor">×</button>
+            </header>
+            <div className="image-editor-stage">
+              <canvas
+                ref={editorCanvasRef}
+                className={`image-editor-preview${zoom > 1 ? " is-draggable" : ""}`}
+                aria-label="Edited photo preview. Drag to reposition when zoomed in."
+                onPointerDown={handleCropPointerDown}
+                onPointerMove={handleCropPointerMove}
+                onPointerUp={handleCropPointerUp}
+                onPointerCancel={handleCropPointerUp}
+                onLostPointerCapture={handleCropPointerUp}
+              />
+              <span className="image-editor-stage-hint">{zoom > 1 ? "Drag to reposition" : "Pinch or zoom to crop"}</span>
+            </div>
+            <div className="image-editor-toolbar">
+              <div className="image-editor-tool-group">
+                <span className="image-editor-tool-label">Crop ratio</span>
+                <div className="image-editor-ratios" role="group" aria-label="Crop aspect ratio">
+                  <button type="button" aria-pressed={cropAspect === "original"} onClick={() => setCropAspect("original")}>Original</button>
+                  <button type="button" aria-pressed={cropAspect === "square"} onClick={() => setCropAspect("square")}>1:1</button>
+                  <button type="button" aria-pressed={cropAspect === "landscape"} onClick={() => setCropAspect("landscape")}>4:3</button>
+                </div>
               </div>
-              <div className="image-editor-control-row">
-                <label htmlFor={`image-zoom-${name}`}>Crop</label>
-                <input id={`image-zoom-${name}`} type="range" min="1" max="3" step="0.05" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} />
-                <span>{zoom.toFixed(1)}×</span>
+              <div className="image-editor-tool-group">
+                <div className="image-editor-zoom-heading">
+                  <label htmlFor={`image-zoom-${name}`}>Zoom</label>
+                  <span>{zoom.toFixed(1)}×</span>
+                </div>
+                <input className="image-editor-zoom" id={`image-zoom-${name}`} type="range" min="1" max="3" step="0.05" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} />
               </div>
-              <div className="image-editor-control-row">
-                <label htmlFor={`image-pan-x-${name}`}>Horizontal</label>
-                <input id={`image-pan-x-${name}`} type="range" min="-1" max="1" step="0.05" value={panX} onChange={(event) => setPanX(Number(event.target.value))} />
-              </div>
-              <div className="image-editor-control-row">
-                <label htmlFor={`image-pan-y-${name}`}>Vertical</label>
-                <input id={`image-pan-y-${name}`} type="range" min="-1" max="1" step="0.05" value={panY} onChange={(event) => setPanY(Number(event.target.value))} />
+              <div className="image-editor-rotate-row">
+                <button type="button" onClick={() => setRotation((value) => (value + 270) % 360)}><span aria-hidden="true">↶</span> Rotate left</button>
+                <button type="button" onClick={() => setRotation((value) => (value + 90) % 360)}><span aria-hidden="true">↷</span> Rotate right</button>
+                <button type="button" onClick={() => { setRotation(0); setZoom(1); setPanX(0); setPanY(0); setCropAspect("original"); }}>Reset</button>
               </div>
             </div>
-            <div className="image-editor-actions">
+            <footer className="image-editor-actions">
               <button type="button" onClick={closeEditor} disabled={isSaving}>Cancel</button>
-              <button type="button" onClick={() => void applyEdit()} disabled={isSaving || isPreparingPreview}>{isSaving ? "Saving…" : "Use this photo"}</button>
-            </div>
+              <button type="button" onClick={() => void applyEdit()} disabled={isSaving || isPreparingPreview}>{isSaving ? "Saving…" : "Use photo"}</button>
+            </footer>
           </section>
         </div>
       )}
