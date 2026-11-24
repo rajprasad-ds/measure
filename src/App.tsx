@@ -147,31 +147,15 @@ function App() {
       database.attempts.toArray(),
       database.factReviews.toArray(),
     ]);
-    setQuestionCards(
-      questions.filter(
-        (card) => !authUser || !card.ownerUserId || card.ownerUserId === authUser.id,
-      ),
-    );
-    setFactCards(
-      facts.filter(
-        (card) => !authUser || !card.ownerUserId || card.ownerUserId === authUser.id,
-      ),
-    );
-    setQuestionFactLinks(
-      links.filter(
-        (link) => !authUser || !link.ownerUserId || link.ownerUserId === authUser.id,
-      ),
-    );
-    setAttemptRecords(
-      attempts.filter(
-        (attempt) => !authUser || !attempt.ownerUserId || attempt.ownerUserId === authUser.id,
-      ),
-    );
-    setFactReviews(
-      reviews.filter(
-        (review) => !authUser || !review.ownerUserId || review.ownerUserId === authUser.id,
-      ),
-    );
+    // Signed-in accounts must never see unassigned records or records owned
+    // by another account. Anonymous mode is limited to unassigned local data.
+    const belongsToCurrentAccount = (ownerUserId?: string) =>
+      authUser ? ownerUserId === authUser.id : !ownerUserId;
+    setQuestionCards(questions.filter((card) => belongsToCurrentAccount(card.ownerUserId)));
+    setFactCards(facts.filter((card) => belongsToCurrentAccount(card.ownerUserId)));
+    setQuestionFactLinks(links.filter((link) => belongsToCurrentAccount(link.ownerUserId)));
+    setAttemptRecords(attempts.filter((attempt) => belongsToCurrentAccount(attempt.ownerUserId)));
+    setFactReviews(reviews.filter((review) => belongsToCurrentAccount(review.ownerUserId)));
     setUnassignedCardCount(
       questions.filter((card) => !card.ownerUserId).length +
         facts.filter((card) => !card.ownerUserId).length +
@@ -346,7 +330,17 @@ function App() {
     } = supabase.auth.onAuthStateChange((event, authSession) => {
       // A Supabase sign-in starts a new app account session. Never carry a
       // Google Drive access token across that boundary, even in the same tab.
-      if (event === "SIGNED_IN") {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+        // Clear account-scoped UI immediately so the previous account's local
+        // records are never visible while the next account's records load.
+        setSavedSessions([]);
+        setQuestionCards([]);
+        setFactCards([]);
+        setQuestionFactLinks([]);
+        setAttemptRecords([]);
+        setFactReviews([]);
+      }
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
         clearDriveAuthorization();
         setDriveConnectionStatus("idle");
         setDriveConnectionError(null);
@@ -386,6 +380,17 @@ function App() {
 
   useEffect(() => {
     let cancelled = false;
+    // Do not treat records as anonymous while Supabase is still restoring the
+    // signed-in account. That can briefly expose another account's local view.
+    setSavedSessions([]);
+    setIsLoadingSessions(true);
+    if (isAuthLoading) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const requestedUserId = authUser?.id ?? null;
     database.sessions
       .toArray()
       .then((records) => {
@@ -393,8 +398,8 @@ function App() {
         const unassigned = records.filter((record) => !record.ownerUserId);
         setUnassignedSessionCount(unassigned.length);
         setSavedSessions(
-          authUser
-            ? records.filter((record) => record.ownerUserId === authUser.id)
+          requestedUserId
+            ? records.filter((record) => record.ownerUserId === requestedUserId)
             : unassigned,
         );
       })
@@ -414,9 +419,15 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [authUser]);
+  }, [authUser?.id, isAuthLoading]);
 
   useEffect(() => {
+    setQuestionCards([]);
+    setFactCards([]);
+    setQuestionFactLinks([]);
+    setAttemptRecords([]);
+    setFactReviews([]);
+    if (isAuthLoading) return;
     void refreshCardData().catch((error: unknown) => {
       setDatabaseError(
         error instanceof Error
@@ -424,7 +435,7 @@ function App() {
           : "Could not load cards.",
       );
     });
-  }, [authUser]);
+  }, [authUser?.id, isAuthLoading]);
 
   async function refreshSyncDriveProgress() {
     const [attempts, questions, facts, images] = await Promise.all([
