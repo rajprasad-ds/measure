@@ -1303,7 +1303,7 @@ function App() {
     for (const feedback of feedbackWithCards.values()) {
       const draft = feedback.questionDraft;
       if (!draft) continue;
-      [draft.promptImageId, draft.solutionImageId, draft.smarterApproachImageId,
+      [draft.promptImageId, draft.solutionImageId,
         ...(draft.solutionImageIds ?? [])].forEach((id) => {
         if (id) finalizedImageIds.add(id);
       });
