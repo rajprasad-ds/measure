@@ -330,7 +330,7 @@ function App() {
     } = supabase.auth.onAuthStateChange((event, authSession) => {
       // A Supabase sign-in starts a new app account session. Never carry a
       // Google Drive access token across that boundary, even in the same tab.
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
         // Clear account-scoped UI immediately so the previous account's local
         // records are never visible while the next account's records load.
         setSavedSessions([]);
@@ -419,7 +419,7 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [authUser?.id, isAuthLoading]);
+  }, [authUser, isAuthLoading]);
 
   useEffect(() => {
     setQuestionCards([]);
@@ -435,7 +435,7 @@ function App() {
           : "Could not load cards.",
       );
     });
-  }, [authUser?.id, isAuthLoading]);
+  }, [authUser, isAuthLoading]);
 
   async function refreshSyncDriveProgress() {
     const [attempts, questions, facts, images] = await Promise.all([
