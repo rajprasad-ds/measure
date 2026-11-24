@@ -259,11 +259,13 @@ export async function processUploadQueue(
   if (running) return;
   running = true;
   try {
-    // Do not turn every queued photo into a failed upload just because this
-    // page load has no in-memory Google token. Require an explicit connection
-    // before changing any queue records.
-    if (store === driveImageStore) await ensureAccessToken();
     const pending = await getPendingImages();
+    // No queued photos means Drive authorization is irrelevant. This lets
+    // session/card metadata sync without requiring a Drive token unnecessarily.
+    if (pending.length === 0) return;
+    // Do not turn queued photos into failed uploads just because this page load
+    // has no in-memory Google token. Require explicit connection first.
+    if (store === driveImageStore) await ensureAccessToken();
     const now = Date.now();
 
     for (const image of pending) {
