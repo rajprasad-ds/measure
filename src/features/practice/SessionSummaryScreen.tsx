@@ -115,8 +115,8 @@ export default function SessionSummaryScreen({
           <div className="summary-sync-pending">
             <p>
               {pendingImageCount > 0
-                ? `${pendingImageCount} photo${pendingImageCount === 1 ? "" : "s"} still need to upload to Google Drive. Your session and photos remain saved on this device.`
-                : "Cloud sync needs attention. Your session and photos remain saved on this device."}
+                ? `${pendingImageCount} photo${pendingImageCount === 1 ? "" : "s"} need Google Drive backup. Your session is already saved on this device.`
+                : "Cloud sync needs attention. Your session is already saved on this device."}
             </p>
             <button
               className="account-secondary-button"
@@ -124,7 +124,11 @@ export default function SessionSummaryScreen({
               onClick={onRetrySync}
               disabled={syncStatus === "syncing"}
             >
-              {syncStatus === "syncing" ? "Retrying upload…" : "Retry sync"}
+              {syncStatus === "syncing"
+                ? "Syncing…"
+                : pendingImageCount > 0
+                  ? "Connect Drive / retry backup"
+                  : "Retry cloud sync"}
             </button>
           </div>
         )}
