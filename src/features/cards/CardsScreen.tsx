@@ -37,7 +37,7 @@ type Props = {
   onUnlink: (questionId: string, factId: string) => Promise<void>;
   onRefresh: () => Promise<void>;
   activeTab: "practice" | "cards" | "history";
-  onNavigate: (tab: "practice" | "cards" | "history") => void;
+  onNavigate: (tab: "practice" | "cards" | "history" | "sync") => void;
 };
 
 type EditorState =
