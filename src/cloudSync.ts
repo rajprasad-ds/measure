@@ -492,7 +492,25 @@ function fromCloudFactReview(row: CloudFactReview): FactReviewRecord {
   };
 }
 
-async function syncPendingCards(userId: string) {
+function questionCardImageIds(card: QuestionCard): string[] {
+  return [
+    card.promptImageId,
+    card.solutionImageId,
+    ...(card.solutionImageIds ?? []),
+    card.smarterApproachImageId,
+  ].filter((id): id is string => Boolean(id));
+}
+
+function factCardImageIds(card: FactCard): string[] {
+  return [card.promptImageId, card.contentImageId].filter(
+    (id): id is string => Boolean(id),
+  );
+}
+
+async function syncPendingCards(
+  userId: string,
+  unresolvedImageIds: Set<string>,
+) {
   const [questions, facts, links, reviews] = await Promise.all([
     database.questions.where("ownerUserId").equals(userId).toArray(),
     database.factCards.where("ownerUserId").equals(userId).toArray(),
@@ -500,12 +518,24 @@ async function syncPendingCards(userId: string) {
     database.factReviews.where("ownerUserId").equals(userId).toArray(),
   ]);
   const client = requireSupabase();
+  // A card may sync only after every image row it references exists in cloud.
+  // Other cards remain independent and can proceed in the same pass.
+  const pendingQuestions = questions.filter(
+    (row) =>
+      row.syncStatus !== "synced" &&
+      !questionCardImageIds(row).some((id) => unresolvedImageIds.has(id)),
+  );
+  const pendingFacts = facts.filter(
+    (row) =>
+      row.syncStatus !== "synced" &&
+      !factCardImageIds(row).some((id) => unresolvedImageIds.has(id)),
+  );
 
   for (const batchStart of Array.from(
-    { length: Math.ceil(questions.filter((row) => row.syncStatus !== "synced").length / 100) },
+    { length: Math.ceil(pendingQuestions.length / 100) },
     (_, index) => index * 100,
   )) {
-    const pending = questions.filter((row) => row.syncStatus !== "synced").slice(batchStart, batchStart + 100);
+    const pending = pendingQuestions.slice(batchStart, batchStart + 100);
     const { error } = await client.from("questions").upsert(
       pending.map((row) => ({ ...toCloudQuestion(row), user_id: userId })),
       { onConflict: "id" },
@@ -520,10 +550,10 @@ async function syncPendingCards(userId: string) {
     );
   }
   for (const batchStart of Array.from(
-    { length: Math.ceil(facts.filter((row) => row.syncStatus !== "synced").length / 100) },
+    { length: Math.ceil(pendingFacts.length / 100) },
     (_, index) => index * 100,
   )) {
-    const pending = facts.filter((row) => row.syncStatus !== "synced").slice(batchStart, batchStart + 100);
+    const pending = pendingFacts.slice(batchStart, batchStart + 100);
     const { error } = await client.from("fact_cards").upsert(
       pending.map((row) => ({ ...toCloudFactCard(row), user_id: userId })),
       { onConflict: "id" },
@@ -537,11 +567,26 @@ async function syncPendingCards(userId: string) {
       ),
     );
   }
+  const [syncedQuestions, syncedFacts] = await Promise.all([
+    database.questions.where("ownerUserId").equals(userId)
+      .filter((row) => row.syncStatus === "synced").toArray(),
+    database.factCards.where("ownerUserId").equals(userId)
+      .filter((row) => row.syncStatus === "synced").toArray(),
+  ]);
+  const syncedQuestionIds = new Set(syncedQuestions.map((row) => row.id));
+  const syncedFactIds = new Set(syncedFacts.map((row) => row.id));
+  const pendingLinks = links.filter(
+    (row) =>
+      row.syncStatus !== "synced" &&
+      syncedQuestionIds.has(row.questionId) &&
+      syncedFactIds.has(row.factId),
+  );
+
   for (const batchStart of Array.from(
-    { length: Math.ceil(links.filter((row) => row.syncStatus !== "synced").length / 100) },
+    { length: Math.ceil(pendingLinks.length / 100) },
     (_, index) => index * 100,
   )) {
-    const pending = links.filter((row) => row.syncStatus !== "synced").slice(batchStart, batchStart + 100);
+    const pending = pendingLinks.slice(batchStart, batchStart + 100);
     const { error } = await client.from("question_fact_links").upsert(
       pending.map((row) => ({
         ...toCloudQuestionFactLink(row),
@@ -563,11 +608,14 @@ async function syncPendingCards(userId: string) {
       ),
     );
   }
+  const pendingReviews = reviews.filter(
+    (row) => row.syncStatus !== "synced" && syncedFactIds.has(row.factId),
+  );
   for (const batchStart of Array.from(
-    { length: Math.ceil(reviews.filter((row) => row.syncStatus !== "synced").length / 100) },
+    { length: Math.ceil(pendingReviews.length / 100) },
     (_, index) => index * 100,
   )) {
-    const pending = reviews.filter((row) => row.syncStatus !== "synced").slice(batchStart, batchStart + 100);
+    const pending = pendingReviews.slice(batchStart, batchStart + 100);
     const { error } = await client.from("fact_reviews").upsert(
       pending.map((row) => ({ ...toCloudFactReview(row), user_id: userId })),
       { onConflict: "id" },
@@ -583,7 +631,7 @@ async function syncPendingCards(userId: string) {
   }
 }
 
-async function syncPendingImages(userId: string) {
+async function syncPendingImages(userId: string): Promise<Set<string>> {
   const [questions, facts] = await Promise.all([
     database.questions.where("ownerUserId").equals(userId).toArray(),
     database.factCards.where("ownerUserId").equals(userId).toArray(),
@@ -633,27 +681,22 @@ async function syncPendingImages(userId: string) {
       ),
     );
   }
-  // Card rows have foreign keys to images. Never attempt the card upsert while
-  // a referenced photo is still waiting for Drive upload or image metadata sync.
-  if (referencedImageIds.size > 0) {
-    const finalRows = await database.localImages.bulkGet(Array.from(referencedImageIds));
-    const unresolved = finalRows.filter(
-      (row) => !row || row.syncStatus !== "synced" || !row.remoteId,
-    );
-    if (unresolved.length > 0) {
-      const failed = finalRows.find((row) => row?.status === "failed" && row.lastError);
-      const detail = failed?.lastError ? ` Latest upload error: ${failed.lastError}` : "";
-      throw new Error(
-        `Cloud sync paused: ${unresolved.length} linked photo(s) still need to finish uploading to Google Drive. Your session and cards remain saved on this device.${detail}`,
-      );
+  // Report unresolved images to the card-sync stage instead of failing the
+  // entire account sync. Sessions and unrelated cards do not depend on Drive.
+  const finalRows = await database.localImages.bulkGet(Array.from(referencedImageIds));
+  const unresolvedImageIds = new Set<string>();
+  finalRows.forEach((row, index) => {
+    if (!row || row.syncStatus !== "synced" || !row.remoteId) {
+      unresolvedImageIds.add(Array.from(referencedImageIds)[index]);
     }
-  }
+  });
+  return unresolvedImageIds;
 }
 
 export async function syncAccountSessions(user: User): Promise<SessionRecord[]> {
   const client = requireSupabase();
-  await syncPendingImages(user.id);
-  await syncPendingCards(user.id);
+  const unresolvedImageIds = await syncPendingImages(user.id);
+  await syncPendingCards(user.id, unresolvedImageIds);
   const localRecords = await database.sessions.toArray();
   const pendingRecords = localRecords.filter(
     (record) =>
@@ -661,53 +704,37 @@ export async function syncAccountSessions(user: User): Promise<SessionRecord[]> 
   );
 
   for (const record of pendingRecords) {
-    const attempts = await database.attempts
-      .where("sessionId")
-      .equals(record.id)
-      .toArray();
     const weakTopics = record.weakTopics.map((topic) => ({
       topic_id: topic.topicId,
       topic_name: topic.topic,
       question_count: topic.questionCount,
     }));
-    const { error } =
-      attempts.length === 0
-        ? await client.rpc("upsert_session_with_topics", {
-            p_session: toCloudSession(record, attempts),
-            p_weak_topics: weakTopics,
-          })
-        : await client.rpc("upsert_session_with_attempts", {
-            p_session: toCloudSession(record, attempts),
-            p_attempts: attempts.map(toCloudAttempt),
-            p_weak_topics: weakTopics,
-          });
+    // Session summaries are independent of question cards and photo uploads.
+    // Attempts sync separately below, after their referenced question exists.
+    const { error } = await client.rpc("upsert_session_with_topics", {
+      p_session: toCloudSession(record),
+      p_weak_topics: weakTopics,
+    });
     if (error) {
       throw new Error(`Could not sync a session: ${error.message}`);
     }
-    await database.transaction(
-      "rw",
-      database.sessions,
-      database.attempts,
-      async () => {
-        await database.sessions.update(record.id, { syncStatus: "synced" });
-        await Promise.all(
-          attempts.map((attempt) =>
-            database.attempts.where("id").equals(attempt.id).modify((current) => {
-              if (current.updatedAt === attempt.updatedAt) {
-                current.syncStatus = "synced";
-              }
-            }),
-          ),
-        );
-      },
-    );
+    await database.sessions.update(record.id, { syncStatus: "synced" });
   }
 
-  const pendingAttempts = await database.attempts
+  const allPendingAttempts = await database.attempts
     .where("ownerUserId")
     .equals(user.id)
     .filter((attempt) => attempt.syncStatus !== "synced")
     .toArray();
+  // attempts.question_id has a foreign key to questions. Keep only attempts
+  // whose linked question card is already present in cloud.
+  const pendingAttempts = (await Promise.all(
+    allPendingAttempts.map(async (attempt) => {
+      if (!attempt.questionId) return attempt;
+      const question = await database.questions.get(attempt.questionId);
+      return question?.syncStatus === "synced" ? attempt : null;
+    }),
+  )).filter((attempt): attempt is AttemptRecord => Boolean(attempt));
   for (let offset = 0; offset < pendingAttempts.length; offset += 100) {
     const batch = pendingAttempts.slice(offset, offset + 100);
     const { error } = await client.from("attempts").upsert(
