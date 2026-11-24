@@ -56,7 +56,7 @@ import { SMARTER_APPROACH_THRESHOLD_MS } from "./features/practice/feedbackFlow"
 import {
   formatStopwatch,
 } from "./features/practice/TimerDisplay";
-import { driveImageStore, prepareDriveConnection, processUploadQueue, retryFailedUploads } from "./features/images/driveImageStore";
+import { driveImageStore, hasDriveAccessToken, prepareDriveConnection, processUploadQueue, retryFailedUploads } from "./features/images/driveImageStore";
 import { queueImagesForUpload } from "./features/images/imageRepository";
 import { validateAttempt } from "./lib/causes";
 import type { Cause, SlipSubtype } from "./lib/causes";
@@ -1473,20 +1473,13 @@ function App() {
             : "Your session is saved, but photo uploads are pending.",
         );
       }
-      // Attempt Drive/cloud sync before showing the summary, but never strand
-      // the user in feedback if the network or Google authorization is unavailable.
-      if (authUser) {
-        try {
-          await performSync(authUser, true);
-        } catch (syncError) {
-          setSyncError(
-            syncError instanceof Error
-              ? syncError.message
-              : "Cloud sync is pending. Your session and photos are saved on this device.",
-          );
-        }
-      }
+      // The local transaction above is the save operation. Show the summary
+      // immediately; cloud backup continues independently and must never keep
+      // the Save session button in a loading state.
       setSession({ ...session, phase: "summary", record });
+      if (authUser) {
+        void performSync(authUser, true);
+      }
     } catch (error) {
       setSaveError(
         error instanceof Error
@@ -1720,7 +1713,7 @@ function App() {
         questionCards={questionCards}
         questionFactLinks={questionFactLinks}
         syncStatus={syncStatus}
-        onRetrySync={() => { if (authUser) void performSync(authUser, true); }}
+        onRetrySync={() => { if (!authUser) return; void (async () => { const pending = await database.localImages.where("status").anyOf(["pending", "uploading", "failed"]).count(); if (pending > 0 && !hasDriveAccessToken()) { await connectGoogleDrive(); return; } await performSync(authUser, true); })().catch((error: unknown) => { setSyncStatus("error"); setSyncError(error instanceof Error ? error.message : "Could not retry sync."); }); }}
         onNewSession={() => void startNewSession()}
       />
     );
