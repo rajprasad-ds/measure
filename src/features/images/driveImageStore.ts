@@ -292,6 +292,10 @@ export async function processUploadQueue(
           image.id,
           error instanceof Error ? error.message : "Upload failed.",
         );
+        // An authorization failure invalidates the shared token. Stop here so
+        // the remaining queue entries stay pending instead of being marked as
+        // failed one by one without a usable connection.
+        if (store === driveImageStore && !hasDriveAccessToken()) break;
       }
     }
   } finally {
