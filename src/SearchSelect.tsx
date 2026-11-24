@@ -39,7 +39,7 @@ function SearchSelect({
         option.label.toLocaleLowerCase().includes(normalizedQuery),
       )
     : showAllOnFocus && isOpen ? options : [];
-  const visibleOptions = showAllOnFocus && !normalizedQuery
+  const visibleOptions = showAllOnFocus
     ? matchingOptions
     : matchingOptions.slice(0, RESULT_LIMIT);
   const listId = `${id}-options`;
