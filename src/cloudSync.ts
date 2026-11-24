@@ -555,7 +555,7 @@ async function syncPendingCards(
     (_, index) => index * 100,
   )) {
     const pending = pendingFacts.slice(batchStart, batchStart + 100);
-    pending.forEach((row) => onFactCardProgress?.(row, "syncing"));
+    pending.filter((row) => !row.createdFromAttemptId).forEach((row) => onFactCardProgress?.(row, "syncing"));
     const { error } = await client.from("fact_cards").upsert(
       pending.map((row) => ({ ...toCloudFactCard(row), user_id: userId })),
       { onConflict: "id" },
@@ -568,7 +568,7 @@ async function syncPendingCards(
         }),
       ),
     );
-    pending.forEach((row) => onFactCardProgress?.({ ...row, syncStatus: "synced" }, "synced"));
+    pending.filter((row) => !row.createdFromAttemptId).forEach((row) => onFactCardProgress?.({ ...row, syncStatus: "synced" }, "synced"));
   }
   const [syncedQuestions, syncedFacts] = await Promise.all([
     database.questions.where("ownerUserId").equals(userId)
