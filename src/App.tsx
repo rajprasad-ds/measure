@@ -115,6 +115,7 @@ function App() {
   const [unassignedCardCount, setUnassignedCardCount] = useState(0);
   const [pendingPhotoCount, setPendingPhotoCount] = useState(0);
   const [syncPhase, setSyncPhase] = useState<"sessions" | "photos" | "finalizing" | null>(null);
+  const [syncingSessionId, setSyncingSessionId] = useState<string | null>(null);
   const [photoUploadProgress, setPhotoUploadProgress] = useState({ completed: 0, total: 0, currentImageId: null as string | null });
   const syncInProgress = useRef(false);
   const sessionRef = useRef<ActiveSession | null>(null);
@@ -404,6 +405,18 @@ function App() {
     });
   }, [authUser]);
 
+  function handleSessionSyncProgress(record: SessionRecord, status: "syncing" | "synced") {
+    if (status === "syncing") {
+      setSyncingSessionId(record.id);
+      return;
+    }
+    setSyncingSessionId(null);
+    setSavedSessions((current) => {
+      const next = [...current.filter((item) => item.id !== record.id), record];
+      return next.sort((left, right) => right.endedAt.localeCompare(left.endedAt));
+    });
+  }
+
   async function performSync(user: User, afterSessionSubmission = false) {
     if (session?.phase === "feedback" && !afterSessionSubmission) return;
     if (syncInProgress.current) return;
@@ -420,7 +433,7 @@ function App() {
       // Practice metadata is independent of Google Drive. Sync it first so a
       // missing/expired Drive token can never block session backup.
       setSyncPhase("sessions");
-      await syncAccountSessions(user);
+      await syncAccountSessions(user, handleSessionSyncProgress);
 
       // Upload photos only when the user has explicitly connected Drive in
       // this browser session. A Drive failure is isolated from metadata sync.
@@ -433,7 +446,7 @@ function App() {
           // New Drive IDs are now available; register their metadata and allow
           // dependent cards to sync in this second pass.
           setSyncPhase("finalizing");
-          await syncAccountSessions(user);
+          await syncAccountSessions(user, handleSessionSyncProgress);
         } catch (photoError) {
           setDriveConnectionStatus("error");
           setDriveConnectionError(
@@ -487,6 +500,7 @@ function App() {
       );
     } finally {
       setSyncPhase(null);
+      setSyncingSessionId(null);
       syncInProgress.current = false;
     }
   }
@@ -1668,6 +1682,7 @@ function App() {
         pendingPhotoCount={pendingPhotoCount}
         syncPhase={syncPhase}
         photoUploadProgress={photoUploadProgress}
+        syncingSessionId={syncingSessionId}
         onBack={() => setActiveTab("practice")}
         onNavigate={navigate}
         onSyncNow={() => { if (authUser) void performSync(authUser); }}
