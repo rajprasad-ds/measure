@@ -22,10 +22,12 @@ let gsiLoadPromise: Promise<void> | null = null;
 let accessToken: string | null = null;
 let accessTokenExpiresAt = 0;
 let tokenPromise: Promise<string> | null = null;
+let authorizationGeneration = 0;
 
 const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 60_000;
 
 export function clearDriveAuthorization() {
+  authorizationGeneration += 1;
   accessToken = null;
   accessTokenExpiresAt = 0;
   tokenPromise = null;
@@ -71,12 +73,17 @@ function requestAccessToken(forceConsent = false): Promise<string> {
   const gsi = (window as any).google?.accounts?.oauth2;
   if (!gsi) return Promise.reject(new Error("Google Identity Services is not ready. Please try again."));
   const clientId = getClientId();
+  const requestGeneration = authorizationGeneration;
   tokenPromise = new Promise((resolve, reject) => {
     const client = gsi.initTokenClient({
       client_id: clientId,
       scope: DRIVE_SCOPE,
       prompt: forceConsent ? "consent" : "",
       callback: (resp: any) => {
+        if (requestGeneration !== authorizationGeneration) {
+          reject(new Error("Google Drive authorization was cleared because the signed-in account changed. Reconnect Drive to continue."));
+          return;
+        }
         tokenPromise = null;
         if (resp.error) {
           reject(new Error(resp.error_description || resp.error || "Google Drive access was cancelled."));
