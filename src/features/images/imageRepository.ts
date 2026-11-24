@@ -78,17 +78,24 @@ export async function getImageRecord(id: string): Promise<LocalImageRecord | und
   return database.localImages.get(id);
 }
 
-export async function getPendingImages(): Promise<LocalImageRecord[]> {
+export async function getPendingImages(ownerUserId: string): Promise<LocalImageRecord[]> {
+  if (!ownerUserId) throw new Error("A signed-in account is required to access the photo upload queue.");
   return database.localImages
-    .where("status")
-    .anyOf(["pending", "failed", "uploading"])
+    .where("ownerUserId")
+    .equals(ownerUserId)
+    .filter((image) => ["pending", "failed", "uploading"].includes(image.status))
     .toArray();
 }
 
 export async function markImageUploaded(
   id: string,
+  ownerUserId: string,
   remoteId: string,
 ): Promise<void> {
+  const image = await database.localImages.get(id);
+  if (!image || image.ownerUserId !== ownerUserId) {
+    throw new Error("Photo ownership changed. The photo was not updated.");
+  }
   await database.localImages.update(id, {
     status: "uploaded",
     remoteId,
@@ -99,10 +106,11 @@ export async function markImageUploaded(
 
 export async function markImageFailed(
   id: string,
+  ownerUserId: string,
   error: string,
 ): Promise<void> {
   const record = await database.localImages.get(id);
-  if (!record) return;
+  if (!record || record.ownerUserId !== ownerUserId) return;
   await database.localImages.update(id, {
     status: "failed",
     attempts: (record.attempts ?? 0) + 1,
@@ -110,14 +118,22 @@ export async function markImageFailed(
   });
 }
 
-export async function resetImageUpload(id: string): Promise<void> {
+export async function resetImageUpload(id: string, ownerUserId: string): Promise<void> {
+  const image = await database.localImages.get(id);
+  if (!image || image.ownerUserId !== ownerUserId) {
+    throw new Error("This photo does not belong to the signed-in account.");
+  }
   await database.localImages.update(id, {
     status: "pending",
     attempts: 0,
     lastError: undefined,
   });
 }
-export async function markImageUploading(id: string): Promise<void> {
+export async function markImageUploading(id: string, ownerUserId: string): Promise<void> {
+  const image = await database.localImages.get(id);
+  if (!image || image.ownerUserId !== ownerUserId) {
+    throw new Error("Photo ownership changed. Upload was stopped.");
+  }
   await database.localImages.update(id, { status: "uploading" });
 }
 
@@ -134,13 +150,17 @@ function canvasToJpeg(canvas: HTMLCanvasElement, quality: number) {
   });
 }
 
-export async function queueImagesForUpload(imageIds: string[]): Promise<void> {
+export async function queueImagesForUpload(ownerUserId: string, imageIds: string[]): Promise<void> {
+  if (!ownerUserId) throw new Error("A signed-in account is required to queue photos for backup.");
   const ids = Array.from(new Set(imageIds.filter(Boolean)));
   if (ids.length === 0) return;
   await database.transaction("rw", database.localImages, async () => {
     for (const id of ids) {
       const image = await database.localImages.get(id);
-      if (!image || image.status === "uploaded") continue;
+      if (!image || image.ownerUserId !== ownerUserId) {
+        throw new Error("A photo does not belong to the signed-in account. It was not queued.");
+      }
+      if (image.status === "uploaded") continue;
       await database.localImages.update(id, {
         status: "pending",
         syncStatus: "local",
