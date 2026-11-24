@@ -13,8 +13,6 @@ type SyncableCard = {
   chapterId: string;
   topicIds: string[];
   createdFromAttemptId?: string;
-  /** True while a fact card's image references await cloud image metadata. */
-  imageSyncPending?: boolean;
 };
 
 export type QuestionDifficulty = "easy" | "medium" | "hard";
@@ -43,6 +41,8 @@ export type FactCardKind =
   | "trap";
 
 export type FactCard = SyncableCard & {
+  /** True while this card's image references await cloud image metadata. */
+  imageSyncPending?: boolean;
   kind: FactCardKind;
   promptText: string;
   promptImageId?: string;
