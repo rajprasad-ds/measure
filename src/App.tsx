@@ -1729,7 +1729,12 @@ function App() {
         onNavigate={navigate}
         onSyncNow={() => {
           if (authUser) {
-            void retryFailedUploads().then(() => performSync(authUser));
+            void retryFailedUploads()
+              .then(() => performSync(authUser))
+              .catch((error: unknown) => {
+                setSyncStatus("error");
+                setSyncError(error instanceof Error ? error.message : "Could not retry backup.");
+              });
           }
         }}
         onConnectDrive={() => void connectGoogleDrive()}
