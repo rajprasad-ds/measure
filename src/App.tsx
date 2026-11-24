@@ -545,7 +545,7 @@ function App() {
 
       // Upload photos only when the user has explicitly connected Drive in
       // this browser session. A Drive failure is isolated from metadata sync.
-      if (hasDriveAccessToken()) {
+      if (hasDriveAccessToken(user.id)) {
         setSyncPhase("photos");
         setPhotoUploadProgress({ completed: 0, total: 0, failed: 0, currentImageId: null });
         setDriveConnectionError(null);
@@ -556,7 +556,7 @@ function App() {
               setDriveConnectionError("Some photos could not be uploaded yet. They remain on this device and can be retried.");
             }
           });
-          if (hasDriveAccessToken()) {
+          if (hasDriveAccessToken(user.id)) {
             setDriveConnectionStatus("connected");
           } else {
             setDriveConnectionStatus("error");
@@ -783,7 +783,7 @@ function App() {
     setSyncStatus("syncing");
     setSyncError(null);
     try {
-      await driveImageStore.reconnect();
+      await driveImageStore.reconnect(authUser.id);
       setDriveConnectionStatus("connected");
       await retryFailedUploads(authUser.id);
       await performSync(authUser);
@@ -1972,7 +1972,7 @@ function App() {
         syncStatus={syncStatus}
         syncError={syncError}
         onRetrySync={() => { if (!authUser) return; void (async () => { const pending = await database.localImages.where("ownerUserId").equals(authUser.id)
-            .filter((image) => ["pending", "uploading", "failed"].includes(image.status)).count(); if (pending > 0 && !hasDriveAccessToken()) { await connectGoogleDrive(); return; } await performSync(authUser, true); })().catch((error: unknown) => { setSyncStatus("error"); setSyncError(error instanceof Error ? error.message : "Could not retry sync."); }); }}
+            .filter((image) => ["pending", "uploading", "failed"].includes(image.status)).count(); if (pending > 0 && !hasDriveAccessToken(authUser.id)) { await connectGoogleDrive(); return; } await performSync(authUser, true); })().catch((error: unknown) => { setSyncStatus("error"); setSyncError(error instanceof Error ? error.message : "Could not retry sync."); }); }}
         onNewSession={() => void startNewSession()}
       />
     );
