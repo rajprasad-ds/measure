@@ -714,8 +714,9 @@ export async function syncAccountSessions(user: User): Promise<SessionRecord[]> 
     }));
     // Session summaries are independent of question cards and photo uploads.
     // Attempts sync separately below, after their referenced question exists.
-    const { error } = await client.rpc("upsert_session_with_topics", {
+    const { error } = await client.rpc("upsert_session_with_attempts", {
       p_session: toCloudSession(record),
+      p_attempts: [],
       p_weak_topics: weakTopics,
     });
     if (error) {
