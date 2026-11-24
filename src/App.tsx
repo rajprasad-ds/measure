@@ -475,16 +475,17 @@ function App() {
             setDriveConnectionStatus("error");
             setDriveConnectionError("Google Drive authorization expired. Reconnect Drive to continue photo backup. Your practice data is safe.");
           }
-          // New Drive IDs are now available; register their metadata and allow
-          // dependent cards to sync in this second pass.
-          setSyncPhase("finalizing");
-          await syncAccountSessions(user, handleSessionSyncProgress, handleFactCardSyncProgress);
         } catch (photoError) {
           setDriveConnectionStatus("error");
           setDriveConnectionError(
             photoError instanceof Error ? photoError.message : "Photo backup could not run.",
           );
         }
+        // New Drive IDs are now available when uploads succeeded. This second
+        // metadata pass is deliberately outside the Drive error handler so a
+        // Supabase failure is reported as a cloud-sync failure, not a Drive one.
+        setSyncPhase("finalizing");
+        await syncAccountSessions(user, handleSessionSyncProgress, handleFactCardSyncProgress);
       } else if (driveConnectionStatus === "connected") {
         setDriveConnectionStatus("idle");
         setDriveConnectionError(null);
