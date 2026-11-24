@@ -128,6 +128,7 @@ function App() {
   const activeSessionWriteTimeout = useRef<number | null>(null);
   const activeSessionWriteQueue = useRef<Promise<void>>(Promise.resolve());
   const previousAuthUserId = useRef<string | null>(null);
+  const accountDataLoadVersion = useRef(0);
 
   useEffect(() => {
     const nextUserId = authUser?.id ?? null;
@@ -139,7 +140,7 @@ function App() {
     previousAuthUserId.current = nextUserId;
   }, [authUser?.id]);
 
-  async function refreshCardData() {
+  async function refreshCardData(expectedVersion?: number) {
     const [questions, facts, links, attempts, reviews] = await Promise.all([
       database.questions.toArray(),
       database.factCards.toArray(),
@@ -147,6 +148,12 @@ function App() {
       database.attempts.toArray(),
       database.factReviews.toArray(),
     ]);
+    if (
+      expectedVersion !== undefined &&
+      expectedVersion !== accountDataLoadVersion.current
+    ) {
+      return;
+    }
     // Signed-in accounts must never see unassigned records or records owned
     // by another account. Anonymous mode is limited to unassigned local data.
     const belongsToCurrentAccount = (ownerUserId?: string) =>
@@ -422,13 +429,14 @@ function App() {
   }, [authUser, isAuthLoading]);
 
   useEffect(() => {
+    const requestVersion = ++accountDataLoadVersion.current;
     setQuestionCards([]);
     setFactCards([]);
     setQuestionFactLinks([]);
     setAttemptRecords([]);
     setFactReviews([]);
     if (isAuthLoading) return;
-    void refreshCardData().catch((error: unknown) => {
+    void refreshCardData(requestVersion).catch((error: unknown) => {
       setDatabaseError(
         error instanceof Error
           ? `Could not load cards: ${error.message}`
