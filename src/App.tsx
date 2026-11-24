@@ -1724,7 +1724,11 @@ function App() {
         syncingFactCardId={syncingFactCardId}
         onBack={() => setActiveTab("practice")}
         onNavigate={navigate}
-        onSyncNow={() => { if (authUser) void performSync(authUser); }}
+        onSyncNow={() => {
+          if (authUser) {
+            void retryFailedUploads().then(() => performSync(authUser));
+          }
+        }}
         onConnectDrive={() => void connectGoogleDrive()}
         onSignIn={() => void signInWithGoogle()}
       />
