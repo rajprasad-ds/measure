@@ -55,7 +55,8 @@ function ItemRow({ title, detail, complete }: { title: string; detail: string; c
   );
 }
 
-function statusCopy(status: SyncStatus, signedIn: boolean) {
+function statusCopy(status: SyncStatus, signedIn: boolean, configured: boolean) {
+  if (!configured) return ["On this device", "Cloud backup isn't configured in this app right now. Your practice data remains stored on this device."];
   if (!signedIn) return ["On this device", "Sign in to back up your practice data across devices."];
   if (status === "syncing") return ["Syncing your data", "Measure is updating your cloud backup."];
   if (status === "synced") return ["Everything is up to date", "Your available practice data is backed up."];
@@ -81,16 +82,16 @@ export default function SyncScreen({
   onSignIn,
 }: Props) {
   const signedIn = Boolean(email);
-  const [headline, description] = statusCopy(syncStatus, signedIn);
+  const [headline, description] = statusCopy(syncStatus, signedIn, configured);
   const orderedSessions = [...sessions].sort((a, b) => b.endedAt.localeCompare(a.endedAt));
-  const pendingSessions = orderedSessions.filter((item) => item.syncStatus !== "synced");
-  const completedSessions = orderedSessions.filter((item) => item.syncStatus === "synced");
+  const pendingSessions = orderedSessions.filter((item) => !configured || item.syncStatus !== "synced");
+  const completedSessions = configured ? orderedSessions.filter((item) => item.syncStatus === "synced") : [];
   const independentFacts = facts.filter((item) => !item.createdFromAttemptId);
-  const pendingFacts = independentFacts.filter((item) => item.syncStatus !== "synced");
-  const completedFacts = independentFacts.filter((item) => item.syncStatus === "synced");
+  const pendingFacts = independentFacts.filter((item) => !configured || item.syncStatus !== "synced");
+  const completedFacts = configured ? independentFacts.filter((item) => item.syncStatus === "synced") : [];
   const pendingCount = pendingSessions.length + pendingFacts.length;
   const totalCount = sessions.length + independentFacts.length;
-  const allComplete = signedIn && pendingCount === 0 && pendingPhotoCount === 0 && syncStatus === "synced";
+  const allComplete = configured && signedIn && pendingCount === 0 && pendingPhotoCount === 0 && syncStatus === "synced";
 
   return (
     <main className="sync-shell">
@@ -114,14 +115,16 @@ export default function SyncScreen({
           </div>
         </div>
         <div className="sync-overview-stats">
-          {totalCount > 0 ? <span><strong>{totalCount - pendingCount}</strong> of <strong>{totalCount}</strong> items backed up</span> : <span>No sessions or independent fact cards yet</span>}
+          {totalCount > 0 ? (configured ? <span><strong>{totalCount - pendingCount}</strong> of <strong>{totalCount}</strong> items backed up</span> : <span><strong>{totalCount}</strong> items stored on this device</span>) : <span>No sessions or independent fact cards yet</span>}
           <span>{pendingPhotoCount} photos waiting</span>
         </div>
-        {signedIn && syncStatus === "error" ? (
+        {!configured ? (
+          <p className="sync-muted">Cloud backup is not configured yet. This is separate from Google Drive photo backup.</p>
+        ) : signedIn && syncStatus === "error" ? (
           <button className="sync-primary-button" type="button" onClick={onSyncNow} disabled={!navigator.onLine}>
             Retry sync
           </button>
-        ) : !signedIn && configured ? (
+        ) : !signedIn ? (
           <button className="sync-primary-button" type="button" onClick={onSignIn}>Sign in to enable backup</button>
         ) : (
           <p className="sync-muted">Cloud backup is not configured yet.</p>
@@ -132,7 +135,7 @@ export default function SyncScreen({
       <section className="sync-section">
         <div className="sync-section-heading">
           <div><p className="sync-overline">PRACTICE HISTORY</p><h2>Sessions</h2></div>
-          <span>{pendingSessions.length} waiting</span>
+          <span>{configured ? `${pendingSessions.length} waiting` : `${sessions.length} on device`}</span>
         </div>
         {sessions.length === 0 ? <p className="sync-empty">Your completed practice sessions will appear here.</p> : (
           <>
@@ -152,7 +155,7 @@ export default function SyncScreen({
       <section className="sync-section">
         <div className="sync-section-heading">
           <div><p className="sync-overline">INDEPENDENT NOTES</p><h2>Fact cards</h2></div>
-          <span>{pendingFacts.length} waiting</span>
+          <span>{configured ? `${pendingFacts.length} waiting` : `${independentFacts.length} on device`}</span>
         </div>
         {independentFacts.length === 0 ? <p className="sync-empty">Independent fact cards you save will appear here.</p> : (
           <>
