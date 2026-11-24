@@ -112,7 +112,8 @@ function App() {
   const [driveConnectionStatus, setDriveConnectionStatus] = useState<"loading" | "idle" | "connecting" | "connected" | "error">("loading");
   const [driveConnectionError, setDriveConnectionError] = useState<string | null>(null);
   const [unassignedSessionCount, setUnassignedSessionCount] = useState(0);
-  const [unassignedCardCount, setUnassignedCardCount] = useState(0);\n  const [pendingPhotoCount, setPendingPhotoCount] = useState(0);
+  const [unassignedCardCount, setUnassignedCardCount] = useState(0);
+  const [pendingPhotoCount, setPendingPhotoCount] = useState(0);
   const syncInProgress = useRef(false);
   const sessionRef = useRef<ActiveSession | null>(null);
   const recoveryCandidateRef = useRef<ActiveSessionSnapshot | null>(null);
@@ -465,6 +466,18 @@ function App() {
       syncInProgress.current = false;
     }
   }
+
+  useEffect(() => {
+    let cancelled = false;
+    const refreshPendingPhotos = () => {
+      void database.localImages.where("status").anyOf(["pending", "uploading", "failed"]).count()
+        .then((count) => { if (!cancelled) setPendingPhotoCount(count); })
+        .catch(() => undefined);
+    };
+    refreshPendingPhotos();
+    const interval = window.setInterval(refreshPendingPhotos, 3000);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [syncStatus, driveConnectionStatus]);
 
   useEffect(() => {
     if (!authUser) {
@@ -1624,7 +1637,28 @@ function App() {
     );
   }
 
-  if (!session && activeTab === "sync") {\n    return (\n      <SyncScreen\n        email={authUser?.email}\n        configured={supabaseConfigured}\n        syncStatus={syncStatus}\n        syncError={syncError}\n        driveStatus={driveConnectionStatus}\n        driveError={driveConnectionError}\n        sessions={savedSessions}\n        facts={factCards}\n        questions={questionCards}\n        pendingPhotoCount={pendingPhotoCount}\n        onBack={() => setActiveTab("practice")}\n        onSyncNow={() => { if (authUser) void performSync(authUser); }}\n        onConnectDrive={() => void connectGoogleDrive()}\n        onSignIn={() => void signInWithGoogle()}\n      />\n    );\n  }\n\n  if (!session && activeTab === "cards") {
+  if (!session && activeTab === "sync") {
+    return (
+      <SyncScreen
+        email={authUser?.email}
+        configured={supabaseConfigured}
+        syncStatus={syncStatus}
+        syncError={syncError}
+        driveStatus={driveConnectionStatus}
+        driveError={driveConnectionError}
+        sessions={savedSessions}
+        facts={factCards}
+        questions={questionCards}
+        pendingPhotoCount={pendingPhotoCount}
+        onBack={() => setActiveTab("practice")}
+        onSyncNow={() => { if (authUser) void performSync(authUser); }}
+        onConnectDrive={() => void connectGoogleDrive()}
+        onSignIn={() => void signInWithGoogle()}
+      />
+    );
+  }
+
+  if (!session && activeTab === "cards") {
     return (
       <CardsScreen
         questions={questionCards}
