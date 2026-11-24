@@ -117,7 +117,7 @@ function App() {
   const [syncPhase, setSyncPhase] = useState<"sessions" | "photos" | "finalizing" | null>(null);
   const [syncingSessionId, setSyncingSessionId] = useState<string | null>(null);
   const [syncingFactCardId, setSyncingFactCardId] = useState<string | null>(null);
-  const [photoUploadProgress, setPhotoUploadProgress] = useState({ completed: 0, total: 0, currentImageId: null as string | null });
+  const [photoUploadProgress, setPhotoUploadProgress] = useState({ completed: 0, total: 0, failed: 0, currentImageId: null as string | null });
   const syncInProgress = useRef(false);
   const sessionRef = useRef<ActiveSession | null>(null);
   const recoveryCandidateRef = useRef<ActiveSessionSnapshot | null>(null);
@@ -460,7 +460,7 @@ function App() {
       // this browser session. A Drive failure is isolated from metadata sync.
       if (hasDriveAccessToken()) {
         setSyncPhase("photos");
-        setPhotoUploadProgress({ completed: 0, total: 0, currentImageId: null });
+        setPhotoUploadProgress({ completed: 0, total: 0, failed: 0, currentImageId: null });
         try {
           await processUploadQueue(driveImageStore, setPhotoUploadProgress);
           if (hasDriveAccessToken()) {
