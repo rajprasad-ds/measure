@@ -446,9 +446,14 @@ function App() {
   }, [authUser, isAuthLoading]);
 
   async function refreshSyncDriveProgress() {
+    const ownerFilter = (ownerUserId?: string) => authUser
+      ? ownerUserId === authUser.id
+      : !ownerUserId;
     const [attempts, questions, facts, images] = await Promise.all([
-      database.attempts.toArray(), database.questions.toArray(),
-      database.factCards.toArray(), database.localImages.toArray(),
+      database.attempts.filter((row) => ownerFilter(row.ownerUserId)).toArray(),
+      database.questions.filter((row) => ownerFilter(row.ownerUserId)).toArray(),
+      database.factCards.filter((row) => ownerFilter(row.ownerUserId)).toArray(),
+      database.localImages.filter((row) => ownerFilter(row.ownerUserId)).toArray(),
     ]);
     const sessionByAttempt = new Map(attempts.map((attempt) => [attempt.id, attempt.sessionId]));
     const imageById = new Map(images.map((image) => [image.id, image]));
@@ -584,8 +589,9 @@ function App() {
       );
       await refreshCardData();
       const remainingPhotos = await database.localImages
-        .where("status")
-        .anyOf(["pending", "uploading", "failed"])
+        .where("ownerUserId")
+        .equals(user.id)
+        .filter((image) => ["pending", "uploading", "failed"].includes(image.status))
         .count();
       setPendingPhotoCount(remainingPhotos);
       const [
@@ -639,7 +645,12 @@ function App() {
 
   useEffect(() => {
     let cancelled = false;
-    void database.localImages.where("status").anyOf(["pending", "uploading", "failed"]).count()
+    const pendingQuery = authUser
+      ? database.localImages.where("ownerUserId").equals(authUser.id)
+          .filter((image) => ["pending", "uploading", "failed"].includes(image.status))
+      : database.localImages.filter((image) =>
+          !image.ownerUserId && ["pending", "uploading", "failed"].includes(image.status));
+    void pendingQuery.count()
       .then((count) => { if (!cancelled) setPendingPhotoCount(count); })
       .catch(() => undefined);
     return () => { cancelled = true; };
