@@ -20,6 +20,7 @@ type Props = {
   syncPhase: SyncPhase;
   photoUploadProgress: PhotoUploadProgress;
   syncingSessionId: string | null;
+  syncingFactCardId: string | null;
   onBack: () => void;
   onNavigate: (tab: "practice" | "cards" | "history" | "sync") => void;
   onSyncNow: () => void;
@@ -83,6 +84,7 @@ export default function SyncScreen({
   syncPhase,
   photoUploadProgress,
   syncingSessionId,
+  syncingFactCardId,
   onBack,
   onNavigate,
   onSyncNow,
@@ -186,7 +188,7 @@ export default function SyncScreen({
         {independentFacts.length === 0 ? <p className="sync-empty">Independent fact cards you save will appear here.</p> : (
           <>
             <ul className="sync-item-list">
-              {pendingFacts.map((item) => <ItemRow key={item.id} title={item.promptText || "Untitled fact"} detail={item.kind.charAt(0).toUpperCase() + item.kind.slice(1)} complete={false} />)}
+              {pendingFacts.map((item) => <ItemRow key={item.id} title={item.promptText || "Untitled fact"} detail={item.kind.charAt(0).toUpperCase() + item.kind.slice(1)} complete={false} active={item.id === syncingFactCardId} />)}
             </ul>
             {completedFacts.length > 0 && <details className="sync-completed">
               <summary>Completed · {completedFacts.length}</summary>
