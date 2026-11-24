@@ -1713,6 +1713,7 @@ function App() {
         questionCards={questionCards}
         questionFactLinks={questionFactLinks}
         syncStatus={syncStatus}
+        syncError={syncError}
         onRetrySync={() => { if (!authUser) return; void (async () => { const pending = await database.localImages.where("status").anyOf(["pending", "uploading", "failed"]).count(); if (pending > 0 && !hasDriveAccessToken()) { await connectGoogleDrive(); return; } await performSync(authUser, true); })().catch((error: unknown) => { setSyncStatus("error"); setSyncError(error instanceof Error ? error.message : "Could not retry sync."); }); }}
         onNewSession={() => void startNewSession()}
       />
