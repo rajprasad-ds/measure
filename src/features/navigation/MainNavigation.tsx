@@ -1,4 +1,4 @@
-type Tab = "practice" | "cards" | "history";
+type Tab = "practice" | "cards" | "history" | "sync";
 
 type Props = {
   activeTab: Tab;
@@ -9,6 +9,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "practice", label: "Practice" },
   { id: "cards", label: "Cards" },
   { id: "history", label: "History" },
+  { id: "sync", label: "Sync" },
 ];
 
 export default function MainNavigation({ activeTab, onNavigate }: Props) {
