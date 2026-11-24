@@ -1019,12 +1019,9 @@ export async function assignLocalSessionsToUser(userId: string) {
           review.syncStatus = "pending";
         }
       });
-      await database.localImages.toCollection().modify((image) => {
-        if (!image.ownerUserId) {
-          image.ownerUserId = userId;
-          image.syncStatus = "pending";
-        }
-      });
+      // Image ownership is intentionally not inferred during bulk import.
+      // Ownerless legacy images are ambiguous in a shared browser database;
+      // keep them local until their ownership can be established safely.
     },
   );
 }
