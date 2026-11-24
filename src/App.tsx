@@ -485,6 +485,9 @@ function App() {
             photoError instanceof Error ? photoError.message : "Photo backup could not run.",
           );
         }
+      } else if (driveConnectionStatus === "connected") {
+        setDriveConnectionStatus("idle");
+        setDriveConnectionError(null);
       }
 
       const localRecords = await database.sessions.toArray();
