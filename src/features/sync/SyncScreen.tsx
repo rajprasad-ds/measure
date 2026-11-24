@@ -19,6 +19,7 @@ type Props = {
   pendingPhotoCount: number;
   syncPhase: SyncPhase;
   photoUploadProgress: PhotoUploadProgress;
+  syncingSessionId: string | null;
   onBack: () => void;
   onNavigate: (tab: "practice" | "cards" | "history" | "sync") => void;
   onSyncNow: () => void;
@@ -26,17 +27,17 @@ type Props = {
   onSignIn: () => void;
 };
 
-function Ring({ complete, label }: { complete: boolean; label: string }) {
+function Ring({ complete, active = false, label }: { complete: boolean; active?: boolean; label: string }) {
   const circumference = 2 * Math.PI * 17;
   return (
-    <svg className={complete ? "sync-ring is-complete" : "sync-ring"} viewBox="0 0 40 40" role="img" aria-label={label}>
+    <svg className={complete ? "sync-ring is-complete" : active ? "sync-ring is-active" : "sync-ring"} viewBox="0 0 40 40" role="img" aria-label={label}>
       <circle className="sync-ring-track" cx="20" cy="20" r="17" />
       <circle
         className="sync-ring-progress"
         cx="20"
         cy="20"
         r="17"
-        strokeDasharray={circumference}
+        strokeDasharray={active ? "26 107" : circumference}
         strokeDashoffset={complete ? 0 : circumference}
       />
       {complete ? <path className="sync-ring-check" d="m13 20 4.5 4.5L27 15" /> : <circle className="sync-ring-dot" cx="20" cy="20" r="2.4" />}
@@ -44,16 +45,16 @@ function Ring({ complete, label }: { complete: boolean; label: string }) {
   );
 }
 
-function ItemRow({ title, detail, complete, waitingLabel = "Waiting" }: { title: string; detail: string; complete: boolean; waitingLabel?: string }) {
+function ItemRow({ title, detail, complete, active = false, waitingLabel = "Waiting" }: { title: string; detail: string; complete: boolean; active?: boolean; waitingLabel?: string }) {
   return (
     <li className="sync-item">
-      <Ring complete={complete} label={complete ? "Backed up" : waitingLabel} />
+      <Ring complete={complete} active={active} label={complete ? "Backed up" : active ? "Syncing" : waitingLabel} />
       <span className="sync-item-copy">
         <strong>{title}</strong>
         <span>{detail}</span>
       </span>
       <span className={complete ? "sync-item-state is-complete" : "sync-item-state"}>
-        {complete ? "Backed up" : waitingLabel}
+        {complete ? "Backed up" : active ? "Syncing" : waitingLabel}
       </span>
     </li>
   );
@@ -81,6 +82,7 @@ export default function SyncScreen({
   pendingPhotoCount,
   syncPhase,
   photoUploadProgress,
+  syncingSessionId,
   onBack,
   onNavigate,
   onSyncNow,
@@ -164,7 +166,7 @@ export default function SyncScreen({
         {sessions.length === 0 ? <p className="sync-empty">Your completed practice sessions will appear here.</p> : (
           <>
             <ul className="sync-item-list">
-              {pendingSessions.map((item) => <ItemRow key={item.id} title={`${item.subject} · ${item.chapter}`} detail={`${new Date(item.endedAt).toLocaleDateString()} · ${item.sessionKind === "question_revision" ? "Question revision" : "Practice session"}`} complete={false} waitingLabel={configured ? "Waiting" : "On device"} />)}
+              {pendingSessions.map((item) => <ItemRow key={item.id} title={`${item.subject} · ${item.chapter}`} detail={`${new Date(item.endedAt).toLocaleDateString()} · ${item.sessionKind === "question_revision" ? "Question revision" : "Practice session"}`} complete={false} active={item.id === syncingSessionId} waitingLabel={configured ? "Waiting" : "On device"} />)}
             </ul>
             {completedSessions.length > 0 && <details className="sync-completed">
               <summary>Completed · {completedSessions.length}</summary>
