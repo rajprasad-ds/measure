@@ -1103,6 +1103,22 @@ function App() {
     }));
   }
 
+  async function unlinkFactCardForAttempt(questionNumber: number, factId: string) {
+    const feedback = session?.feedback[questionNumber];
+    if (!session || !feedback) throw new Error("The attempt is no longer available.");
+
+    // Remove only the relationship. The fact card remains in the independent
+    // fact library and remains searchable.
+    if (feedback.questionId) {
+      await unlinkQuestionAndFact(feedback.questionId, factId);
+    }
+    updateFeedbackForQuestion(questionNumber, (current) => ({
+      ...current,
+      linkedFactIds: (current.linkedFactIds ?? []).filter((id) => id !== factId),
+    }));
+    await refreshCardData();
+  }
+
   async function saveSession() {
     if (!session) return;
     const recordId = globalThis.crypto.randomUUID();
@@ -1735,6 +1751,7 @@ function App() {
         onSaveDifficulty={saveQuestionDifficulty}
         onCreateFactCard={saveFeedbackFactCard}
         onUseFactCard={useFactCardForAttempt}
+        onUnlinkFactCard={unlinkFactCardForAttempt}
         onSave={() => void saveSession()}
       />
     );
