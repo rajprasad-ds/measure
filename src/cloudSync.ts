@@ -510,6 +510,7 @@ function factCardImageIds(card: FactCard): string[] {
 async function syncPendingCards(
   userId: string,
   unresolvedImageIds: Set<string>,
+  onFactCardProgress?: (card: FactCard, status: "syncing" | "synced") => void,
 ) {
   const [questions, facts, links, reviews] = await Promise.all([
     database.questions.where("ownerUserId").equals(userId).toArray(),
@@ -554,6 +555,7 @@ async function syncPendingCards(
     (_, index) => index * 100,
   )) {
     const pending = pendingFacts.slice(batchStart, batchStart + 100);
+    pending.forEach((row) => onFactCardProgress?.(row, "syncing"));
     const { error } = await client.from("fact_cards").upsert(
       pending.map((row) => ({ ...toCloudFactCard(row), user_id: userId })),
       { onConflict: "id" },
@@ -566,6 +568,7 @@ async function syncPendingCards(
         }),
       ),
     );
+    pending.forEach((row) => onFactCardProgress?.({ ...row, syncStatus: "synced" }, "synced"));
   }
   const [syncedQuestions, syncedFacts] = await Promise.all([
     database.questions.where("ownerUserId").equals(userId)
@@ -699,10 +702,11 @@ async function syncPendingImages(userId: string): Promise<Set<string>> {
 export async function syncAccountSessions(
   user: User,
   onSessionProgress?: (record: SessionRecord, status: "syncing" | "synced") => void,
+  onFactCardProgress?: (card: FactCard, status: "syncing" | "synced") => void,
 ): Promise<SessionRecord[]> {
   const client = requireSupabase();
   const unresolvedImageIds = await syncPendingImages(user.id);
-  await syncPendingCards(user.id, unresolvedImageIds);
+  await syncPendingCards(user.id, unresolvedImageIds, onFactCardProgress);
   const localRecords = await database.sessions.toArray();
   const pendingRecords = localRecords.filter(
     (record) =>
