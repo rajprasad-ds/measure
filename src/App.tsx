@@ -705,8 +705,8 @@ function App() {
 
   async function signOut() {
     if (!supabase) return;
-    if (syncInProgress.current) {
-      setAuthError("Wait for the current backup to finish before signing out.");
+    if (syncInProgress.current || driveConnectionStatus === "connecting") {
+      setAuthError("Wait for the current backup or Google Drive connection to finish before signing out.");
       return;
     }
     setAuthError(null);
