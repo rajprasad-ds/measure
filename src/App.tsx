@@ -564,14 +564,19 @@ function App() {
     if (!authUser || driveConnectionStatus === "connecting") return;
     setDriveConnectionStatus("connecting");
     setDriveConnectionError(null);
+    setSyncStatus("syncing");
+    setSyncError(null);
     try {
       await driveImageStore.reconnect();
       setDriveConnectionStatus("connected");
       await retryFailedUploads();
       await performSync(authUser);
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not connect Google Drive.";
       setDriveConnectionStatus("error");
-      setDriveConnectionError(error instanceof Error ? error.message : "Could not connect Google Drive.");
+      setDriveConnectionError(message);
+      setSyncStatus("error");
+      setSyncError(message);
     }
   }
 
