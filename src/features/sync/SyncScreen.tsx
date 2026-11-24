@@ -1,5 +1,6 @@
 import type { SessionRecord } from "../../database";
 import type { FactCard } from "../cards/types";
+import MainNavigation from "../navigation/MainNavigation";
 
 type SyncStatus = "idle" | "syncing" | "synced" | "offline" | "error";
 type DriveStatus = "loading" | "idle" | "connecting" | "connected" | "error";
@@ -15,6 +16,7 @@ type Props = {
   facts: FactCard[];
   pendingPhotoCount: number;
   onBack: () => void;
+  onNavigate: (tab: "practice" | "cards" | "history" | "sync") => void;
   onSyncNow: () => void;
   onConnectDrive: () => void;
   onSignIn: () => void;
@@ -73,6 +75,7 @@ export default function SyncScreen({
   facts,
   pendingPhotoCount,
   onBack,
+  onNavigate,
   onSyncNow,
   onConnectDrive,
   onSignIn,
@@ -185,6 +188,7 @@ export default function SyncScreen({
         )}
         {driveError && <p className="sync-alert" role="alert">{driveError}</p>}
       </section>
+      <MainNavigation activeTab="sync" onNavigate={onNavigate} />
     </main>
   );
 }
