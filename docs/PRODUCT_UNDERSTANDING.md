@@ -831,3 +831,24 @@ This section records decisions made after the 23 November handoff. Where this se
 - Photo queue progress reports processed items, failures, and the currently uploading photo. This is queue-item progress, not byte-level network progress; the UI must not describe it as a percentage of bytes transferred.
 - Drive authorization is cleared on explicit Measure sign-out and when the authenticated Measure account changes, preventing an in-memory Drive token from being carried across account changes.
 - Remaining verification: exercise successful and failed Drive uploads, expired authorization, photo-dependent card retry, account switching, offline recovery, and confirm session metadata still reaches Supabase when Drive is unavailable. No end-to-end browser test has yet been run for this implementation.
+
+
+### 16.9 Two concentric synchronization rings (revised design decision, 24 November 2026)
+
+This section supersedes the **one overall ring per session** visual rule in Section 16.5 and the interim ring descriptions in Sections 16.7–16.8.
+
+- Each practice-session card uses **two concentric progress rings**, inspired by the Apple Fitness ring metaphor:
+  - **Outer green ring — Supabase:** practice/session data stored in Measure's cloud backend (session summary, attempts, cards and their dependent records).
+  - **Inner blue ring — Google Drive:** the session's associated image files.
+- The rings communicate two independent backup responsibilities. A session may have its Supabase ring complete while its Drive ring is still partial or waiting.
+- Do not add a ring per database table, card type, or individual image. The two categories are the complete top-level visual model.
+- The Supabase ring is determinate only to the extent supported by real sync state. At minimum it moves from waiting to complete when the session's required Supabase records are confirmed synced. Do not show a fabricated intermediate percentage. Its arc should animate smoothly when its confirmed progress changes.
+- The Drive ring is based on the actual number of images associated with that session that have completed Google Drive upload. Its arc represents uploaded images divided by the session's total associated images; update it as each upload succeeds. It is a file-count progress measure, not byte-level network progress.
+- If a session has no associated images, the inner ring is visually muted/dashed and its state is **Not needed**. Do not represent no work as a completed 100% upload.
+- Failed images retain the completed portion of the Drive ring and show a textual **Needs attention** state. Waiting for authorization or connectivity must not be represented as active uploading.
+- The same two-category model applies to independently created fact-card items where applicable. A fact card without images has no Drive work; a fact card created through session feedback remains part of its originating session and must not be double-counted as an independent item.
+- Keep a compact legend visible on the Sync screen: green = Supabase practice data; blue = Google Drive photos. Textual status remains necessary for accessibility and clarity; colour alone is insufficient.
+- Animate arc changes with a restrained transition. Respect reduced-motion preferences. Do not use a perpetual spinner as a substitute for measured progress.
+- The overall Sync summary may continue to communicate account-wide state, but per-session cards use the two distinct rings above.
+
+Implementation note: session-to-image association is derived through attempts and cards created from those attempts. The Drive ring is calculated from locally persisted image upload records (status and remoteId); refresh it during upload progress and after sync data changes. Browser verification is required to confirm that this mapping covers every supported image-creation workflow.
