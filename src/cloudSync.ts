@@ -526,11 +526,16 @@ async function syncPendingCards(
       row.syncStatus !== "synced" &&
       !questionCardImageIds(row).some((id) => unresolvedImageIds.has(id)),
   );
-  const pendingFacts = facts.filter(
-    (row) =>
-      row.syncStatus !== "synced" &&
-      !factCardImageIds(row).some((id) => unresolvedImageIds.has(id)),
-  );
+  // Fact-card content and photo backup are independent. If an unresolved
+  // image has accompanying text, sync that text/card now and defer the image
+  // reference. An image-only side must wait until its image exists in cloud.
+  const pendingFacts = facts.filter((row) => {
+    if (row.syncStatus === "synced") return false;
+    const promptWaiting = Boolean(row.promptImageId && unresolvedImageIds.has(row.promptImageId));
+    const contentWaiting = Boolean(row.contentImageId && unresolvedImageIds.has(row.contentImageId));
+    return (!promptWaiting || Boolean(row.promptText.trim())) &&
+      (!contentWaiting || Boolean(row.contentText.trim()));
+  });
 
   for (const batchStart of Array.from(
     { length: Math.ceil(pendingQuestions.length / 100) },
@@ -556,15 +561,28 @@ async function syncPendingCards(
   )) {
     const pending = pendingFacts.slice(batchStart, batchStart + 100);
     pending.filter((row) => !row.createdFromAttemptId).forEach((row) => onFactCardProgress?.(row, "syncing"));
+    const deferredImageRefs = new Map<string, boolean>();
+    const payload = pending.map((row) => {
+      const cloudRow = { ...toCloudFactCard(row), user_id: userId };
+      const deferPrompt = Boolean(row.promptImageId && unresolvedImageIds.has(row.promptImageId) && row.promptText.trim());
+      const deferContent = Boolean(row.contentImageId && unresolvedImageIds.has(row.contentImageId) && row.contentText.trim());
+      if (deferPrompt) cloudRow.prompt_image_id = null;
+      if (deferContent) cloudRow.content_image_id = null;
+      deferredImageRefs.set(row.id, deferPrompt || deferContent);
+      return cloudRow;
+    });
     const { error } = await client.from("fact_cards").upsert(
-      pending.map((row) => ({ ...toCloudFactCard(row), user_id: userId })),
+      payload,
       { onConflict: "id" },
     );
     if (error) throw new Error(`Could not sync fact cards: ${error.message}`);
     await Promise.all(
       pending.map((row) =>
         database.factCards.where("id").equals(row.id).modify((current) => {
-          if (current.updatedAt === row.updatedAt) current.syncStatus = "synced";
+          if (current.updatedAt === row.updatedAt) {
+            current.syncStatus = "synced";
+            current.imageSyncPending = deferredImageRefs.get(row.id) ?? false;
+          }
         }),
       ),
     );
@@ -703,6 +721,14 @@ async function syncPendingImages(userId: string): Promise<Set<string>> {
       unresolvedImageIds.add(referencedIds[index]);
     }
   });
+  const ownedFacts = await database.factCards.where("ownerUserId").equals(userId).toArray();
+  await Promise.all(ownedFacts.filter((card) =>
+    card.imageSyncPending &&
+    !factCardImageIds(card).some((id) => unresolvedImageIds.has(id)),
+  ).map((card) => database.factCards.update(card.id, {
+    syncStatus: "pending",
+    imageSyncPending: false,
+  })));
   return unresolvedImageIds;
 }
 
