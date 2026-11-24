@@ -2547,3 +2547,31 @@ h1 {
   from { transform: rotate(-90deg); }
   to { transform: rotate(270deg); }
 }
+
+
+/* Two-layer sync rings: Supabase (outer) and Google Drive (inner). */
+.sync-ring-pair { display:block; flex:0 0 2.8rem; width:2.8rem; height:2.8rem; overflow:visible; }
+.sync-ring-pair .sync-ring-track { fill:none; stroke-width:3.2; }
+.sync-ring-cloud-track { stroke:#e0e9df; }
+.sync-ring-cloud-progress {
+  fill:none; stroke:#6f9d64; stroke-width:3.2; stroke-linecap:round;
+  transform:rotate(-90deg); transform-origin:20px 20px;
+  transition:stroke-dashoffset 650ms cubic-bezier(.2,.75,.25,1),stroke 180ms ease;
+}
+.sync-ring-drive-track { stroke:#e2e8f1; }
+.sync-ring-drive-progress {
+  fill:none; stroke:#5796c9; stroke-width:3.2; stroke-linecap:round;
+  transform:rotate(-90deg); transform-origin:20px 20px;
+  transition:stroke-dashoffset 650ms cubic-bezier(.2,.75,.25,1),stroke 180ms ease;
+}
+.sync-ring-drive-progress.is-not-needed { stroke:#b9c4ce; stroke-dasharray:2 3; }
+.sync-ring-pair.is-active .sync-ring-cloud-progress:not([stroke-dashoffset="0"]) { stroke:#86aa7c; }
+.sync-item-state.is-error { color:#a3473d; }
+.sync-ring-legend { display:flex; flex-wrap:wrap; gap:.75rem 1.1rem; margin:.9rem 0 1.1rem; color:#68766b; font-size:.74rem; }
+.sync-ring-legend span { display:inline-flex; align-items:center; gap:.4rem; }
+.sync-ring-legend i { display:inline-block; width:.55rem; height:.55rem; border-radius:50%; }
+.sync-legend-cloud { background:#6f9d64; }
+.sync-legend-drive { background:#5796c9; }
+@media (prefers-reduced-motion: reduce) {
+  .sync-ring-cloud-progress,.sync-ring-drive-progress { transition:none; }
+}
