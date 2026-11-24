@@ -67,12 +67,13 @@ import SessionSummaryScreen from "./features/practice/SessionSummaryScreen";
 import AccountPanel from "./features/account/AccountPanel";
 import CardsScreen from "./features/cards/CardsScreen";
 import MainNavigation from "./features/navigation/MainNavigation";
+import SyncScreen from "./features/sync/SyncScreen";
 
 const DURATIONS = [30, 45, 60, 90, 120];
 const ACTIVE_SESSION_SAVE_DEBOUNCE_MS = 300;
 
 function App() {
-  const [activeTab, setActiveTab] = useState<"practice" | "cards" | "history">(
+  const [activeTab, setActiveTab] = useState<"practice" | "cards" | "history" | "sync">(
     "practice",
   );
   const [setup, setSetup] = useState<SessionSetup>({
@@ -111,7 +112,7 @@ function App() {
   const [driveConnectionStatus, setDriveConnectionStatus] = useState<"loading" | "idle" | "connecting" | "connected" | "error">("loading");
   const [driveConnectionError, setDriveConnectionError] = useState<string | null>(null);
   const [unassignedSessionCount, setUnassignedSessionCount] = useState(0);
-  const [unassignedCardCount, setUnassignedCardCount] = useState(0);
+  const [unassignedCardCount, setUnassignedCardCount] = useState(0);\n  const [pendingPhotoCount, setPendingPhotoCount] = useState(0);
   const syncInProgress = useRef(false);
   const sessionRef = useRef<ActiveSession | null>(null);
   const recoveryCandidateRef = useRef<ActiveSessionSnapshot | null>(null);
@@ -160,7 +161,7 @@ function App() {
     );
   }
 
-  function navigate(tab: "practice" | "cards" | "history") {
+  function navigate(tab: "practice" | "cards" | "history" | "sync") {
     setActiveTab(tab);
   }
 
@@ -1623,7 +1624,7 @@ function App() {
     );
   }
 
-  if (!session && activeTab === "cards") {
+  if (!session && activeTab === "sync") {\n    return (\n      <SyncScreen\n        email={authUser?.email}\n        configured={supabaseConfigured}\n        syncStatus={syncStatus}\n        syncError={syncError}\n        driveStatus={driveConnectionStatus}\n        driveError={driveConnectionError}\n        sessions={savedSessions}\n        facts={factCards}\n        questions={questionCards}\n        pendingPhotoCount={pendingPhotoCount}\n        onBack={() => setActiveTab("practice")}\n        onSyncNow={() => { if (authUser) void performSync(authUser); }}\n        onConnectDrive={() => void connectGoogleDrive()}\n        onSignIn={() => void signInWithGoogle()}\n      />\n    );\n  }\n\n  if (!session && activeTab === "cards") {
     return (
       <CardsScreen
         questions={questionCards}
@@ -1810,25 +1811,27 @@ function App() {
           view.
         </p>
 
+        <section className="home-sync-card" aria-label="Sync status">
+          <button type="button" className="home-sync-open" onClick={() => setActiveTab("sync")}>
+            <span className="home-sync-icon" aria-hidden="true">↗</span>
+            <span className="home-sync-copy">
+              <strong>{!authUser ? "Back up your practice" : syncStatus === "syncing" ? "Syncing your data…" : syncStatus === "error" ? "Sync needs attention" : pendingPhotoCount > 0 ? "Photos waiting for backup" : syncStatus === "synced" ? "Everything is backed up" : "Check your backup"}</strong>
+              <span>{!authUser ? "See what stays on this device and how to back it up" : pendingPhotoCount > 0 ? `${pendingPhotoCount} photo${pendingPhotoCount === 1 ? "" : "s"} waiting · View sync details` : "View sessions, cards and photo backup"}</span>
+            </span>
+            <span className="home-sync-chevron" aria-hidden="true">›</span>
+          </button>
+        </section>
         <AccountPanel
           configured={supabaseConfigured}
           email={authUser?.email}
           authMessage={authMessage}
           authError={authError}
           isSubmittingAuth={isSubmittingAuth}
-          syncStatus={syncStatus}
-          syncError={syncError}
           unassignedSessionCount={unassignedSessionCount}
           unassignedCardCount={unassignedCardCount}
           onGoogleSignIn={() => void signInWithGoogle()}
           onSignOut={() => void signOut()}
           onImportLocalSessions={() => void importLocalSessions()}
-          onSyncNow={() => {
-            if (authUser) void performSync(authUser);
-          }}
-          driveConnectionStatus={driveConnectionStatus}
-          driveConnectionError={driveConnectionError}
-          onConnectGoogleDrive={() => void connectGoogleDrive()}
         />
 
         <p className="storage-note">
