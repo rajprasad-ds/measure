@@ -568,7 +568,14 @@ async function syncPendingCards(
         }),
       ),
     );
-    pending.filter((row) => !row.createdFromAttemptId).forEach((row) => onFactCardProgress?.({ ...row, syncStatus: "synced" }, "synced"));
+    const confirmed = await Promise.all(
+      pending.map((row) => database.factCards.get(row.id)),
+    );
+    confirmed.forEach((card) => {
+      if (card?.syncStatus === "synced" && !card.createdFromAttemptId) {
+        onFactCardProgress?.(card, "synced");
+      }
+    });
   }
   const [syncedQuestions, syncedFacts] = await Promise.all([
     database.questions.where("ownerUserId").equals(userId)
