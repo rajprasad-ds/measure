@@ -150,7 +150,7 @@ export default function SyncScreen({
         {!configured ? (
           <p className="sync-muted">Cloud backup is not configured yet. This is separate from Google Drive photo backup.</p>
         ) : signedIn && (syncStatus === "error" || (pendingPhotoCount > 0 && driveStatus === "connected")) ? (
-          <button className="sync-primary-button" type="button" onClick={onSyncNow} disabled={!navigator.onLine}>
+          <button className="sync-primary-button" type="button" onClick={onSyncNow} disabled={!navigator.onLine || syncStatus === "syncing"}>
             Retry backup
           </button>
         ) : !signedIn ? (
