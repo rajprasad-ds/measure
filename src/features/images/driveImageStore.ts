@@ -12,16 +12,18 @@ const FOLDER_NAME = "JEE Practice";
 const GSI_CLIENT_SCRIPT = "https://accounts.google.com/gsi/client";
 
 export interface ImageStore {
-  upload(blob: Blob, meta: { id: string; mime: string }): Promise<{ remoteId: string }>;
+  upload(blob: Blob, meta: { id: string; mime: string; ownerUserId: string }): Promise<{ remoteId: string }>;
   download(remoteId: string): Promise<Blob>;
   remove(remoteId: string): Promise<void>;
-  reconnect(): Promise<void>;
+  reconnect(ownerUserId: string): Promise<void>;
 }
 
 let gsiLoadPromise: Promise<void> | null = null;
 let accessToken: string | null = null;
 let accessTokenExpiresAt = 0;
 let tokenPromise: Promise<string> | null = null;
+let tokenPromiseOwnerUserId: string | null = null;
+let authorizedOwnerUserId: string | null = null;
 let authorizationGeneration = 0;
 
 const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 60_000;
@@ -31,6 +33,8 @@ export function clearDriveAuthorization() {
   accessToken = null;
   accessTokenExpiresAt = 0;
   tokenPromise = null;
+  tokenPromiseOwnerUserId = null;
+  authorizedOwnerUserId = null;
 }
 
 function handleUnauthorizedResponse(response: Response, operation: string) {
@@ -69,11 +73,12 @@ function getClientId(): string {
   return id;
 }
 
-function requestAccessToken(forceConsent = false): Promise<string> {
+function requestAccessToken(forceConsent: boolean, ownerUserId: string): Promise<string> {
   const gsi = (window as any).google?.accounts?.oauth2;
   if (!gsi) return Promise.reject(new Error("Google Identity Services is not ready. Please try again."));
   const clientId = getClientId();
   const requestGeneration = authorizationGeneration;
+  tokenPromiseOwnerUserId = ownerUserId;
   tokenPromise = new Promise((resolve, reject) => {
     const client = gsi.initTokenClient({
       client_id: clientId,
@@ -93,6 +98,7 @@ function requestAccessToken(forceConsent = false): Promise<string> {
         } else {
           const token = resp.access_token as string;
           accessToken = token;
+          authorizedOwnerUserId = ownerUserId;
           accessTokenExpiresAt = Date.now() + Math.max(0, Number(resp.expires_in ?? 0)) * 1_000;
           resolve(token);
         }
@@ -104,21 +110,32 @@ function requestAccessToken(forceConsent = false): Promise<string> {
   return tokenPromise;
 }
 
-async function ensureAccessToken(): Promise<string> {
+async function ensureAccessToken(ownerUserId?: string): Promise<string> {
   if (
     accessToken &&
     accessTokenExpiresAt - Date.now() > TOKEN_EXPIRY_SAFETY_WINDOW_MS
-  ) return accessToken;
+  ) {
+    if (ownerUserId && authorizedOwnerUserId !== ownerUserId) {
+      throw new Error("Google Drive is connected to a different Measure account. Switch back to the account that owns these photos.");
+    }
+    return accessToken;
+  }
   if (accessToken) clearDriveAuthorization();
-  if (tokenPromise) return tokenPromise;
+  if (tokenPromise) {
+    if (ownerUserId && tokenPromiseOwnerUserId !== ownerUserId) {
+      throw new Error("A Google Drive connection is already being prepared for a different Measure account.");
+    }
+    return tokenPromise;
+  }
   if (!(window as any).google?.accounts?.oauth2) await loadGSI();
   throw new Error("Google Drive needs to be connected. Reconnect Google Drive to upload photos. Your local data is safe.");
 }
 
-export function hasDriveAccessToken(): boolean {
+export function hasDriveAccessToken(ownerUserId?: string): boolean {
   return Boolean(
     accessToken &&
-    accessTokenExpiresAt - Date.now() > TOKEN_EXPIRY_SAFETY_WINDOW_MS,
+    accessTokenExpiresAt - Date.now() > TOKEN_EXPIRY_SAFETY_WINDOW_MS &&
+    (!ownerUserId || authorizedOwnerUserId === ownerUserId),
   );
 }
 
@@ -164,9 +181,9 @@ async function getOrCreateFolderId(token: string): Promise<string> {
 export class DriveImageStore implements ImageStore {
   async upload(
     blob: Blob,
-    meta: { id: string; mime: string },
+    meta: { id: string; mime: string; ownerUserId: string },
   ): Promise<{ remoteId: string }> {
-    const token = await ensureAccessToken();
+    const token = await ensureAccessToken(meta.ownerUserId);
     const folderId = await getOrCreateFolderId(token);
 
     const ext = meta.mime.split("/")[1] ?? "jpg";
@@ -226,13 +243,13 @@ export class DriveImageStore implements ImageStore {
     }
   }
 
-  reconnect(): Promise<void> {
+  reconnect(ownerUserId: string): Promise<void> {
+    if (!ownerUserId) return Promise.reject(new Error("Sign in to Measure before connecting Google Drive."));
     clearDriveAuthorization();
-    tokenPromise = null;
     if ((window as any).google?.accounts?.oauth2) {
-      return requestAccessToken(true).then(() => undefined);
+      return requestAccessToken(true, ownerUserId).then(() => undefined);
     }
-    return loadGSI().then(() => requestAccessToken(true)).then(() => undefined);
+    return loadGSI().then(() => requestAccessToken(true, ownerUserId)).then(() => undefined);
   }
 }
 
@@ -287,7 +304,7 @@ export async function processUploadQueue(
     }
     // Do not turn queued photos into failed uploads just because this page load
     // has no in-memory Google token. Require explicit connection first.
-    if (store === driveImageStore) await ensureAccessToken();
+    if (store === driveImageStore) await ensureAccessToken(ownerUserId);
     const now = Date.now();
     const eligible = pending.filter((image) => {
       const lastTry = lastAttemptAtById.get(image.id) ?? 0;
@@ -305,6 +322,7 @@ export async function processUploadQueue(
       if ((image.attempts ?? 0) >= MAX_ATTEMPTS) continue;
 
       onProgress?.({ completed, total: eligible.length, failed, currentImageId: image.id });
+      if (store === driveImageStore) await ensureAccessToken(ownerUserId);
       const blob = await getLocalImageBlob(image.id);
       if (!blob) {
         await markImageFailed(image.id, ownerUserId, "Local photo is no longer available.");
@@ -319,12 +337,17 @@ export async function processUploadQueue(
         const { remoteId } = await store.upload(blob, {
           id: image.id,
           mime: image.mime,
+          ownerUserId,
         });
         await markImageUploaded(image.id, ownerUserId, remoteId);
         lastAttemptAtById.delete(image.id);
         completed += 1;
         onProgress?.({ completed, total: eligible.length, failed, currentImageId: null });
       } catch (error) {
+        if (store === driveImageStore && hasDriveAccessToken() && !hasDriveAccessToken(ownerUserId)) {
+          await resetImageUpload(image.id, ownerUserId);
+          break;
+        }
         await markImageFailed(
           image.id,
           ownerUserId,
@@ -336,7 +359,7 @@ export async function processUploadQueue(
         // An authorization failure invalidates the shared token. Stop here so
         // the remaining queue entries stay pending instead of being marked as
         // failed one by one without a usable connection.
-        if (store === driveImageStore && !hasDriveAccessToken()) break;
+        if (store === driveImageStore && !hasDriveAccessToken(ownerUserId)) break;
       }
     }
   } finally {
