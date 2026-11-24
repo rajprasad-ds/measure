@@ -166,7 +166,7 @@ export default function ImageInput({
       const [first, second] = [...pointers.values()];
       pinchRef.current = { distance: Math.hypot(second.x - first.x, second.y - first.y), zoom };
       dragRef.current = null;
-    } else if (pointers.size === 1 && zoom > 1) {
+    } else if (pointers.size === 1 && (zoom > 1 || cropAspect !== "original")) {
       dragRef.current = { x: event.clientX, y: event.clientY, panX, panY };
     }
   }
@@ -185,7 +185,7 @@ export default function ImageInput({
     const canvas = editorCanvasRef.current;
     if (!start || !canvas) return;
     const bounds = canvas.getBoundingClientRect();
-    const maxPan = Math.max(0.001, 1 - 1 / zoom);
+    const maxPan = zoom > 1 ? 1 - 1 / zoom : 1;
     setPanX(Math.max(-1, Math.min(1, start.panX - ((event.clientX - start.x) / bounds.width) * 2 * maxPan)));
     setPanY(Math.max(-1, Math.min(1, start.panY - ((event.clientY - start.y) / bounds.height) * 2 * maxPan)));
   }
@@ -195,7 +195,7 @@ export default function ImageInput({
     pointers.delete(event.pointerId);
     pinchRef.current = null;
     dragRef.current = null;
-    if (pointers.size === 1 && zoom > 1) {
+    if (pointers.size === 1 && (zoom > 1 || cropAspect !== "original")) {
       const remaining = [...pointers.values()][0];
       dragRef.current = { x: remaining.x, y: remaining.y, panX, panY };
     }
