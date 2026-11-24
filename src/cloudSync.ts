@@ -879,10 +879,35 @@ export async function syncAccountSessions(
       const localRows = await database.factCards.bulkGet(
         pulledFacts.map((row) => row.id),
       );
+      const mergedFacts = pulledFacts.map((cloudCard, index) => {
+        const localCard = localRows[index];
+        if (!localCard || !localCard.imageSyncPending) return cloudCard;
+
+        // A null image reference in the cloud can be an intentional temporary
+        // omission: text was synced while its photo was still uploading. Do
+        // not let that partial cloud row erase the only local reference.
+        const promptImageId =
+          cloudCard.promptImageId ?? localCard.promptImageId;
+        const contentImageId =
+          cloudCard.contentImageId ?? localCard.contentImageId;
+        const keptDeferredImage =
+          (!cloudCard.promptImageId && Boolean(localCard.promptImageId)) ||
+          (!cloudCard.contentImageId && Boolean(localCard.contentImageId));
+
+        return {
+          ...cloudCard,
+          ...(promptImageId ? { promptImageId } : {}),
+          ...(contentImageId ? { contentImageId } : {}),
+          syncStatus: keptDeferredImage ? "pending" as const : cloudCard.syncStatus,
+          imageSyncPending: keptDeferredImage,
+        };
+      });
       await database.factCards.bulkPut(
-        pulledFacts.filter(
+        mergedFacts.filter(
           (_, index) =>
-            !localRows[index] || localRows[index].syncStatus === "synced",
+            !localRows[index] ||
+            localRows[index].syncStatus === "synced" ||
+            localRows[index].imageSyncPending,
         ),
       );
     }),
