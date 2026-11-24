@@ -13,6 +13,7 @@ type Props = {
   questionCards: QuestionCard[];
   questionFactLinks: QuestionFactLink[];
   syncStatus: "idle" | "syncing" | "synced" | "offline" | "error";
+  syncError: string | null;
   onRetrySync: () => void;
   onNewSession: () => void;
 };
@@ -24,6 +25,7 @@ export default function SessionSummaryScreen({
   questionCards,
   questionFactLinks,
   syncStatus,
+  syncError,
   onRetrySync,
   onNewSession,
 }: Props) {
@@ -114,9 +116,9 @@ export default function SessionSummaryScreen({
         {(pendingImageCount > 0 || syncStatus === "error" || syncStatus === "offline") && (
           <div className="summary-sync-pending">
             <p>
-              {pendingImageCount > 0
+              {syncError || (pendingImageCount > 0
                 ? `${pendingImageCount} photo${pendingImageCount === 1 ? "" : "s"} need Google Drive backup. Your session is already saved on this device.`
-                : "Cloud sync needs attention. Your session is already saved on this device."}
+                : "Cloud sync needs attention. Your session is already saved on this device.")}
             </p>
             <button
               className="account-secondary-button"
