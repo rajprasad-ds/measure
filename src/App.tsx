@@ -116,6 +116,7 @@ function App() {
   const [pendingPhotoCount, setPendingPhotoCount] = useState(0);
   const [syncPhase, setSyncPhase] = useState<"sessions" | "photos" | "finalizing" | null>(null);
   const [syncingSessionId, setSyncingSessionId] = useState<string | null>(null);
+  const [syncingFactCardId, setSyncingFactCardId] = useState<string | null>(null);
   const [photoUploadProgress, setPhotoUploadProgress] = useState({ completed: 0, total: 0, currentImageId: null as string | null });
   const syncInProgress = useRef(false);
   const sessionRef = useRef<ActiveSession | null>(null);
@@ -417,6 +418,15 @@ function App() {
     });
   }
 
+  function handleFactCardSyncProgress(card: FactCard, status: "syncing" | "synced") {
+    if (status === "syncing") {
+      setSyncingFactCardId(card.id);
+      return;
+    }
+    setSyncingFactCardId(null);
+    setFactCards((current) => current.map((item) => item.id === card.id ? card : item));
+  }
+
   async function performSync(user: User, afterSessionSubmission = false) {
     if (session?.phase === "feedback" && !afterSessionSubmission) return;
     if (syncInProgress.current) return;
@@ -433,7 +443,7 @@ function App() {
       // Practice metadata is independent of Google Drive. Sync it first so a
       // missing/expired Drive token can never block session backup.
       setSyncPhase("sessions");
-      await syncAccountSessions(user, handleSessionSyncProgress);
+      await syncAccountSessions(user, handleSessionSyncProgress, handleFactCardSyncProgress);
 
       // Upload photos only when the user has explicitly connected Drive in
       // this browser session. A Drive failure is isolated from metadata sync.
@@ -446,7 +456,7 @@ function App() {
           // New Drive IDs are now available; register their metadata and allow
           // dependent cards to sync in this second pass.
           setSyncPhase("finalizing");
-          await syncAccountSessions(user, handleSessionSyncProgress);
+          await syncAccountSessions(user, handleSessionSyncProgress, handleFactCardSyncProgress);
         } catch (photoError) {
           setDriveConnectionStatus("error");
           setDriveConnectionError(
@@ -501,6 +511,7 @@ function App() {
     } finally {
       setSyncPhase(null);
       setSyncingSessionId(null);
+      setSyncingFactCardId(null);
       syncInProgress.current = false;
     }
   }
@@ -1683,6 +1694,7 @@ function App() {
         syncPhase={syncPhase}
         photoUploadProgress={photoUploadProgress}
         syncingSessionId={syncingSessionId}
+        syncingFactCardId={syncingFactCardId}
         onBack={() => setActiveTab("practice")}
         onNavigate={navigate}
         onSyncNow={() => { if (authUser) void performSync(authUser); }}
