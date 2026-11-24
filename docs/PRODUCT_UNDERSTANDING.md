@@ -810,3 +810,13 @@ This section records decisions made after the 23 November handoff. Where this se
 - The current sync path was observed to process the upload queue before account-session synchronization. If upload processing throws because Drive authorization is unavailable, independent session metadata synchronization may be skipped. This must be verified and corrected before the disconnected-Drive test.
 - These are findings from source inspection, not browser-verified reproduction results. Do not describe the account-mismatch upload as confirmed to have happened; it is a risk that must be closed and tested.
 
+
+
+### 16.7 Sync experience implementation progress (24 November 2026)
+
+- The first UI implementation adds one persistent Home sync-status card and a dedicated Sync screen.
+- The Sync screen groups practice sessions separately from independently created fact cards. Fact cards created from an attempt/session are excluded from the independent group to avoid presenting the same work twice.
+- Completed sessions and independent fact cards are placed in collapsible Completed sections.
+- Google Drive photo backup is shown as a dependency within the Sync screen. When no photos are waiting, the UI explains that Drive authorization is not currently needed.
+- The session ring currently communicates completion versus waiting only. It deliberately does not invent a percentage or imply measured sub-task progress. Real per-session progress and precise states (preparing, uploading, waiting for connection, needs attention) require sync-pipeline instrumentation and are a follow-up reliability step.
+- This is a first implementation pass, not yet a verified end-to-end sync experience. Browser verification, accessibility/responsive review, and the underlying Drive/session pipeline fixes remain outstanding.
