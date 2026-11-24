@@ -114,14 +114,14 @@ export default function SyncScreen({
           </div>
         </div>
         <div className="sync-overview-stats">
-          <span><strong>{totalCount - pendingCount}</strong> of <strong>{totalCount}</strong> items backed up</span>
+          {totalCount > 0 ? <span><strong>{totalCount - pendingCount}</strong> of <strong>{totalCount}</strong> items backed up</span> : <span>No sessions or independent fact cards yet</span>}
           <span>{pendingPhotoCount} photos waiting</span>
         </div>
-        {signedIn ? (
-          <button className="sync-primary-button" type="button" onClick={onSyncNow} disabled={syncStatus === "syncing" || !navigator.onLine}>
-            {syncStatus === "syncing" ? "Syncing…" : "Sync now"}
+        {signedIn && syncStatus === "error" ? (
+          <button className="sync-primary-button" type="button" onClick={onSyncNow} disabled={!navigator.onLine}>
+            Retry sync
           </button>
-        ) : configured ? (
+        ) : !signedIn && configured ? (
           <button className="sync-primary-button" type="button" onClick={onSignIn}>Sign in to enable backup</button>
         ) : (
           <p className="sync-muted">Cloud backup is not configured yet.</p>
@@ -137,7 +137,7 @@ export default function SyncScreen({
         {sessions.length === 0 ? <p className="sync-empty">Your completed practice sessions will appear here.</p> : (
           <>
             <ul className="sync-item-list">
-              {pendingSessions.map((item) => <ItemRow key={item.id} title={`${item.subject} · ${item.chapter}`} detail={`${new Date(item.endedAt).toLocaleDateString()} · Practice session`} complete={false} />)}
+              {pendingSessions.map((item) => <ItemRow key={item.id} title={`${item.subject} · ${item.chapter}`} detail={`${new Date(item.endedAt).toLocaleDateString()} · ${item.sessionKind === "question_revision" ? "Question revision" : "Practice session"}`} complete={false} />)}
             </ul>
             {completedSessions.length > 0 && <details className="sync-completed">
               <summary>Completed · {completedSessions.length}</summary>
