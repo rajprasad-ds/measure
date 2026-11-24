@@ -25,14 +25,14 @@ let tokenPromise: Promise<string> | null = null;
 
 const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 60_000;
 
-function clearAccessToken() {
+export function clearDriveAuthorization() {
   accessToken = null;
   accessTokenExpiresAt = 0;
 }
 
 function handleUnauthorizedResponse(response: Response, operation: string) {
   if (response.status === 401 || response.status === 403) {
-    clearAccessToken();
+    clearDriveAuthorization();
     throw new Error(
       `Google Drive authorization expired or was revoked during ${operation}. Reconnect Google Drive to continue. Your local data is safe.`,
     );
@@ -80,7 +80,7 @@ function requestAccessToken(forceConsent = false): Promise<string> {
         if (resp.error) {
           reject(new Error(resp.error_description || resp.error || "Google Drive access was cancelled."));
         } else if (!resp.access_token) {
-          clearAccessToken();
+          clearDriveAuthorization();
           reject(new Error("Google did not return a Drive access token. Please reconnect."));
         } else {
           accessToken = resp.access_token;
@@ -100,7 +100,7 @@ async function ensureAccessToken(): Promise<string> {
     accessToken &&
     accessTokenExpiresAt - Date.now() > TOKEN_EXPIRY_SAFETY_WINDOW_MS
   ) return accessToken;
-  if (accessToken) clearAccessToken();
+  if (accessToken) clearDriveAuthorization();
   if (tokenPromise) return tokenPromise;
   if (!(window as any).google?.accounts?.oauth2) await loadGSI();
   throw new Error("Google Drive needs to be connected. Reconnect Google Drive to upload photos. Your local data is safe.");
@@ -218,7 +218,7 @@ export class DriveImageStore implements ImageStore {
   }
 
   reconnect(): Promise<void> {
-    clearAccessToken();
+    clearDriveAuthorization();
     tokenPromise = null;
     if ((window as any).google?.accounts?.oauth2) {
       return requestAccessToken(true).then(() => undefined);
@@ -253,8 +253,15 @@ export async function retryFailedUploads(): Promise<void> {
   }
 }
 
+export type UploadQueueProgress = {
+  completed: number;
+  total: number;
+  currentImageId: string | null;
+};
+
 export async function processUploadQueue(
   store: ImageStore = driveImageStore,
+  onProgress?: (progress: UploadQueueProgress) => void,
 ): Promise<void> {
   if (running) return;
   running = true;
@@ -262,11 +269,21 @@ export async function processUploadQueue(
     const pending = await getPendingImages();
     // No queued photos means Drive authorization is irrelevant. This lets
     // session/card metadata sync without requiring a Drive token unnecessarily.
-    if (pending.length === 0) return;
+    if (pending.length === 0) {
+      onProgress?.({ completed: 0, total: 0, currentImageId: null });
+      return;
+    }
     // Do not turn queued photos into failed uploads just because this page load
     // has no in-memory Google token. Require explicit connection first.
     if (store === driveImageStore) await ensureAccessToken();
     const now = Date.now();
+    const eligible = pending.filter((image) => {
+      const lastTry = lastAttemptAtById.get(image.id) ?? 0;
+      return now >= lastTry + backoffFor(image.attempts ?? 0) &&
+        (image.attempts ?? 0) < MAX_ATTEMPTS;
+    });
+    let completed = 0;
+    onProgress?.({ completed, total: eligible.length, currentImageId: null });
 
     for (const image of pending) {
       const lastTry = lastAttemptAtById.get(image.id) ?? 0;
@@ -280,6 +297,7 @@ export async function processUploadQueue(
         continue;
       }
 
+      onProgress?.({ completed, total: eligible.length, currentImageId: image.id });
       lastAttemptAtById.set(image.id, Date.now());
       await markImageUploading(image.id);
       try {
@@ -289,11 +307,15 @@ export async function processUploadQueue(
         });
         await markImageUploaded(image.id, remoteId);
         lastAttemptAtById.delete(image.id);
+        completed += 1;
+        onProgress?.({ completed, total: eligible.length, currentImageId: null });
       } catch (error) {
         await markImageFailed(
           image.id,
           error instanceof Error ? error.message : "Upload failed.",
         );
+        completed += 1;
+        onProgress?.({ completed, total: eligible.length, currentImageId: null });
         // An authorization failure invalidates the shared token. Stop here so
         // the remaining queue entries stay pending instead of being marked as
         // failed one by one without a usable connection.
