@@ -2438,8 +2438,9 @@ h1 {
   width: min(100%, 46rem);
   min-height: 100dvh;
   margin: 0 auto;
+  /* Keep the final sync rows clear of the sticky bottom navigation. */
   padding: max(1.25rem, env(safe-area-inset-top)) 1rem
-    calc(2rem + env(safe-area-inset-bottom));
+    calc(7rem + env(safe-area-inset-bottom));
   color: #17231e;
 }
 .sync-header { display: flex; align-items: center; gap: 0.9rem; margin-bottom: 1.25rem; }
