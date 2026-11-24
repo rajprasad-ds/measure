@@ -139,7 +139,7 @@ export default function SyncScreen({
                 <small>{photoUploadProgress.currentImageId ? "Uploading a photo…" : photoUploadProgress.completed === photoUploadProgress.total ? "Photo queue pass finished." : "Preparing next photo…"}</small>
               </>
             ) : (
-              <small>{syncPhase === "sessions" ? "Sessions, cards and their links are being checked and saved." : "Photo references are being added to your backup."}</small>
+              <small>{syncPhase === "sessions" ? "Sessions, cards and their links are being checked and saved." : syncPhase === "photos" ? "No photos are ready to retry in this pass. They remain stored on this device." : "Photo references are being added to your backup."}</small>
             )}
           </div>
         )}
