@@ -119,6 +119,7 @@ function App() {
   const [syncingFactCardId, setSyncingFactCardId] = useState<string | null>(null);
   const [photoUploadProgress, setPhotoUploadProgress] = useState({ completed: 0, total: 0, failed: 0, currentImageId: null as string | null });
   const syncInProgress = useRef(false);
+  const syncRequestedAgain = useRef(false);
   const sessionRef = useRef<ActiveSession | null>(null);
   const recoveryCandidateRef = useRef<ActiveSessionSnapshot | null>(null);
   const lastInteractionAtRef = useRef(Date.now());
@@ -440,7 +441,10 @@ function App() {
 
   async function performSync(user: User, afterSessionSubmission = false) {
     if (session?.phase === "feedback" && !afterSessionSubmission) return;
-    if (syncInProgress.current) return;
+    if (syncInProgress.current) {
+      syncRequestedAgain.current = true;
+      return;
+    }
     if (!navigator.onLine) {
       setSyncStatus("offline");
       setSyncError(null);
@@ -544,6 +548,10 @@ function App() {
       setSyncingSessionId(null);
       setSyncingFactCardId(null);
       syncInProgress.current = false;
+      if (syncRequestedAgain.current) {
+        syncRequestedAgain.current = false;
+        void performSync(user, afterSessionSubmission);
+      }
     }
   }
 
