@@ -252,11 +252,11 @@ function backoffFor(attempts: number): number {
   return BACKOFF_MS[Math.min(attempts - 1, BACKOFF_MS.length - 1)];
 }
 
-export async function retryFailedUploads(): Promise<void> {
-  const pending = await getPendingImages();
+export async function retryFailedUploads(ownerUserId: string): Promise<void> {
+  const pending = await getPendingImages(ownerUserId);
   for (const image of pending) {
     if (image.status === "failed" || image.status === "uploading") {
-      await resetImageUpload(image.id);
+      await resetImageUpload(image.id, ownerUserId);
       lastAttemptAtById.delete(image.id);
     }
   }
@@ -270,13 +270,15 @@ export type UploadQueueProgress = {
 };
 
 export async function processUploadQueue(
+  ownerUserId: string,
   store: ImageStore = driveImageStore,
   onProgress?: (progress: UploadQueueProgress) => void,
 ): Promise<void> {
+  if (!ownerUserId) throw new Error("A signed-in account is required to upload photos.");
   if (running) return;
   running = true;
   try {
-    const pending = await getPendingImages();
+    const pending = await getPendingImages(ownerUserId);
     // No queued photos means Drive authorization is irrelevant. This lets
     // session/card metadata sync without requiring a Drive token unnecessarily.
     if (pending.length === 0) {
@@ -305,26 +307,27 @@ export async function processUploadQueue(
       onProgress?.({ completed, total: eligible.length, failed, currentImageId: image.id });
       const blob = await getLocalImageBlob(image.id);
       if (!blob) {
-        await markImageFailed(image.id, "Local photo is no longer available.");
+        await markImageFailed(image.id, ownerUserId, "Local photo is no longer available.");
         completed += 1;
         failed += 1;
         onProgress?.({ completed, total: eligible.length, failed, currentImageId: null });
         continue;
       }
       lastAttemptAtById.set(image.id, Date.now());
-      await markImageUploading(image.id);
+      await markImageUploading(image.id, ownerUserId);
       try {
         const { remoteId } = await store.upload(blob, {
           id: image.id,
           mime: image.mime,
         });
-        await markImageUploaded(image.id, remoteId);
+        await markImageUploaded(image.id, ownerUserId, remoteId);
         lastAttemptAtById.delete(image.id);
         completed += 1;
         onProgress?.({ completed, total: eligible.length, failed, currentImageId: null });
       } catch (error) {
         await markImageFailed(
           image.id,
+          ownerUserId,
           error instanceof Error ? error.message : "Upload failed.",
         );
         completed += 1;
