@@ -2575,3 +2575,17 @@ h1 {
 @media (prefers-reduced-motion: reduce) {
   .sync-ring-cloud-progress,.sync-ring-drive-progress { transition:none; }
 }
+
+.sync-overview-copy { min-width:0; flex:1 1 auto; }
+.sync-drive-connect-inline {
+  display:inline-flex; align-items:center; justify-content:center; min-height:2.55rem;
+  margin-top:.85rem; padding:.55rem .95rem; border:1px solid #9ab99a;
+  border-radius:999px; background:#dcebdc; color:#1d3524; font:inherit;
+  font-size:.82rem; font-weight:800; cursor:pointer;
+}
+.sync-drive-connect-inline:disabled { cursor:wait; opacity:.65; }
+@media (max-width:420px) {
+  .sync-overview-top { align-items:flex-start; }
+  .sync-overview-ring { padding:0; }
+  .sync-drive-connect-inline { max-width:100%; }
+}
