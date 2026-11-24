@@ -461,8 +461,14 @@ function App() {
       if (hasDriveAccessToken()) {
         setSyncPhase("photos");
         setPhotoUploadProgress({ completed: 0, total: 0, failed: 0, currentImageId: null });
+        setDriveConnectionError(null);
         try {
-          await processUploadQueue(driveImageStore, setPhotoUploadProgress);
+          await processUploadQueue(driveImageStore, (progress) => {
+            setPhotoUploadProgress(progress);
+            if (progress.failed > 0) {
+              setDriveConnectionError("Some photos could not be uploaded yet. They remain on this device and can be retried.");
+            }
+          });
           if (hasDriveAccessToken()) {
             setDriveConnectionStatus("connected");
           } else {
