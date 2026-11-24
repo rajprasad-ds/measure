@@ -933,3 +933,153 @@ Before treating the foundation as fully reliable, continue to verify with fresh,
 - Review the mockup against the established product rules, identify only genuine ambiguities or conflicts, and settle those before implementation.
 - Do not start the adaptive revision planner, new scheduling algorithms, or unrelated feature expansion merely because the underlying card data has scheduling fields. Those remain separate product scope and require their own approved design.
 - Preserve the core principles: one source of truth for study intervals; OFF days permit no study activity; honest metrics and sync states; local committed data is never destroyed by cloud failure; low-friction UX; and no unnecessary technical controls exposed to the student.
+
+
+---
+
+## 17. Current reliability handoff: image editor and account-safe Google Drive backup (24 November 2026)
+
+This section records the active problems being investigated and the expected product behavior. It deliberately excludes Google OAuth access-blocked / origin-mismatch troubleshooting; that is a separate configuration issue and must not be conflated with the application-level image and account-isolation requirements below.
+
+### 17.1 Pre-save image editor for fact-card photos
+
+**Problem being addressed**
+
+The current photo capture/selection flow needs a proper editing step before an image is committed to a fact card. A student may take a photo or select an existing image, but the raw image should not be saved immediately if it needs framing or orientation correction.
+
+**Required experience**
+
+- Both taking a new photo and selecting an existing photo should open the same pre-save image editor.
+- The editor is part of the image-selection flow and appears before the user saves/commits the fact card.
+- The student should be able to:
+  - Rotate the image.
+  - Crop the image.
+  - Zoom in and out.
+  - Reposition the image horizontally and vertically within the crop.
+- The editing controls should make the result understandable and predictable. Avoid exposing technical image-processing concepts.
+- The user should be able to review the final crop before confirming it.
+- Cancelling the editor must not replace or corrupt an already saved image on the card.
+- Replacing an existing photo should only replace the card's image after the edited result is confirmed and the card save flow succeeds.
+
+**Image output and persistence constraints**
+
+- The editor should render the final composition to a JPEG Blob using a canvas-based export.
+- Preserve the existing local-first image lifecycle: save the resulting Blob locally, associate it with the intended card, and queue it for Drive backup through the existing image-store path.
+- Do not bypass or create a parallel upload mechanism for edited images.
+- The saved card must reference the edited output, not the original unedited camera/file Blob.
+- The image should remain available locally while Drive is disconnected, authorization is unavailable, the device is offline, or an upload fails.
+- Drive upload should remain deferred/retryable and must not be a prerequisite for saving the card's text or local image.
+- Replacing/removing an image must ensure the old image is no longer treated as an eligible upload for that card. Do not leave abandoned queued uploads or stale associations.
+- Keep image metadata and the local Blob association stable across reloads and subsequent Supabase pulls.
+- Avoid unnecessary quality loss or unexpectedly large files; use a sensible JPEG export quality and dimensions appropriate for readable study notes. Do not resize so aggressively that small text becomes illegible.
+
+**Implementation / verification status**
+
+- The pre-save editor work is part of the current `phase-1b-cards` branch.
+- The branch implementation was described as supporting rotation, crop, zoom, and horizontal/vertical positioning, with canvas JPEG Blob output and reuse of the existing local save/Drive queue lifecycle.
+- This is implementation status, not proof of complete browser verification. Verify both camera capture and file selection, all editor controls, cancel/confirm behavior, replacement of an existing image, reload persistence, and deferred Drive upload before calling the flow complete.
+
+### 17.2 Measure-account isolation for local sessions and cards
+
+**Observed problem**
+
+A real practice session in Math — Vector Algebra, created while signed into one Measure account, appeared again after a server restart and was also visible after signing into a second Measure account. The owner explicitly confirmed that they had not selected any local-session import, Sync, or Sync now action before observing the cross-account visibility.
+
+The underlying risk is that browser IndexedDB is shared by Measure accounts using the same browser profile. A record left locally from one account must not become visible to, or be uploaded as data for, another account merely because the active login changed. Server restart/reload must not cause stale in-memory data from a previous identity to reappear.
+
+**Product requirements**
+
+- Every signed-in account must see only records owned by that exact authenticated Supabase user ID.
+- Local unassigned/legacy records must never be silently exposed to a signed-in account. They may only be brought into an account through an explicit, deliberate import/ownership flow with clear user intent.
+- Anonymous/unassigned local data, where legacy compatibility still exists, may be shown only in an anonymous context—not as fallback data for a signed-in user.
+- On sign-in, sign-out, or account change, clear account-scoped in-memory session, card, attempt, link, and review state immediately before loading data for the new identity.
+- Do not render cached records from the previous account while the new account's authentication or data load is still resolving.
+- All asynchronous account-scoped loads must be protected against stale completion. If an earlier account's query finishes after an auth transition, its result must not overwrite the current account's state.
+- Re-fetch account-scoped data after authentication transitions, including a fresh SIGNED_IN event for the same account where a refresh is required.
+- Apply the same strict ownership rule consistently to History, Cards, session lists, and all other account-owned surfaces. Do not use permissive filters that include records with missing owner IDs for signed-in users.
+- Do not silently delete, reassign, or upload a questionable legacy record. If ownership is ambiguous, preserve it safely and require an explicit resolution path rather than guessing.
+
+**Implementation changes already made on `phase-1b-cards`**
+
+The branch contains three focused commits addressing the observed class of bug:
+
+1. `f88bc6034c513ca2c28257bc761b638af3a2ac8c` — `fix: isolate local study data between accounts`
+   - Clears in-memory session/card/link/attempt/review state on SIGNED_IN and SIGNED_OUT.
+   - Clears Drive authorization state on those transitions.
+   - Loads sessions only after auth loading resolves and applies strict owner filtering.
+   - Signed-in users see records whose owner ID exactly matches their user ID; unassigned records are only eligible in anonymous mode.
+2. `76921a0f36d694999c26d741c5af1cfbd907ff48` — `fix: refresh account-scoped data on auth transitions`
+   - Ensures account-scoped data refreshes on authentication transitions, including same-account SIGNED_IN events.
+   - Avoids treating USER_UPDATED as a sign-in/sign-out boundary.
+3. `aca900b4aeb79738373b32ead23bc18f23f839f5` — `fix: prevent stale account data loads from crossing sessions`
+   - Adds an account-data load generation guard.
+   - Prevents a card-data request started under an earlier auth state from applying its results after a newer account transition.
+
+**Important limitation:** These changes are defensive code fixes, not proof that the specific Vector Algebra record's ownership or origin has been diagnosed. The local IndexedDB contents were not inspected as part of this code review. If the record itself has an incorrect owner ID due to an earlier import or data-writing bug, strict filtering alone cannot determine the true owner. Do not delete or transfer it without inspecting its provenance and obtaining the owner's decision.
+
+**Required verification**
+
+- Sign in to Measure account A and verify that only A-owned sessions and cards appear.
+- Sign out, then sign in to account B in the same browser profile. Verify that A's Vector Algebra session and A's cards do not appear in History, Cards, or any session list.
+- Repeat after a full page reload and after a server restart/redeployment.
+- Repeat the transition in the opposite direction (B to A).
+- Verify that no import action, Sync action, or background refresh is required to trigger the isolation behavior.
+- Verify that a pending asynchronous load from account A cannot populate the UI after account B becomes active.
+- Verify same-account reauthentication refreshes current data without briefly showing stale records.
+- If any cross-account record remains visible, stop before cleanup. Inspect its local owner ID, source, and cloud counterpart; do not bulk-assign unowned records or clear IndexedDB as a diagnostic shortcut.
+
+### 17.3 Google Drive authorization must be bound to the active Measure account
+
+This is a separate but related account-isolation requirement. Measure identity and Google Drive identity are different things: Supabase determines which Measure account owns the application data, while Google OAuth determines which Google Drive can receive the photo files.
+
+**Failure mode to prevent**
+
+A Drive access token acquired while one Measure account is active must not remain usable after signing out or switching to another Measure account. Otherwise, queued photos belonging to the newly active Measure account could be uploaded to the previously authorized Google account's Drive. Conversely, a previous account's pending image work must never be picked up and uploaded under the next account's Drive authorization.
+
+**Required behavior**
+
+- Treat the in-memory Drive access token as scoped to the Measure identity under which it was obtained.
+- Clear the app's in-memory Drive token and associated authorization status/error state on both SIGNED_OUT and SIGNED_IN transitions, including account-to-account switching.
+- Clearing the app's token is not the same as revoking the user's Google grant. Do not revoke the Google grant merely because the user signs out of Measure.
+- A pending OAuth callback started under an earlier account/auth generation must not restore a token after the user has switched accounts or signed out.
+- Before uploading a queued image, establish that the image belongs to the active Measure account and that the current Drive authorization was obtained for that same active Measure account.
+- Do not infer that the Google account is correct merely because a token exists. If the app cannot establish the authorization-to-Measure-account association, block the upload and ask the user to authorize Drive in the current Measure account.
+- Preserve local photo Blobs and queue entries during sign-out, account switching, token clearing, authorization failure, and reconnect. Do not discard pending backups.
+- After switching accounts, ask for Drive authorization only if the active account has eligible pending image work. Do not prompt when there are no pending photos.
+- A missing in-memory token after reload is not evidence that the Google grant has been revoked. Request authorization only when needed, and make the selected Google account explicit where the OAuth flow supports it.
+- Drive upload failure must remain isolated from Supabase metadata/session synchronization.
+- The account association must be checked at the point of queue selection and again before/at upload, not only when the UI initially renders.
+
+**Implementation changes already made on `phase-1b-cards`**
+
+- `fcfc7e232d5cfc673681a3dbce41b9c93808b4be` and `a8667c50a186934e9cd9704aad4ded5a7e679a59` add Drive authorization-generation protection. Clearing authorization increments the generation, and a delayed OAuth callback from an earlier generation is rejected instead of restoring a stale token.
+- The app clears Drive authorization state on Supabase SIGNED_IN transitions.
+- The later account-isolation work also clears Drive authorization state on SIGNED_OUT.
+- These changes clear the app's active in-memory authorization; they do not revoke the Google account's grant.
+
+**Remaining risk / audit item**
+
+- The current sync progress refresh path was previously noted to load local attempts/questions/facts/images from IndexedDB without consistently scoping pending-photo counts to the active account. Audit every image queue selection, upload path, progress count, and retry path for owner scoping.
+- Audit whether each local image/queue record carries an immutable Measure owner ID and whether the upload worker verifies it against the current authenticated user immediately before upload.
+- Verify that Drive IDs and image metadata are stored against the correct card and Measure owner, and that cloud pull cannot attach another account's image reference.
+- If the current data model cannot prove the Drive authorization's Measure-account association, prefer requiring a fresh authorization after each Measure account transition rather than reusing a token whose account association is unknown.
+
+**Required two-account Drive test**
+
+1. Sign in to Measure account A and create/save a fact card with a photo. Confirm the photo is locally queued.
+2. Authorize Google Drive while A is active and verify the chosen Google account is the intended destination.
+3. Sign out of A without deleting local photo data.
+4. Sign in to Measure account B in the same browser profile.
+5. Confirm A's card/session/photo queue is not shown as B's data and is not selected for B's upload.
+6. If B has its own pending photo work, authorize the intended Drive account for B and verify only B-owned images upload there.
+7. Sign out and back into A; verify A's pending photo remains available and can resume only under A's identity and intended Drive authorization.
+8. Repeat with page reloads, delayed OAuth completion, offline/online transitions, and retry after upload failure.
+
+### 17.4 Current branch and handoff status
+
+- Active implementation branch: `phase-1b-cards`.
+- The branch includes the photo-editor/topic-picker work, Drive token-generation guard, and account-scoped local data-loading fixes described above.
+- The latest account-data race guard commit recorded at the time of this handoff is `aca900b4aeb79738373b32ead23bc18f23f839f5`.
+- The production OAuth account chooser / origin configuration investigation is deliberately not specified here; it is separate from the crop/editor and account-isolation product requirements.
+- Cross-account session visibility and two-account Drive upload safety still require explicit browser verification. Do not report either as fully resolved solely because the code changes have been committed.
+- Before further changes, inspect the current branch and working tree/remote state rather than assuming this handoff SHA is still the branch head.
