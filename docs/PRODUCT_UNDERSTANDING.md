@@ -723,3 +723,41 @@ This section records decisions made after the 23 November handoff. Where this se
 - Fact revision remains a separate workflow and can be paused/resumed across study intervals; its unfinished-session end-of-day behavior remains as specified in Section 3.3.
 - Do not generalize normal-practice recovery, feedback expiry, or timing rules to either revision workflow without a separate product decision.
 
+
+
+### 16.5 Synchronization experience and recovery (decided 24 November 2026)
+
+**One synchronization entry point**
+- Replace the separate Home-screen Google Drive connection and Sync actions with one persistent **Sync status card**.
+- The card always remains available, including when everything is up to date, and always opens the same dedicated Sync screen.
+- Its concise state text reflects the current condition: **Sync pending**, **Syncing · N items**, **Sync needs attention**, or **All data synced** (wording may be refined during implementation).
+- Other entry points, including a retry action from the session summary, must route to this same Sync screen and workflow rather than implementing separate retry/connection logic.
+
+**Connection-first, automatic synchronization**
+- The Sync screen detects whether Google Drive authorization is available and valid before presenting upload work as ready to proceed.
+- If authorization is missing, expired, or revoked, show the required connect/reconnect step first. Do not present upload tasks as actively syncing while the required connection is unavailable.
+- Once the connection is successfully established, begin eligible synchronization automatically. Do not require a separate **Start Sync** confirmation button.
+- Connection and synchronization are distinct states and should be explained clearly to the user.
+
+**What appears in the Sync screen**
+- Prioritize unfinished work and items needing attention.
+- Show session-level synchronization cards for practice sessions, with a clean, compact presentation: subject/session type, session date, one circular overall progress indicator, and a short current status.
+- Do not show question counts, image counts, or technical sub-progress breakdowns on the main session card. A future card-detail screen may expose that information; its design is deliberately deferred.
+- Independently created fact cards (not created as part of a session's feedback submission) appear as a separate synchronization item/group, distinct from session-level work.
+- A fact card created and committed through session feedback belongs to that session's synchronization work; do not double-count it as an independently created fact-card item.
+- Use one overall progress ring per session, not separate rings for database records, question images, and solution images. The status text can explain the current operation (for example, preparing, uploading images, waiting for connection, needs attention, or complete).
+- Successfully synchronized items move into a separate **Completed** section that is collapsible. Keep this section accessible but visually secondary to pending/active/failed work.
+- Tapping a session card may open a detailed synchronization view in a later iteration. Do not expand the current scope to design or implement that detail view now.
+
+**Retry and connectivity behavior**
+- Automatically retry temporary synchronization failures; do not require manual intervention for ordinary transient errors.
+- If retries are exhausted or the failure requires user action, mark the item **Needs attention** and provide a retry path from the Sync screen.
+- If internet connectivity is lost, safely pause affected uploads and show **Waiting for connection**.
+- Resume automatically when connectivity returns.
+- Preserve successful upload progress and already completed uploads so recovery does not unnecessarily upload the same content again.
+- Keep locally committed application data and image blobs safe when Drive authorization, internet connectivity, or cloud synchronization is unavailable. A sync failure must not roll back or destroy locally committed work.
+
+**Design direction**
+- Use a clean, restrained visual hierarchy inspired by the supplied design references. Circular progress is a visual summary, not a substitute for clear textual status.
+- Keep the Home entry point and Sync screen concise; put technical breakdowns behind a future detail interaction rather than crowding the primary workflow.
+- These decisions define the intended product experience. They do not assert that the current implementation already supports token refresh/reconnection, durable upload retry, connectivity recovery, or accurate per-item progress; those capabilities must be verified and implemented as needed.
