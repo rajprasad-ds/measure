@@ -118,6 +118,7 @@ function App() {
   const [syncingSessionId, setSyncingSessionId] = useState<string | null>(null);
   const [syncingFactCardId, setSyncingFactCardId] = useState<string | null>(null);
   const [photoUploadProgress, setPhotoUploadProgress] = useState({ completed: 0, total: 0, failed: 0, currentImageId: null as string | null });
+  const [syncDriveProgress, setSyncDriveProgress] = useState<Record<string, { completed: number; total: number; failed: number }>>({});
   const syncInProgress = useRef(false);
   const syncRequestedAgain = useRef(false);
   const sessionRef = useRef<ActiveSession | null>(null);
@@ -418,6 +419,44 @@ function App() {
     });
   }, [authUser]);
 
+  async function refreshSyncDriveProgress() {
+    const [attempts, questions, facts, images] = await Promise.all([
+      database.attempts.toArray(), database.questions.toArray(),
+      database.factCards.toArray(), database.localImages.toArray(),
+    ]);
+    const sessionByAttempt = new Map(attempts.map((attempt) => [attempt.id, attempt.sessionId]));
+    const imageById = new Map(images.map((image) => [image.id, image]));
+    const sessionImageIds = new Map<string, Set<string>>();
+    const next: Record<string, { completed: number; total: number; failed: number }> = {};
+    const addSessionImages = (attemptId: string | undefined, ids: Array<string | undefined>) => {
+      if (!attemptId) return;
+      const sessionId = sessionByAttempt.get(attemptId);
+      if (!sessionId) return;
+      const set = sessionImageIds.get(sessionId) ?? new Set<string>();
+      ids.forEach((id) => { if (id) set.add(id); });
+      sessionImageIds.set(sessionId, set);
+    };
+    questions.forEach((card) => addSessionImages(card.createdFromAttemptId, [
+      card.promptImageId, card.solutionImageId, ...(card.solutionImageIds ?? []), card.smarterApproachImageId,
+    ]));
+    facts.forEach((card) => addSessionImages(card.createdFromAttemptId, [card.promptImageId, card.contentImageId]));
+    const summarize = (ids: Set<string>) => {
+      const rows = Array.from(ids).map((id) => imageById.get(id));
+      return {
+        total: ids.size,
+        completed: rows.filter((image) => image?.status === "uploaded" && Boolean(image.remoteId)).length,
+        failed: rows.filter((image) => image?.status === "failed").length,
+      };
+    };
+    savedSessions.forEach((record) => {
+      next[record.id] = summarize(sessionImageIds.get(record.id) ?? new Set<string>());
+    });
+    facts.filter((card) => !card.createdFromAttemptId).forEach((card) => {
+      next[card.id] = summarize(new Set([card.promptImageId, card.contentImageId].filter((id): id is string => Boolean(id))));
+    });
+    setSyncDriveProgress(next);
+  }
+
   function handleSessionSyncProgress(record: SessionRecord, status: "syncing" | "synced") {
     if (status === "syncing") {
       setSyncingSessionId(record.id);
@@ -554,6 +593,10 @@ function App() {
       }
     }
   }
+
+  useEffect(() => {
+    void refreshSyncDriveProgress();
+  }, [savedSessions, questionCards, factCards, photoUploadProgress]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1738,6 +1781,7 @@ function App() {
         photoUploadProgress={photoUploadProgress}
         syncingSessionId={syncingSessionId}
         syncingFactCardId={syncingFactCardId}
+        driveProgress={syncDriveProgress}
         onBack={() => setActiveTab("practice")}
         onNavigate={navigate}
         onSyncNow={() => {
