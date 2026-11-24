@@ -75,7 +75,7 @@ function requestAccessToken(forceConsent = false): Promise<string> {
     const client = gsi.initTokenClient({
       client_id: clientId,
       scope: DRIVE_SCOPE,
-      prompt: forceConsent ? "consent" : "",
+      prompt: forceConsent ? "select_account consent" : "",
       callback: (resp: any) => {
         tokenPromise = null;
         if (resp.error) {
@@ -92,7 +92,7 @@ function requestAccessToken(forceConsent = false): Promise<string> {
       },
     });
     // Request directly from the click handler so the browser permits the popup.
-    client.requestAccessToken({ prompt: forceConsent ? "consent" : "" });
+    client.requestAccessToken({ prompt: forceConsent ? "select_account consent" : "" });
   });
   return tokenPromise;
 }
