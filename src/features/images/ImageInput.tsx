@@ -180,18 +180,25 @@ export default function ImageInput({
   async function retryUpload() {
     if (!imageId || !record) return;
     setError(null);
-    try { await resetImageUpload(imageId); await processUploadQueue(); onUploadComplete?.(); }
+    try {
+      if (!ownerUserId) throw new Error("Sign in to back up this photo.");
+      await resetImageUpload(imageId, ownerUserId);
+      await processUploadQueue(ownerUserId);
+      onUploadComplete?.();
+    }
     catch (queueError) {
       const message = queueError instanceof Error ? queueError.message : "Retry failed.";
-      setError(message); await markImageFailed(imageId, message);
+      setError(message);
+      if (ownerUserId) await markImageFailed(imageId, ownerUserId, message);
     }
   }
 
   async function reconnectDrive() {
     try {
       const connection = driveImageStore.reconnect();
-      if (imageId) await resetImageUpload(imageId);
-      await connection; await processUploadQueue(); onUploadComplete?.();
+      if (!ownerUserId) throw new Error("Sign in to back up this photo.");
+      if (imageId) await resetImageUpload(imageId, ownerUserId);
+      await connection; await processUploadQueue(ownerUserId); onUploadComplete?.();
     } catch (reconnectError) {
       setError(reconnectError instanceof Error ? reconnectError.message : "Could not reconnect Google Drive.");
     }
