@@ -1609,17 +1609,11 @@ function App() {
             authMessage={authMessage}
             authError={authError}
             isSubmittingAuth={isSubmittingAuth}
-            syncStatus={syncStatus}
-            syncError={syncError}
             unassignedSessionCount={unassignedSessionCount}
             unassignedCardCount={unassignedCardCount}
             onGoogleSignIn={() => void signInWithGoogle()}
             onSignOut={() => undefined}
             onImportLocalSessions={() => undefined}
-            onSyncNow={() => undefined}
-            driveConnectionStatus="idle"
-            driveConnectionError={null}
-            onConnectGoogleDrive={() => undefined}
           />
         </section>
       </main>
