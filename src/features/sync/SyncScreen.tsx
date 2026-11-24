@@ -4,6 +4,8 @@ import MainNavigation from "../navigation/MainNavigation";
 
 type SyncStatus = "idle" | "syncing" | "synced" | "offline" | "error";
 type DriveStatus = "loading" | "idle" | "connecting" | "connected" | "error";
+type SyncPhase = "sessions" | "photos" | "finalizing" | null;
+type PhotoUploadProgress = { completed: number; total: number; currentImageId: string | null };
 
 type Props = {
   email?: string;
@@ -15,6 +17,8 @@ type Props = {
   sessions: SessionRecord[];
   facts: FactCard[];
   pendingPhotoCount: number;
+  syncPhase: SyncPhase;
+  photoUploadProgress: PhotoUploadProgress;
   onBack: () => void;
   onNavigate: (tab: "practice" | "cards" | "history" | "sync") => void;
   onSyncNow: () => void;
@@ -75,6 +79,8 @@ export default function SyncScreen({
   sessions,
   facts,
   pendingPhotoCount,
+  syncPhase,
+  photoUploadProgress,
   onBack,
   onNavigate,
   onSyncNow,
@@ -114,6 +120,24 @@ export default function SyncScreen({
             <Ring complete={allComplete} label={allComplete ? "All data backed up" : "Backup not yet complete"} />
           </div>
         </div>
+        {syncPhase && (
+          <div className="sync-live-progress" role="status" aria-live="polite">
+            <div className="sync-live-progress-heading">
+              <span>{syncPhase === "sessions" ? "Syncing practice data" : syncPhase === "photos" ? "Backing up photos" : "Finishing cloud backup"}</span>
+              {syncPhase === "photos" && photoUploadProgress.total > 0 && (
+                <strong>{photoUploadProgress.completed} of {photoUploadProgress.total}</strong>
+              )}
+            </div>
+            {syncPhase === "photos" && photoUploadProgress.total > 0 ? (
+              <>
+                <progress value={photoUploadProgress.completed} max={photoUploadProgress.total} />
+                <small>{photoUploadProgress.currentImageId ? "Uploading a photo…" : "Preparing next photo…"}</small>
+              </>
+            ) : (
+              <small>{syncPhase === "sessions" ? "Sessions, cards and their links are being checked and saved." : "Photo references are being added to your backup."}</small>
+            )}
+          </div>
+        )}
         <div className="sync-overview-stats">
           {totalCount > 0 ? (configured ? <span><strong>{totalCount - pendingCount}</strong> of <strong>{totalCount}</strong> items backed up</span> : <span><strong>{totalCount}</strong> items stored on this device</span>) : <span>No sessions or independent fact cards yet</span>}
           <span>{pendingPhotoCount} photos waiting</span>
@@ -175,7 +199,7 @@ export default function SyncScreen({
       <section className="sync-section sync-drive-section">
         <div className="sync-section-heading">
           <div><p className="sync-overline">PHOTO BACKUP</p><h2>Google Drive</h2></div>
-          <span>{driveStatus === "connected" ? "Connected" : pendingPhotoCount > 0 ? "Action may be needed" : "No action needed"}</span>
+          <span>{driveStatus === "connected" ? "Connected" : driveStatus === "error" ? "Needs attention" : pendingPhotoCount > 0 ? "Waiting for connection" : "No action needed"}</span>
         </div>
         {pendingPhotoCount === 0 ? (
           <p className="sync-empty">No photos are waiting to upload. Google Drive access is not needed right now.</p>
@@ -183,7 +207,7 @@ export default function SyncScreen({
           <p className="sync-muted">{pendingPhotoCount} photo{pendingPhotoCount === 1 ? "" : "s"} waiting for backup. Drive is connected.</p>
         ) : (
           <>
-            <p className="sync-muted">{driveStatus === "connecting" ? "Connecting to Google Drive…" : "Photos are safely stored on this device. Connect Drive when you're ready to back them up."}</p>
+            <p className="sync-muted">{driveStatus === "connecting" ? "Connecting to Google Drive…" : driveStatus === "error" ? "Photo backup needs attention. Your photos remain stored on this device." : "Photos are safely stored on this device. Connect Drive when you're ready to back them up."}</p>
             <button className="sync-secondary-button" type="button" onClick={onConnectDrive} disabled={driveStatus === "loading" || driveStatus === "connecting"}>
               {driveStatus === "connecting" ? "Connecting…" : "Connect Google Drive"}
             </button>
