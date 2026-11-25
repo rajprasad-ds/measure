@@ -69,6 +69,8 @@ import CardsScreen from "./features/cards/CardsScreen";
 import MainNavigation from "./features/navigation/MainNavigation";
 import SyncScreen from "./features/sync/SyncScreen";
 import StudyIntervalPanel from "./features/study-interval/StudyIntervalPanel";
+import { getActiveStudyInterval, resolveDayIntervals } from "./features/study-interval/studyInterval";
+import { getOrCreateStudyDaySnapshot } from "./features/study-interval/studyIntervalRepository";
 
 const DURATIONS = [30, 45, 60, 90, 120];
 const ACTIVE_SESSION_SAVE_DEBOUNCE_MS = 300;
@@ -101,6 +103,8 @@ function App() {
   const [isSavingSession, setIsSavingSession] = useState(false);
   const [databaseError, setDatabaseError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [studyIntervalError, setStudyIntervalError] = useState<string | null>(null);
+  const [isStartingSession, setIsStartingSession] = useState(false);
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [authMessage, setAuthMessage] = useState<string | null>(null);
@@ -844,29 +848,52 @@ function App() {
     }
   }
 
-  function startSession(event: React.FormEvent<HTMLFormElement>) {
+  async function startSession(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!authUser || isStartingSession) return;
+    setIsStartingSession(true);
+    setStudyIntervalError(null);
     const startedAt = Date.now();
-    lastInteractionAtRef.current = startedAt;
-    pendingWarningRef.current = null;
-    setPendingWarning(null);
-    setNow(startedAt);
-    setSession({
-      ...setup,
-      sessionKind: "practice",
-      phase: "active",
-      startedAt,
-      endsAt: startedAt + setup.duration * 60_000,
-      endedAt: null,
-      questionNumber: setup.startingQuestion,
-      questionNumberText: String(setup.startingQuestion),
-      questionElapsedMs: 0,
-      questionStartedAt: null,
-      questionTimesMs: {},
-      longQuestionPromptedNumbers: [],
-      feedback: {},
-      record: null,
-    });
+    try {
+      const daySnapshot = await getOrCreateStudyDaySnapshot(authUser.id, new Date(startedAt));
+      if (!daySnapshot) {
+        setStudyIntervalError("Set your weekly Study Intervals before starting a practice session.");
+        return;
+      }
+      const resolved = resolveDayIntervals(new Date(startedAt), daySnapshot.schedule, startedAt);
+      const activeInterval = getActiveStudyInterval(resolved, startedAt);
+      if (!activeInterval) {
+        setStudyIntervalError(daySnapshot.schedule.off
+          ? "Today is marked as a day off. You can start practice during your next scheduled interval."
+          : "You are outside today's scheduled study intervals. You can start practice when the next interval begins.");
+        return;
+      }
+      lastInteractionAtRef.current = startedAt;
+      pendingWarningRef.current = null;
+      setPendingWarning(null);
+      setNow(startedAt);
+      setSession({
+        ...setup,
+        sessionKind: "practice",
+        phase: "active",
+        startedAt,
+        // The scheduled boundary takes precedence over the chosen session duration.
+        endsAt: Math.min(startedAt + setup.duration * 60_000, activeInterval.endAt),
+        endedAt: null,
+        questionNumber: setup.startingQuestion,
+        questionNumberText: String(setup.startingQuestion),
+        questionElapsedMs: 0,
+        questionStartedAt: null,
+        questionTimesMs: {},
+        longQuestionPromptedNumbers: [],
+        feedback: {},
+        record: null,
+      });
+    } catch (error) {
+      setStudyIntervalError(error instanceof Error ? error.message : "Could not check today's Study Interval.");
+    } finally {
+      setIsStartingSession(false);
+    }
   }
 
   function toggleStopwatch() {
@@ -1728,7 +1755,36 @@ function App() {
   async function resumeRecoveredSession() {
     if (!recoveryCandidate) return;
     const resumedAt = Date.now();
-    const recovered = recoverSessionSnapshot(recoveryCandidate, resumedAt);
+    let candidate = recoveryCandidate;
+    if (candidate.session.sessionKind === "practice" && candidate.session.phase === "active") {
+      const daySnapshot = await getOrCreateStudyDaySnapshot(authUser.id, new Date(candidate.session.startedAt));
+      const intervals = daySnapshot
+        ? resolveDayIntervals(new Date(candidate.session.startedAt), daySnapshot.schedule, candidate.session.startedAt)
+        : [];
+      const containingInterval = intervals.find((interval) =>
+        candidate.session.startedAt >= interval.startAt && candidate.session.startedAt < interval.endAt
+      );
+      if (containingInterval) {
+        candidate = {
+          ...candidate,
+          session: {
+            ...candidate.session,
+            endsAt: Math.min(candidate.session.endsAt, containingInterval.endAt),
+          },
+        };
+      } else {
+        // A legacy/recovered practice session that did not begin in an allowed
+        // interval is ended at its start rather than being allowed to continue.
+        candidate = {
+          ...candidate,
+          session: {
+            ...candidate.session,
+            endsAt: Math.min(candidate.session.endsAt, candidate.session.startedAt),
+          },
+        };
+      }
+    }
+    const recovered = recoverSessionSnapshot(candidate, resumedAt);
     lastInteractionAtRef.current = recovered.lastInteractionAt;
     pendingWarningRef.current = recovered.pendingWarning;
     setPendingWarning(recovered.pendingWarning);
@@ -2086,6 +2142,7 @@ function App() {
         )}
 
         <form className="setup-form" onSubmit={startSession}>
+          {studyIntervalError && <p className="database-error" role="alert">{studyIntervalError}</p>}
           <SearchSelect
             label="Subject"
             value={setup.subjectId}
@@ -2158,9 +2215,9 @@ function App() {
           <button
             className="start-button"
             type="submit"
-            disabled={!setup.chapterId || setup.startingQuestion < 1}
+            disabled={!setup.chapterId || setup.startingQuestion < 1 || isStartingSession}
           >
-            Start session
+            {isStartingSession ? "Checking schedule…" : "Start session"}
           </button>
         </form>
 
