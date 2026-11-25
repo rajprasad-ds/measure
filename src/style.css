@@ -2794,3 +2794,51 @@ h1 {
   .image-editor-preview { max-height: 100%; }
   .image-editor-toolbar { gap: .8rem; }
 }
+
+
+/* Crop-box-first mobile photo editor */
+.crop-editor-backdrop {
+  position: fixed; z-index: 1100; inset: 0; display: grid; place-items: center;
+  padding: 1rem; background: rgb(7 10 8 / 88%); backdrop-filter: blur(12px);
+}
+.crop-editor {
+  display: flex; flex-direction: column; gap: .85rem; width: min(100%, 44rem);
+  max-height: min(96dvh, 58rem); padding: 1rem; overflow: auto;
+  border: 1px solid #303a33; border-radius: 1.25rem; background: #151a17; color: #f4f6f2;
+}
+.crop-editor-header { display:flex; align-items:center; justify-content:space-between; gap:.75rem; }
+.crop-editor-header strong { font-size:1.05rem; }
+.crop-editor button { min-height:2.8rem; padding:.55rem .85rem; border:1px solid #3c4940; border-radius:.75rem; background:#232c26; color:#f4f6f2; font:inherit; font-weight:650; touch-action:manipulation; }
+.crop-editor-header button:last-child,.crop-editor-footer button:last-child { background:#c6e4c2; border-color:#c6e4c2; color:#1b3020; }
+.crop-editor-stage-wrap { display:grid; place-items:center; min-height:12rem; flex:1 1 auto; }
+.crop-editor-stage { position:relative; max-width:100%; max-height:52dvh; overflow:hidden; background:#202822; touch-action:none; user-select:none; }
+.crop-editor-canvas { display:block; width:100%; height:100%; touch-action:none; }
+.crop-editor-frame { position:absolute; border:2px solid #fff; box-shadow:0 0 0 9999px rgb(0 0 0 / 48%); pointer-events:none; }
+.crop-handle { position:absolute; width:26px; height:26px; min-height:26px!important; padding:0!important; border:2px solid #fff!important; border-radius:7px!important; background:#fff!important; box-shadow:0 1px 6px #0008; pointer-events:auto; touch-action:none; }
+.crop-handle-nw { left:-7px; top:-7px; cursor:nwse-resize; }
+.crop-handle-ne { right:-7px; top:-7px; cursor:nesw-resize; }
+.crop-handle-sw { left:-7px; bottom:-7px; cursor:nesw-resize; }
+.crop-handle-se { right:-7px; bottom:-7px; cursor:nwse-resize; }
+.crop-handle-n { left:50%; top:-7px; transform:translateX(-50%); cursor:ns-resize; }
+.crop-handle-s { left:50%; bottom:-7px; transform:translateX(-50%); cursor:ns-resize; }
+.crop-handle-w { left:-7px; top:50%; transform:translateY(-50%); cursor:ew-resize; }
+.crop-handle-e { right:-7px; top:50%; transform:translateY(-50%); cursor:ew-resize; }
+.crop-editor-hint { margin:0; color:#b8c5bb; text-align:center; font-size:.78rem; }
+.crop-editor-ratios { display:flex; gap:.4rem; overflow-x:auto; }
+.crop-editor-ratios button { flex:1 0 auto; }
+.crop-editor-ratios button[aria-pressed="true"] { background:#dcebdc; border-color:#dcebdc; color:#1d3524; }
+.crop-editor-controls { display:flex; align-items:center; gap:.55rem; }
+.crop-editor-controls label { display:flex; align-items:center; gap:.55rem; flex:1; min-width:5rem; color:#d9e1da; font-size:.82rem; }
+.crop-editor-controls input { min-width:2rem; width:100%; accent-color:#b9d8b7; }
+.crop-editor-error { margin:0; color:#ffb6a9; font-size:.85rem; }
+.crop-editor-footer { display:flex; justify-content:flex-end; gap:.6rem; padding-top:.75rem; border-top:1px solid #303a33; }
+@media (max-width:600px) {
+  .crop-editor-backdrop { padding:0; }
+  .crop-editor { width:100%; height:100dvh; max-height:100dvh; min-height:100dvh; border:0; border-radius:0; padding:max(.8rem,env(safe-area-inset-top)) .8rem max(.8rem,env(safe-area-inset-bottom)); gap:.65rem; }
+  .crop-editor-stage-wrap { min-height:0; max-height:58dvh; }
+  .crop-editor-stage { max-height:58dvh; }
+  .crop-editor-hint { font-size:.72rem; }
+  .crop-editor-controls button { padding:.45rem .55rem; }
+  .crop-editor-controls label { flex-wrap:wrap; }
+  .crop-editor-footer button { flex:1; }
+}
