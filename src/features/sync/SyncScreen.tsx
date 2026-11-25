@@ -11,7 +11,7 @@ type Props = {
   driveStatus: DriveStatus; driveError: string | null; sessions: SessionRecord[]; facts: FactCard[];
   pendingPhotoCount: number; syncPhase: SyncPhase; photoUploadProgress: PhotoUploadProgress;
   syncingSessionId: string | null; syncingFactCardId: string | null;
-  driveProgress: Record<string, DriveProgress>;
+  driveProgress: Record<string, DriveProgress>; driveDiagnostics: string[];
   onBack: () => void; onNavigate: (tab: "practice" | "cards" | "history" | "sync") => void;
   onSyncNow: () => void; onConnectDrive: () => void; onSignIn: () => void;
 };
@@ -70,7 +70,7 @@ function statusCopy(status: SyncStatus, signedIn: boolean, configured: boolean, 
 export default function SyncScreen({
   email, configured, syncStatus, syncError, driveStatus, driveError, sessions, facts,
   pendingPhotoCount, syncPhase, photoUploadProgress, syncingSessionId, syncingFactCardId,
-  driveProgress, onBack, onNavigate, onSyncNow, onConnectDrive, onSignIn,
+  driveProgress, driveDiagnostics, onBack, onNavigate, onSyncNow, onConnectDrive, onSignIn,
 }: Props) {
   const signedIn = Boolean(email);
   const [headline, description] = statusCopy(syncStatus, signedIn, configured, pendingPhotoCount);
@@ -177,6 +177,11 @@ export default function SyncScreen({
                 : "Photos remain safely stored on this device. Connect Drive using the button in the backup status area above."}</p>}
         {driveError && <p className="sync-alert" role="alert">{driveError}</p>}
       </section>
+      <details className="sync-section sync-drive-diagnostics">
+        <summary>Temporary Drive diagnostics</summary>
+        <p className="sync-muted">After testing on your phone, share these event lines. No access token or Google account identifier is recorded.</p>
+        {driveDiagnostics.length === 0 ? <p className="sync-empty">No diagnostic events yet. Tap Connect Google Drive to begin.</p> : <ol>{driveDiagnostics.map((line, index) => <li key={index}><code>{line}</code></li>)}</ol>}
+      </details>
       <div className="sync-ring-legend" aria-label="Progress ring legend">
         <span><i className="sync-legend-cloud" /> Supabase practice data</span>
         <span><i className="sync-legend-drive" /> Google Drive photos</span>
