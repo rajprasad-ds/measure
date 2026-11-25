@@ -8,6 +8,7 @@ import {
   type WeeklyStudySchedule,
   type Weekday,
 } from "./studyInterval";
+import { DEFAULT_FEEDBACK_GRACE_HOURS, FEEDBACK_GRACE_HOUR_OPTIONS, isFeedbackGraceHours } from "./feedbackDeadline";
 import {
   getOrCreateStudyDaySnapshot,
   getWeeklyStudySchedule,
@@ -49,6 +50,7 @@ type Props = {
 export default function StudyIntervalPanel({ userId, sessions }: Props) {
   const [now, setNow] = useState(() => Date.now());
   const [schedule, setSchedule] = useState<WeeklyStudySchedule>(emptySchedule);
+  const [feedbackGraceHours, setFeedbackGraceHours] = useState<2 | 6 | 12>(DEFAULT_FEEDBACK_GRACE_HOURS);
   const [hasSavedSchedule, setHasSavedSchedule] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,6 +76,7 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
         if (cancelled) return;
         if (record) {
           setSchedule(record.schedule);
+          setFeedbackGraceHours(isFeedbackGraceHours(record.feedbackGraceHours) ? record.feedbackGraceHours : DEFAULT_FEEDBACK_GRACE_HOURS);
           setHasSavedSchedule(true);
         } else {
           setSchedule(emptySchedule());
@@ -124,7 +127,7 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
     setError(null);
     setNotice(null);
     try {
-      await saveWeeklyStudySchedule(userId, schedule);
+      await saveWeeklyStudySchedule(userId, schedule, undefined, new Date(), feedbackGraceHours);
       // Cloud sync is best-effort; the local schedule is already committed.
       void syncStudySchedule(userId);
       setHasSavedSchedule(true);
@@ -206,6 +209,12 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
       {isEditing && (
         <div className="study-interval-editor">
           <p className="study-interval-help">Choose one or more same-day intervals for each weekday. Adjacent intervals are allowed; overlapping intervals are not.</p>
+          <label className="study-interval-grace-setting">Feedback deadline after your final interval
+            <select value={feedbackGraceHours} onChange={(event) => setFeedbackGraceHours(Number(event.target.value) as 2 | 6 | 12)}>
+              {FEEDBACK_GRACE_HOUR_OPTIONS.map((hours) => <option key={hours} value={hours}>{hours} hours</option>)}
+            </select>
+          </label>
+          <p className="study-interval-help">Unsubmitted practice feedback is discarded after this grace period. Independently saved fact cards are kept.</p>
           {WEEKDAYS.map(({ id, label }) => {
             const day = schedule[id];
             return (
