@@ -88,7 +88,7 @@ export default function CropEditor({ file, onCancel, onUse, saving = false }: Pr
   function setAspect(next: string) {
     setRatio(next);
     if (next === "free" || !stageSize.width || !stageSize.height) return;
-    const target = next === "1:1" ? 1 : next === "4:3" ? 4 / 3 : 16 / 9;
+    const target = next === "original" ? sourceSize.width / sourceSize.height : next === "1:1" ? 1 : next === "4:3" ? 4 / 3 : 16 / 9;
     let w = rect.right - rect.left, h = rect.bottom - rect.top;
     if (w * stageSize.width / (h * stageSize.height) > target) w = h * stageSize.height * target / stageSize.width;
     else h = w * stageSize.width / (target * stageSize.height);
@@ -115,13 +115,14 @@ export default function CropEditor({ file, onCancel, onUse, saving = false }: Pr
     if (g.kind === "pinch" && pointers.current.size >= 2) {
       const [a,b] = [...pointers.current.values()];
       const distance = Math.hypot(b.x-a.x,b.y-a.y);
-      const mid = { x:(a.x+b.x)/2-bounds.left-bounds.width/2, y:(a.y+b.y)/2-bounds.top-bounds.height/2 };
+      const currentMid = { x:(a.x+b.x)/2-bounds.left-bounds.width/2, y:(a.y+b.y)/2-bounds.top-bounds.height/2 };
+      const startMid = { x:(g.midpoint!.x+bounds.width/2-bounds.left)-bounds.width/2, y:(g.midpoint!.y+bounds.height/2-bounds.top)-bounds.height/2 };
       const nextZoom = clamp(g.zoom * distance / Math.max(1,g.distance || 1), 1, 5);
       const scale = nextZoom / g.zoom;
       setZoom(nextZoom);
       const frameLeft = rect.left * bounds.width, frameRight = rect.right * bounds.width;
       const frameTop = rect.top * bounds.height, frameBottom = rect.bottom * bounds.height;
-      const nextX = mid.x - (mid.x - g.pan.x) * scale, nextY = mid.y - (mid.y - g.pan.y) * scale;
+      const nextX = currentMid.x - (startMid.x - g.pan.x) * scale, nextY = currentMid.y - (startMid.y - g.pan.y) * scale;
       setPan({ x: clamp(nextX, frameRight-bounds.width/2-bounds.width*nextZoom/2, frameLeft-bounds.width/2+bounds.width*nextZoom/2), y: clamp(nextY, frameBottom-bounds.height/2-bounds.height*nextZoom/2, frameTop-bounds.height/2+bounds.height*nextZoom/2) });
     } else if (g.kind === "move") {
       const nextZoom = g.zoom;
@@ -154,7 +155,7 @@ export default function CropEditor({ file, onCancel, onUse, saving = false }: Pr
       if (handle.includes("n")) top = clamp(top + y, 0, bottom - min);
       if (handle.includes("s")) bottom = clamp(bottom + y, top + min, 1);
       if (ratio !== "free") {
-        const target = ratio === "1:1" ? 1 : ratio === "4:3" ? 4/3 : 16/9;
+        const target = ratio === "original" ? sourceSize.width / sourceSize.height : ratio === "1:1" ? 1 : ratio === "4:3" ? 4/3 : 16/9;
         const w = right-left, h = bottom-top;
         if (Math.abs(x) * stageSize.width > Math.abs(y) * stageSize.height) {
           const nh = w * stageSize.width / (target * stageSize.height);
@@ -177,6 +178,17 @@ export default function CropEditor({ file, onCancel, onUse, saving = false }: Pr
     if (g?.kind === "resize" && g.handle) resizeCrop(g.handle, e.clientX-g.start.x, e.clientY-g.start.y, g.rect);
   }
   function handleUp() { gesture.current = null; }
+
+  function updateZoom(value: number) {
+    const nextZoom = clamp(value, 1, 5);
+    const stage = stageRef.current;
+    if (!stage) { setZoom(nextZoom); return; }
+    const w = stage.clientWidth, h = stage.clientHeight;
+    const minX = rect.right*w-w/2-w*nextZoom/2, maxX = rect.left*w-w/2+w*nextZoom/2;
+    const minY = rect.bottom*h-h/2-h*nextZoom/2, maxY = rect.top*h-h/2+h*nextZoom/2;
+    setZoom(nextZoom);
+    setPan(old => ({ x:clamp(old.x,minX,maxX), y:clamp(old.y,minY,maxY) }));
+  }
 
   async function usePhoto() {
     const source = sourceRef.current;
@@ -216,7 +228,7 @@ export default function CropEditor({ file, onCancel, onUse, saving = false }: Pr
       </nav>
       <div className="crop-editor-controls">
         <button type="button" onClick={()=>setRotation(r=>(r+270)%360)}>↶ Rotate</button>
-        <label>Zoom <input type="range" min="1" max="5" step=".05" value={zoom} onChange={e=>setZoom(Number(e.target.value))}/><span>{zoom.toFixed(1)}×</span></label>
+        <label>Zoom <input type="range" min="1" max="5" step=".05" value={zoom} onChange={e=>updateZoom(Number(e.target.value))}/><span>{zoom.toFixed(1)}×</span></label>
         <button type="button" onClick={()=>{setZoom(1);setPan({x:0,y:0});setRect({left:.06,top:.06,right:.94,bottom:.94});setAspect("free");}}>Reset</button>
       </div>
       {error && <p role="alert" className="crop-editor-error">{error}</p>}
