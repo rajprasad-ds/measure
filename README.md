@@ -40,18 +40,22 @@ build. Use `npm run build` to verify the app before deployment.
    a photo on every question prompt and on both sides of every fact card.
 6. Run `supabase/migrations/20261110230000_images_table.sql` to add the
    `images` metadata table, image-level RLS, and card→image foreign keys.
-7. In **Authentication → URL Configuration**, add the local redirect URL
+7. Run `supabase/migrations/20261125120000_weekly_study_schedules.sql` to add
+   the per-account weekly Study Interval schedule table and its RLS policies.
+8. In **Authentication → URL Configuration**, add the local redirect URL
    `http://localhost:5173/**` (and `http://127.0.0.1:5173/**` if using that
    address) to the redirect allow list.
-6. Keep email/password authentication enabled. With email confirmation
+9. Keep email/password authentication enabled. With email confirmation
    enabled, new users must confirm the email before signing in.
-7. Start the app locally, create an account, and test a session. Existing
-   device-only sessions are not uploaded automatically; while signed in, use
-   **Import local data to this account** to opt into uploading it.
+10. Start the app locally, create an account, and test a session. Existing
+    device-only sessions are not uploaded automatically; while signed in, use
+    **Import local data to this account** to opt into uploading it.
 
 The migrations create `sessions`, `session_weak_topics`, `attempts`, `questions`,
-`fact_cards`, `question_fact_links`, and `fact_reviews`, enable Row Level
-Security, and add transaction-safe RPCs for syncing sessions and attempts.
+`fact_cards`, `question_fact_links`, `fact_reviews`, `images`, and
+`weekly_study_schedules`, enable Row Level Security, and add transaction-safe
+RPCs for syncing sessions and attempts. Weekly schedules are isolated by
+Supabase user ID.
 Each account can only access its own data. The syllabus catalog remains in
 `syllabus.json`; session records store stable IDs and display names. Attempts
 do not store live question numbers. Existing saved sessions remain unchanged
@@ -61,7 +65,10 @@ and do not receive fabricated attempt records.
 
 Completed sessions are written to IndexedDB first. While signed in, pending
 records sync when online; failed or offline uploads remain local and can be
-retried with **Sync now**. Synced cloud history is retained remotely, while the
+retried with **Sync now**. Weekly Study Interval schedules are also stored
+locally first and reconciled with the signed-in account during sync. A local
+daily schedule snapshot is captured once per calendar date; editing the
+recurring schedule does not rewrite a snapshot already captured for today. Synced cloud history is retained remotely, while the
 device caches the latest 50 synced sessions per account. Unsynced records are
 never removed by cache cleanup. Signed-out sessions remain local until the user
 chooses to import them into an account.
