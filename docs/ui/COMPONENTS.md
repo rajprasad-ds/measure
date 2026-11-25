@@ -1,41 +1,49 @@
 # Component and state matrix
 
-All interactive components must implement and visually consider: default, hover, active, focus-visible, disabled, loading, empty, and error. States that do not apply should be explicitly marked N/A in implementation notes.
+All interactive components must consider: default, hover, active, focus-visible, disabled, loading, empty, error. Mark inapplicable states N/A.
 
-## Home metric pair
-- Purpose: average time/question and accuracy with prior-day comparison.
-- Default: large centered white value; muted label; compact signed delta.
-- Hover/active: subtle surface response only; no exaggerated scale.
-- Focus-visible: visible lime outline if interactive; otherwise N/A.
-- Disabled/loading: N/A unless data is loading; use stable skeleton/placeholder.
-- Empty: value `—`; no delta.
-- Error: retain last valid local value if available; otherwise `—` and a concise error.
-- Border: red/green only when a valid comparison exists; neutral without one.
+## Home utility bar
+- One compact top row integrates sync state, signed-in email + sign-out action, and today's study interval status.
+- Use compact icon/status clusters and truncation; do not stack separate large sync, account and schedule cards.
+- Signed-in state: show email in small muted text and a clearly accessible Sign out action in the same utility region. Do not send the user to a large account panel just to sign out.
+- Signed-out state: concise sign-in/backup affordance.
+- Sync states: syncing, synced, pending/offline, error must remain distinguishable.
+- Study interval: show today's frozen status and next available interval as space permits; tap opens schedule detail.
+- Default/hover/active/focus-visible/disabled/loading/error states must remain legible at mobile width.
 
-## Lower dashboard indicators
-- Syllabus coverage: percentage plus signed delta only when calculable from syllabus-linked records.
-- Streak: current consecutive active days and highest streak; no sample numbers.
-- Empty: explicit no activity / not yet available.
+## Create Session (primary action)
+- The strongest action and primary visual focal point on Home.
+- Keep subject, chapter, duration and starting question grouped in one clear form.
+- Account settings, sync detail and schedule editing must not visually interrupt or dominate this flow.
+- Primary button must have clear enabled, disabled, loading and focus-visible states.
 
-## Study interval summary
-- Default: show today's frozen snapshot, not the unsaved weekly editor state.
-- Empty/unconfigured: explain that today's first-seen snapshot may be OFF and future schedule edits begin tomorrow.
-- Active: show current interval and remaining time.
-- Off: explicitly distinguish today's frozen OFF state from the weekly schedule configured for tomorrow.
-- Error/loading: visible and non-destructive.
+## Four surrounding metric tiles
+- Two top tiles: average time/question and accuracy.
+- Two lower tiles: only metrics with agreed semantics and trustworthy data. Syllabus coverage is currently excluded pending a completion definition.
+- Same component geometry across all four: generous rounded corners, consistent thicker border, neutral default border, centered hierarchy.
+- Headline is white; delta is compact and adjacent.
+- Border and delta colour are derived from valid comparison only: positive/negative/neutral. Never assign a fixed colour by metric identity.
+- Empty: `—`, no delta. Error: retain last valid local value where safe; otherwise show unavailable.
+- Main central split numbers are larger and visually dominant compared with these four secondary tiles.
 
-## Sync and account summaries
-- Compact summary cards near the top of Home; tap opens the full screen.
-- Loading, offline, pending, synced and error states must be distinct.
-- Account identity and sign-in actions remain available without dominating the dashboard.
+## Central progress split
+- Two centered columns; large system-sans values; 1px × 90px gradient divider.
+- Secondary labels and outcome breakdown sit beneath the headline without competing.
+- States: empty/loading/error must not distort the central alignment.
+
+## Account and sync detail
+- Full account management belongs on the Sync/account destination or a deliberate detail view, not as a large block in the Home task flow.
+- Home only exposes compact email/sign-out and sync status.
+- Sign-out must call the actual sign-out handler; never render an inert shortcut.
 
 ## Bottom navigation
-- Four primary destinations: Home, Cards, History, Sync.
-- Each has an icon and label; active item is visually distinct.
-- Fixed/floating at viewport bottom with safe-area padding; content reserves enough bottom space.
-- States: default, hover, active, focus-visible, disabled; loading/empty/error N/A.
+- Four destinations with recognizable icons and labels.
+- Fixed/floating relative to the viewport, not the scrollable Home content.
+- Must remain visible at initial page load and while scrolling.
+- Must be outside any transformed/animated screen ancestor that could capture fixed positioning.
+- Reserve content bottom inset so the nav does not obscure controls.
+- Include safe-area inset and keyboard/focus handling.
 
 ## History panel
-- Scrollable inset container with soft gradient divider above it.
-- Session cards show chapter, subject, planned duration, active time, attempts, accuracy and average/question where available.
+- Scrollable inset container, soft gradient separator and refined session cards.
 - Empty/loading/error states remain inside the same container.
