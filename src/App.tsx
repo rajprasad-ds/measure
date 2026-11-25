@@ -2105,6 +2105,7 @@ function App() {
     return (
       <SessionFeedbackScreen
         session={session}
+        feedbackDeadlineAt={session.feedbackDeadlineAt ?? Date.now()}
         userId={authUser.id}
         onImageUploadComplete={() => { if (authUser) void performSync(authUser); }}
         persistenceError={persistenceError}
