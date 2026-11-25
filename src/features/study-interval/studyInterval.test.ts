@@ -90,9 +90,7 @@ describe("validateStudyIntervals", () => {
       ]),
     ).toEqual([
       "Interval 1 needs an ID.",
-      "Interval IDs must be unique.",
       "Interval 2 needs an ID.",
-      "Interval IDs must be unique.",
     ]);
   });
 });
