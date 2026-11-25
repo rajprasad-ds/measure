@@ -761,7 +761,7 @@ function App() {
   }, [session?.phase]);
 
   useEffect(() => {
-    if (!session || session.phase !== "feedback" || !isFeedbackExpired(session.feedbackDeadlineAt, now)) return;
+    if (!session || session.sessionKind !== "practice" || session.phase !== "feedback" || !isFeedbackExpired(session.feedbackDeadlineAt, now)) return;
     if (expiredSessionCleanupInProgress.current) return;
     expiredSessionCleanupInProgress.current = true;
     void discardExpiredPendingSession(session).then(() => {
@@ -1479,7 +1479,7 @@ function App() {
 
   async function saveSession() {
     if (!session) return;
-    if (isFeedbackExpired(session.feedbackDeadlineAt, Date.now())) {
+    if (session.sessionKind === "practice" && isFeedbackExpired(session.feedbackDeadlineAt, Date.now())) {
       await discardExpiredPendingSession(session);
       setSession(null);
       setStudyIntervalError("The feedback deadline has passed. This unfinished practice session was discarded; independently saved fact cards were kept.");
@@ -1760,7 +1760,7 @@ function App() {
         [database.sessions, database.attempts, database.activeSession, database.questions, database.factCards, database.questionFactLinks],
         async () => {
           // Re-check inside the same local transaction as the complete feedback write.
-          if (isFeedbackExpired(session.feedbackDeadlineAt, Date.now())) {
+          if (session.sessionKind === "practice" && isFeedbackExpired(session.feedbackDeadlineAt, Date.now())) {
             throw new Error("The feedback deadline passed before the session could be committed.");
           }
           await database.sessions.add(record);
@@ -2173,7 +2173,7 @@ function App() {
     return (
       <SessionFeedbackScreen
         session={session}
-        feedbackDeadlineAt={session.feedbackDeadlineAt ?? Date.now()}
+        feedbackDeadlineAt={session.feedbackDeadlineAt}
         userId={authUser.id}
         onImageUploadComplete={() => { if (authUser) void performSync(authUser); }}
         persistenceError={persistenceError}
