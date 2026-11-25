@@ -179,3 +179,82 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 @media (min-width:768px) {
  .measure-home-card { max-width:430px; }
 }
+
+
+/* Mockup-v4 dashboard refinement: keep the visual hierarchy compact and intentional. */
+.measure-home-card { gap: 13px; }
+.measure-top-utility { margin: 0 0 2px; }
+.measure-utility-account {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:9px 15px 11px; border-top:1px solid #292929;
+}
+.measure-utility-account span { min-width:0; overflow:hidden; color:#999; font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
+.measure-utility-account button { flex:none; padding:4px 0; border:0; background:none; color:var(--measure-lime); font-size:11px; font-weight:700; }
+.measure-home-heading { display:none; }
+.measure-insights { border:0; border-radius:25px; background:#080808; }
+.measure-insight-pair { gap:12px; padding:15px 14px 17px; border-bottom:1px solid #242424; }
+.measure-stat {
+  min-height:91px; align-content:center; gap:7px; padding:10px 7px;
+  border:1px solid #303030; border-radius:21px; background:#0d0d0e;
+}
+.measure-stat-slow { border-color:#693333; }
+.measure-stat-value { display:flex; align-items:baseline; justify-content:center; gap:7px; min-width:0; }
+.measure-stat strong {
+  color:#fff; font-size:clamp(25px,7.2vw,32px); font-weight:800;
+  line-height:1; letter-spacing:-.045em; font-variant-numeric:tabular-nums;
+}
+.measure-stat span { color:#999; font-size:10px; line-height:1.25; text-align:center; }
+.measure-delta { color:#888; font-size:11px; font-style:normal; font-weight:750; white-space:nowrap; }
+.measure-delta.is-positive { color:#5fd35f; }
+.measure-delta.is-negative { color:#ff6262; }
+.measure-delta.is-neutral { color:#777; }
+.measure-insight-main {
+  grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr);
+  align-items:center; gap:13px; padding:17px 15px 16px;
+}
+.measure-count-block { display:grid; justify-items:center; text-align:center; }
+.measure-count-block .measure-overline { margin-bottom:8px; text-align:center; }
+.measure-count-block > strong {
+  font-size:clamp(36px,10vw,46px); font-weight:850; line-height:1;
+  letter-spacing:-.055em; font-variant-numeric:tabular-nums;
+}
+.measure-result-breakdown { justify-content:center; gap:8px 12px; margin-top:12px; font-size:12px; }
+.measure-insight-divider {
+  width:1px; height:90px; align-self:center;
+  background:linear-gradient(transparent,#555,transparent);
+}
+.measure-insight-bottom {
+  display:grid; grid-template-columns:1fr 1fr; gap:14px;
+  margin:0 15px; padding:13px 0 15px; border-top:1px solid #252525;
+}
+.measure-kpi { display:flex; align-items:center; gap:10px; min-width:0; }
+.measure-kpi-icon { flex:none; color:#5fd35f; font-size:23px; line-height:1; }
+.measure-kpi > div { display:grid; gap:3px; min-width:0; }
+.measure-kpi strong { color:#fff; font-size:21px; line-height:1; font-variant-numeric:tabular-nums; }
+.measure-kpi strong small { color:#999; font-size:10px; font-weight:500; }
+.measure-kpi > div > span { color:#999; font-size:10px; line-height:1.3; }
+.measure-kpi-streak .measure-kpi-icon { color:#fff; }
+.measure-insight-footnote { padding:0 15px 13px; }
+.measure-today-history {
+  position:relative; max-height:360px; overflow:hidden; padding:17px 15px 10px;
+  border:1px solid #292929; border-radius:24px; background:#080808;
+}
+.measure-today-history::before {
+  position:absolute; top:0; left:18px; right:18px; height:1px;
+  background:linear-gradient(90deg,transparent,#555 22%,#555 78%,transparent);
+  content:"";
+}
+.measure-today-history ul { max-height:270px; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:#444 transparent; }
+.measure-today-history li {
+  margin:0 0 8px; padding:13px 12px; border:1px solid #242424!important;
+  border-radius:16px; background:#111;
+}
+.measure-today-history li:last-child { margin-bottom:0; }
+.bottom-navigation button { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-height:52px; }
+.bottom-navigation button svg { width:19px; height:19px; }
+.bottom-navigation button span { font-size:10px; line-height:1; }
+.bottom-navigation button[aria-current="page"] { background:#252525; color:var(--measure-lime); }
+.measure-home { padding-bottom:calc(118px + env(safe-area-inset-bottom)); }
+@media (min-width:768px) {
+  .measure-home-card { max-width:430px; }
+}
