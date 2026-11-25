@@ -213,3 +213,16 @@ export function getPracticeTimelineSegments(
       left.startAt - right.startAt || left.endAt - right.endAt,
   );
 }
+
+/**
+ * A normal practice session may end earlier than its chosen duration when
+ * the containing Study Interval closes. A null interval means it cannot run.
+ */
+export function getPracticeSessionEndAt(
+  startedAt: number,
+  plannedEndAt: number,
+  intervalEndAt: number | null,
+): number {
+  if (intervalEndAt === null) return startedAt;
+  return Math.min(plannedEndAt, intervalEndAt);
+}
