@@ -1452,6 +1452,7 @@ function App() {
     updateFeedbackForQuestion(questionNumber, (current) => ({
       ...current,
       linkedFactIds: Array.from(new Set([...(current.linkedFactIds ?? []), card.id])),
+      unlinkedFactIds: (current.unlinkedFactIds ?? []).filter((id) => id !== card.id),
     }));
   }
 
@@ -1864,7 +1865,7 @@ function App() {
       // Everything below is post-commit housekeeping. A refresh, Drive or
       // cloud failure must not make a committed session look unsaved.
       try {
-        if (draftFacts.length || draftLinks.length) await refreshCardData();
+        if (draftFacts.length || draftLinks.length || pendingUnlinks.length) await refreshCardData();
       } catch (refreshError) {
         setPersistenceError(
           refreshError instanceof Error ? refreshError.message : "Cards were saved, but the view could not refresh.",
