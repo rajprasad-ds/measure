@@ -33,7 +33,7 @@ import CardImage from "../images/CardImage";
 
 type Props = {
   session: ActiveSession;
-  feedbackDeadlineAt: number;
+  feedbackDeadlineAt?: number;
   userId?: string;
   onImageUploadComplete: () => void;
   persistenceError: string | null;
