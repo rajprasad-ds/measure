@@ -75,13 +75,14 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
         if (record) {
           setSchedule(record.schedule);
           setHasSavedSchedule(true);
-          const day = await getOrCreateStudyDaySnapshot(userId, new Date());
-          if (!cancelled) setSnapshot(day);
         } else {
           setSchedule(emptySchedule());
           setHasSavedSchedule(false);
-          setSnapshot(null);
         }
+        // Capture today's schedule (or OFF when none exists) on first visit.
+        // Creating/editing the recurring schedule later today cannot alter it.
+        const day = await getOrCreateStudyDaySnapshot(userId, new Date());
+        if (!cancelled) setSnapshot(day);
       } catch (cause) {
         if (!cancelled) setError(cause instanceof Error ? cause.message : "Could not load your study schedule.");
       } finally {
