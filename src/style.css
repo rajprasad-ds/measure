@@ -3203,3 +3203,123 @@ h1 {
 @media (min-width:700px) {
   .study-schedule-screen { border-right:1px solid #262626; border-left:1px solid #262626; }
 }
+
+
+/* Measure continuity pass: Study Interval stays inside the app's light visual system. */
+.study-interval-home {
+  border-color:#dfe3da;
+  border-radius:1.25rem;
+  background:#f7f8f3;
+  color:#17231e;
+  box-shadow:0 8px 24px rgb(23 35 30 / 5%);
+  animation:study-panel-enter .28s cubic-bezier(.2,.75,.25,1) both;
+}
+.study-interval-home-open { color:#17231e; }
+.study-interval-home-heading>strong { color:#203d2c; }
+.study-interval-home-heading>span { color:#647067; }
+.study-interval-home-heading>span b { color:#477b43; }
+.study-interval-home-heading>span i { color:#7d887f; }
+.study-interval-home-track { border-color:transparent; background:#dfe5dc; }
+.study-interval-home-track.is-current { border-color:#668b62; }
+.study-interval-home-track.is-future { border-color:#e0e4dc; background:#eef0eb; }
+.study-interval-home-track>i { background:#8acb65; }
+.study-interval-home-track>u { background:#294631; }
+.study-interval-home-track-wrap>span:last-child { color:#738076; }
+.study-interval-home-track-wrap>span.is-current-label { color:#294631; }
+.study-interval-no-tracks { border-color:#dfe3da; color:#667168; }
+.study-interval-home-notice { color:#667168; }
+
+/* Keep configuration in the same page/card rather than opening a second full-screen app. */
+.study-schedule-screen {
+  position:relative;
+  z-index:auto;
+  inset:auto;
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:0;
+  overflow:visible;
+  overscroll-behavior:auto;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:#17231e;
+  box-shadow:none;
+  color-scheme:light;
+  font-family:inherit;
+  -webkit-font-smoothing:antialiased;
+  animation:study-editor-enter .32s cubic-bezier(.2,.75,.25,1) both;
+}
+.study-schedule-topbar { margin:0 0 1.1rem; }
+.study-schedule-topbar button { color:#477b43; }
+.study-schedule-topbar button:focus-visible,
+.study-weekday:focus-visible,
+.study-schedule-actions button:focus-visible { outline-color:#6d9477; }
+.study-schedule-screen h1 { color:#17231e; }
+.study-schedule-intro { color:#647067; }
+.study-weekday { border-color:#e2e6de; background:#f1f3ed; color:#405047; }
+.study-weekday.is-selected { border-color:#294631; background:#294631; color:#fff; }
+.study-weekday.is-today:not(.is-selected)::after,
+.study-weekday i { background:#6d9477; }
+.study-weekday.is-selected i { background:#fff; }
+.study-weekday.is-off:not(.is-selected) { color:#89928b; }
+.study-day-summary strong { color:#203d2c; }
+.study-day-summary span { color:#738076; }
+.study-day-off-row { border-color:#dfe3da; background:#f7f8f3; color:#23342a; }
+.study-switch i { background:#cbd2c8; }
+.study-switch i::after { background:#fff; }
+.study-switch input:checked+i { background:#6d9477; }
+.study-switch input:checked+i::after { background:#fff; }
+.study-switch input:focus-visible+i { outline-color:#294631; }
+.study-editor-timeline { border-color:#dfe3da; background:#f1f3ed; }
+.study-editor-block { background:#8acb65; }
+.study-editor-block.is-selected { outline-color:#294631; }
+.study-editor-block.has-error { background:#d95f5f; }
+.study-editor-drag-range { border-color:#294631; background:#8acb6555; }
+.study-editor-ticks,.study-schedule-hint { color:#78837a; }
+.study-interval-edit-list,.study-schedule-actions { background:#f7f8f3; }
+.study-interval-edit-item { border-color:#e2e6de; background:#f7f8f3; }
+.study-interval-edit-item.is-selected { background:#edf2e9; }
+.study-time-input input {
+  border-color:#dfe3da;
+  background:#fffefa;
+  color:#203d2c;
+  color-scheme:light;
+}
+.study-time-arrow,.study-interval-duration { color:#738076; }
+.study-interval-delete { color:#bd4949; }
+.study-interval-validation { color:#b43d3d; }
+.study-interval-empty-row,.study-schedule-weekly-total,.study-schedule-off-note { color:#667168; }
+.study-schedule-actions button { border-color:#e2e6de; color:#477b43; }
+.study-grace-setting { border-color:#dfe3da; background:#f7f8f3; }
+.study-grace-setting summary { color:#34443a; }
+.study-grace-setting summary::after { color:#477b43; }
+.study-grace-setting summary span,.study-grace-setting label,.study-grace-setting p { color:#738076; }
+.study-grace-setting select {
+  border-color:#d5dbd2;
+  background:#fffefa;
+  color:#23342a;
+  color-scheme:light;
+}
+.study-schedule-error { background:#fff0ee; color:#a33c35; }
+.study-schedule-notice { background:#edf5e9; color:#315c31; }
+.study-copy-overlay { background:rgb(23 35 30 / 28%); }
+.study-copy-sheet { border-color:#dfe3da; background:#fffefa; color:#17231e; }
+.study-copy-sheet>p { color:#667168; }
+.study-copy-days button { border-color:#dfe3da; background:#f7f8f3; color:#34443a; }
+.study-copy-days button.is-selected { border-color:#6d9477; background:#edf5e9; color:#315c31; }
+.study-copy-days button small { color:#738076; }
+.study-copy-confirm { background:#294631; color:#fff; }
+.study-copy-cancel { color:#667168; }
+
+@keyframes study-panel-enter {
+  from { opacity:0; transform:translateY(7px); }
+  to { opacity:1; transform:translateY(0); }
+}
+@keyframes study-editor-enter {
+  from { opacity:0; transform:translateY(12px); }
+  to { opacity:1; transform:translateY(0); }
+}
+@media (prefers-reduced-motion:reduce) {
+  .study-interval-home,.study-schedule-screen { animation:none; }
+}
