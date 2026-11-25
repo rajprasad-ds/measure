@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import CropEditor from "./CropEditor";
 import { driveImageStore, isUploadQueueRunning, processUploadQueue } from "./driveImageStore";
 import {
   getImageRecord,
@@ -18,7 +19,6 @@ type Props = {
   onChange?: (imageId: string) => void;
 };
 
-type CropAspect = "original" | "square" | "landscape";
 
 export default function ImageInput({
   label,
@@ -31,22 +31,11 @@ export default function ImageInput({
 }: Props) {
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
-  const editorCanvasRef = useRef<HTMLCanvasElement>(null);
-  const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
-  const activePointersRef = useRef(new Map<number, { x: number; y: number }>());
-  const pinchRef = useRef<{ distance: number; zoom: number } | null>(null);
   const [imageId, setImageId] = useState(value ?? "");
   const [previewUrl, setPreviewUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [editorUrl, setEditorUrl] = useState("");
-  const [rotation, setRotation] = useState(0);
-  const [zoom, setZoom] = useState(1);
-  const [panX, setPanX] = useState(0);
-  const [panY, setPanY] = useState(0);
-  const [cropAspect, setCropAspect] = useState<CropAspect>("original");
-  const [isPreparingPreview, setIsPreparingPreview] = useState(false);
   const [record, setRecord] = useState<{
     status: string;
     remoteId?: string;
@@ -83,55 +72,6 @@ export default function ImageInput({
     return () => { cancelled = true; if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [imageId, record?.remoteId]);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function drawPreview() {
-      if (!selectedFile || !editorCanvasRef.current) return;
-      setIsPreparingPreview(true);
-      try {
-        const bitmap = await createImageBitmap(selectedFile);
-        if (cancelled) { bitmap.close(); return; }
-        const quarterTurn = ((rotation % 360) + 360) % 360;
-        const rotatedWidth = quarterTurn % 180 === 0 ? bitmap.width : bitmap.height;
-        const rotatedHeight = quarterTurn % 180 === 0 ? bitmap.height : bitmap.width;
-        const rotated = document.createElement("canvas");
-        rotated.width = rotatedWidth;
-        rotated.height = rotatedHeight;
-        const rotatedContext = rotated.getContext("2d");
-        if (!rotatedContext) throw new Error("Could not prepare this image.");
-        rotatedContext.translate(rotatedWidth / 2, rotatedHeight / 2);
-        rotatedContext.rotate((quarterTurn * Math.PI) / 180);
-        rotatedContext.drawImage(bitmap, -bitmap.width / 2, -bitmap.height / 2);
-        bitmap.close();
-
-        const aspect = cropAspect === "square" ? 1 : cropAspect === "landscape" ? 4 / 3 : rotatedWidth / rotatedHeight;
-        let cropWidth = rotatedWidth;
-        let cropHeight = cropWidth / aspect;
-        if (cropHeight > rotatedHeight) { cropHeight = rotatedHeight; cropWidth = cropHeight * aspect; }
-        cropWidth /= zoom;
-        cropHeight /= zoom;
-        const sx = (rotatedWidth - cropWidth) * (panX + 1) / 2;
-        const sy = (rotatedHeight - cropHeight) * (panY + 1) / 2;
-        const outputWidth = 960;
-        const outputHeight = Math.max(1, Math.round(outputWidth / aspect));
-        const canvas = editorCanvasRef.current;
-        canvas.width = outputWidth;
-        canvas.height = outputHeight;
-        const context = canvas.getContext("2d");
-        if (!context) throw new Error("Could not prepare this image.");
-        context.fillStyle = "#ffffff";
-        context.fillRect(0, 0, outputWidth, outputHeight);
-        context.drawImage(rotated, sx, sy, cropWidth, cropHeight, 0, 0, outputWidth, outputHeight);
-      } catch (previewError) {
-        if (!cancelled) setError(previewError instanceof Error ? previewError.message : "Could not preview this image.");
-      } finally {
-        if (!cancelled) setIsPreparingPreview(false);
-      }
-    }
-    void drawPreview();
-    return () => { cancelled = true; };
-  }, [selectedFile, rotation, zoom, panX, panY, cropAspect]);
-
   function openEditor(file?: File) {
     if (!file) return;
     if (!file.type.startsWith("image/")) { setError("Choose an image file."); return; }
@@ -139,79 +79,14 @@ export default function ImageInput({
     if (typeof createImageBitmap !== "function") { setError("This browser cannot edit images. Try a newer browser."); return; }
     setError(null);
     setSelectedFile(file);
-    setEditorUrl(URL.createObjectURL(file));
-    setRotation(0);
-    setZoom(1);
-    setPanX(0);
-    setPanY(0);
-    setCropAspect("original");
   }
 
-  function closeEditor() {
-    if (editorUrl) URL.revokeObjectURL(editorUrl);
-    setEditorUrl("");
-    setSelectedFile(null);
-    setRotation(0);
-    setZoom(1);
-    setPanX(0);
-    setPanY(0);
-    setCropAspect("original");
-  }
+  function closeEditor() { setSelectedFile(null); }
 
-  function handleCropPointerDown(event: PointerEvent<HTMLCanvasElement>) {
-    event.currentTarget.setPointerCapture(event.pointerId);
-    const pointers = activePointersRef.current;
-    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    if (pointers.size === 2) {
-      const [first, second] = [...pointers.values()];
-      pinchRef.current = { distance: Math.hypot(second.x - first.x, second.y - first.y), zoom };
-      dragRef.current = null;
-    } else if (pointers.size === 1 && (zoom > 1 || cropAspect !== "original")) {
-      dragRef.current = { x: event.clientX, y: event.clientY, panX, panY };
-    }
-  }
-
-  function handleCropPointerMove(event: PointerEvent<HTMLCanvasElement>) {
-    const pointers = activePointersRef.current;
-    if (!pointers.has(event.pointerId)) return;
-    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    if (pointers.size >= 2 && pinchRef.current) {
-      const [first, second] = [...pointers.values()];
-      const distance = Math.hypot(second.x - first.x, second.y - first.y);
-      setZoom(Math.max(1, Math.min(3, pinchRef.current.zoom * distance / Math.max(1, pinchRef.current.distance))));
-      return;
-    }
-    const start = dragRef.current;
-    const canvas = editorCanvasRef.current;
-    if (!start || !canvas) return;
-    const bounds = canvas.getBoundingClientRect();
-    const maxPan = zoom > 1 ? 1 - 1 / zoom : 1;
-    setPanX(Math.max(-1, Math.min(1, start.panX - ((event.clientX - start.x) / bounds.width) * 2 * maxPan)));
-    setPanY(Math.max(-1, Math.min(1, start.panY - ((event.clientY - start.y) / bounds.height) * 2 * maxPan)));
-  }
-
-  function handleCropPointerUp(event: PointerEvent<HTMLCanvasElement>) {
-    const pointers = activePointersRef.current;
-    pointers.delete(event.pointerId);
-    pinchRef.current = null;
-    dragRef.current = null;
-    if (pointers.size === 1 && (zoom > 1 || cropAspect !== "original")) {
-      const remaining = [...pointers.values()][0];
-      dragRef.current = { x: remaining.x, y: remaining.y, panX, panY };
-    }
-  }
-
-  async function applyEdit() {
-    const canvas = editorCanvasRef.current;
-    if (!canvas || !selectedFile) return;
+  async function applyEditedFile(editedFile: File) {
     setIsSaving(true);
     setError(null);
     try {
-      const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((result) => {
-        if (result) resolve(result);
-        else reject(new Error("Could not prepare this image."));
-      }, "image/jpeg", 0.92));
-      const editedFile = new File([blob], selectedFile.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg", lastModified: Date.now() });
       const nextId = await saveImageFile(editedFile, ownerUserId);
       setImageId(nextId);
       onChange?.(nextId);
@@ -281,57 +156,8 @@ export default function ImageInput({
       <input ref={cameraRef} className="image-input-file" type="file" accept="image/*" capture="environment" aria-label={`Take ${label.toLowerCase()}`} style={{ display: "none" }} onChange={(event) => { openEditor(event.target.files?.[0]); event.target.value = ""; }} />
       <input ref={galleryRef} className="image-input-file" type="file" accept="image/*" aria-label={`Choose ${label.toLowerCase()} from gallery`} style={{ display: "none" }} onChange={(event) => { openEditor(event.target.files?.[0]); event.target.value = ""; }} />
 
-      {editorUrl && (
-        <div className="image-editor-backdrop" role="presentation">
-          <section className="image-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="image-editor-title">
-            <header className="image-editor-header">
-              <div>
-                <span className="image-editor-kicker">PHOTO EDITOR</span>
-                <h3 id="image-editor-title">Adjust your photo</h3>
-              </div>
-              <button className="image-editor-close" type="button" onClick={closeEditor} disabled={isSaving} aria-label="Close photo editor">×</button>
-            </header>
-            <div className="image-editor-stage">
-              <canvas
-                ref={editorCanvasRef}
-                className={`image-editor-preview${zoom > 1 ? " is-draggable" : ""}`}
-                aria-label="Edited photo preview. Drag to reposition when zoomed in."
-                onPointerDown={handleCropPointerDown}
-                onPointerMove={handleCropPointerMove}
-                onPointerUp={handleCropPointerUp}
-                onPointerCancel={handleCropPointerUp}
-                onLostPointerCapture={handleCropPointerUp}
-              />
-              <span className="image-editor-stage-hint">{zoom > 1 ? "Drag to reposition" : "Pinch or zoom to crop"}</span>
-            </div>
-            <div className="image-editor-toolbar">
-              <div className="image-editor-tool-group">
-                <span className="image-editor-tool-label">Crop ratio</span>
-                <div className="image-editor-ratios" role="group" aria-label="Crop aspect ratio">
-                  <button type="button" aria-pressed={cropAspect === "original"} onClick={() => setCropAspect("original")}>Original</button>
-                  <button type="button" aria-pressed={cropAspect === "square"} onClick={() => setCropAspect("square")}>1:1</button>
-                  <button type="button" aria-pressed={cropAspect === "landscape"} onClick={() => setCropAspect("landscape")}>4:3</button>
-                </div>
-              </div>
-              <div className="image-editor-tool-group">
-                <div className="image-editor-zoom-heading">
-                  <label htmlFor={`image-zoom-${name}`}>Zoom</label>
-                  <span>{zoom.toFixed(1)}×</span>
-                </div>
-                <input className="image-editor-zoom" id={`image-zoom-${name}`} type="range" min="1" max="3" step="0.05" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} />
-              </div>
-              <div className="image-editor-rotate-row">
-                <button type="button" onClick={() => setRotation((value) => (value + 270) % 360)}><span aria-hidden="true">↶</span> Rotate left</button>
-                <button type="button" onClick={() => setRotation((value) => (value + 90) % 360)}><span aria-hidden="true">↷</span> Rotate right</button>
-                <button type="button" onClick={() => { setRotation(0); setZoom(1); setPanX(0); setPanY(0); setCropAspect("original"); }}>Reset</button>
-              </div>
-            </div>
-            <footer className="image-editor-actions">
-              <button type="button" onClick={closeEditor} disabled={isSaving}>Cancel</button>
-              <button type="button" onClick={() => void applyEdit()} disabled={isSaving || isPreparingPreview}>{isSaving ? "Saving…" : "Use photo"}</button>
-            </footer>
-          </section>
-        </div>
+      {selectedFile && (
+        <CropEditor file={selectedFile} onCancel={closeEditor} onUse={(file) => void applyEditedFile(file)} saving={isSaving} />
       )}
 
       {record && record.status !== "uploaded" && (
