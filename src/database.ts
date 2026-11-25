@@ -1,5 +1,29 @@
 import Dexie, { type EntityTable, type Table } from "dexie";
 import type { ActiveSessionSnapshot } from "./features/practice/types";
+import type { WeeklyStudySchedule } from "./features/study-interval/studyInterval";
+
+export type WeeklyStudyScheduleRecord = {
+  id: string;
+  ownerUserId: string;
+  schedule: WeeklyStudySchedule;
+  timezone: string;
+  updatedAt: string;
+  syncStatus: "pending" | "synced";
+};
+
+export type StudyDaySnapshotRecord = {
+  id: string;
+  ownerUserId: string;
+  dateKey: string;
+  weekday: number;
+  schedule: {
+    off: boolean;
+    intervals: Array<{ id: string; start: string; end: string }>;
+  };
+  timezone: string;
+  capturedAt: string;
+};
+
 import type {
   AttemptResult,
   Cause,
@@ -80,6 +104,8 @@ class PracticeDatabase extends Dexie {
   factReviews!: EntityTable<FactReviewRecord, "id">;
   localImages!: EntityTable<LocalImageRecord, "id">;
   localImageBlobs!: EntityTable<{ id: string; blob: Blob }, "id">;
+  weeklySchedules!: EntityTable<WeeklyStudyScheduleRecord, "id">;
+  studyDaySnapshots!: EntityTable<StudyDaySnapshotRecord, "id">;
 
   constructor() {
     super("jee-practice");
@@ -215,6 +241,27 @@ class PracticeDatabase extends Dexie {
           row.lastError = (row as LocalImageRecord).lastError ?? undefined;
         });
       });
+    this.version(10).stores({
+      sessions:
+        "&id, endedAt, subject, chapter, subjectId, chapterId, ownerUserId, syncStatus, sessionKind",
+      activeSession: "&id",
+      attempts:
+        "&id, sessionId, questionId, result, cause, ownerUserId, syncStatus, updatedAt, *topicIds",
+      questions:
+        "&id, ownerUserId, syncStatus, subjectId, chapterId, updatedAt, createdFromAttemptId, *topicIds",
+      factCards:
+        "&id, ownerUserId, syncStatus, subjectId, chapterId, kind, dueAt, updatedAt, createdFromAttemptId, *topicIds",
+      questionFactLinks:
+        "&[questionId+factId], questionId, factId, ownerUserId, syncStatus, updatedAt, deletedAt",
+      factReviews:
+        "&id, ownerUserId, syncStatus, factId, reviewedAt, updatedAt",
+      localImages:
+        "&id, status, syncStatus, ownerUserId, remoteId, createdAt",
+      localImageBlobs: "&id",
+      meta: "&id",
+      weeklySchedules: "&id, ownerUserId, updatedAt, syncStatus",
+      studyDaySnapshots: "&id, ownerUserId, dateKey, [ownerUserId+dateKey]",
+    });
   }
 }
 
