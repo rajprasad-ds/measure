@@ -69,7 +69,7 @@ import CardsScreen from "./features/cards/CardsScreen";
 import MainNavigation from "./features/navigation/MainNavigation";
 import SyncScreen from "./features/sync/SyncScreen";
 import StudyIntervalPanel from "./features/study-interval/StudyIntervalPanel";
-import { getActiveStudyInterval, resolveDayIntervals } from "./features/study-interval/studyInterval";
+import { getActiveStudyInterval, getPracticeSessionEndAt, resolveDayIntervals } from "./features/study-interval/studyInterval";
 import { getOrCreateStudyDaySnapshot } from "./features/study-interval/studyIntervalRepository";
 
 const DURATIONS = [30, 45, 60, 90, 120];
@@ -878,7 +878,7 @@ function App() {
         phase: "active",
         startedAt,
         // The scheduled boundary takes precedence over the chosen session duration.
-        endsAt: Math.min(startedAt + setup.duration * 60_000, activeInterval.endAt),
+        endsAt: getPracticeSessionEndAt(startedAt, startedAt + setup.duration * 60_000, activeInterval.endAt),
         endedAt: null,
         questionNumber: setup.startingQuestion,
         questionNumberText: String(setup.startingQuestion),
@@ -1769,7 +1769,7 @@ function App() {
           ...candidate,
           session: {
             ...candidate.session,
-            endsAt: Math.min(candidate.session.endsAt, containingInterval.endAt),
+            endsAt: getPracticeSessionEndAt(candidate.session.startedAt, candidate.session.endsAt, containingInterval.endAt),
           },
         };
       } else {
@@ -1779,7 +1779,7 @@ function App() {
           ...candidate,
           session: {
             ...candidate.session,
-            endsAt: Math.min(candidate.session.endsAt, candidate.session.startedAt),
+            endsAt: getPracticeSessionEndAt(candidate.session.startedAt, candidate.session.endsAt, null),
           },
         };
       }
