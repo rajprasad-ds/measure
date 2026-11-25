@@ -348,6 +348,10 @@ function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, authSession) => {
+      window.dispatchEvent(new CustomEvent("measure:drive-diagnostic", { detail: {
+        event: "supabase_auth_event", at: new Date().toISOString(), authEvent: event,
+        driveConnectionInProgress: driveConnectionInProgress.current, driveTokenValid: hasDriveAccessToken(),
+      }}));
       // A Supabase sign-in starts a new app account session. Never carry a
       // Google Drive access token across that boundary, even in the same tab.
       if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
@@ -791,12 +795,20 @@ function App() {
 
   async function connectGoogleDrive() {
     if (!authUser || driveConnectionStatus === "connecting") return;
+    driveConnectionInProgress.current = true;
+    setDriveDiagnostics([]);
+    window.dispatchEvent(new CustomEvent("measure:drive-diagnostic", { detail: {
+      event: "connect_button_started", at: new Date().toISOString(), driveTokenValid: hasDriveAccessToken(authUser.id),
+    }}));
     setDriveConnectionStatus("connecting");
     setDriveConnectionError(null);
     setSyncStatus("syncing");
     setSyncError(null);
     try {
       await driveImageStore.reconnect(authUser.id);
+      window.dispatchEvent(new CustomEvent("measure:drive-diagnostic", { detail: {
+        event: "reconnect_resolved", at: new Date().toISOString(), driveTokenValid: hasDriveAccessToken(authUser.id),
+      }}));
       setDriveConnectionStatus("connected");
       await retryFailedUploads(authUser.id);
       await performSync(authUser);
@@ -806,6 +818,16 @@ function App() {
       setDriveConnectionError(message);
       setSyncStatus("error");
       setSyncError(message);
+      window.dispatchEvent(new CustomEvent("measure:drive-diagnostic", { detail: {
+        event: "reconnect_rejected", at: new Date().toISOString(),
+        errorName: error instanceof Error ? error.name : "UnknownError",
+        errorMessage: message.slice(0, 180), driveTokenValid: hasDriveAccessToken(authUser.id),
+      }}));
+    } finally {
+      driveConnectionInProgress.current = false;
+      window.dispatchEvent(new CustomEvent("measure:drive-diagnostic", { detail: {
+        event: "connect_flow_finished", at: new Date().toISOString(), driveTokenValid: hasDriveAccessToken(authUser.id),
+      }}));
     }
   }
 
