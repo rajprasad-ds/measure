@@ -1196,6 +1196,7 @@ export default function SessionFeedbackScreen({
               </section>
             </article>
 
+            {feedbackDeadlineAt !== undefined && <p className="study-interval-help" role="note">Submit this feedback by {new Date(feedbackDeadlineAt).toLocaleString()}. Unsubmitted feedback is discarded after the deadline; independently saved fact cards are kept.</p>}
             <footer className="feedback-footer feedback-sequential-footer">
               <button
                 className="account-secondary-button"
