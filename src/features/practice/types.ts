@@ -29,6 +29,8 @@ export type QuestionFeedback = {
   /** Legacy snapshots may still contain a fact draft; new cards are persisted immediately. */
   factDraft?: Pick<FactCardInput, "kind" | "promptText" | "promptImageId" | "contentText" | "contentImageId" | "wrongBelief">;
   linkedFactIds?: string[];
+  /** Existing links the user has removed during this unsubmitted feedback flow. */
+  unlinkedFactIds?: string[];
 };
 
 export type SessionPhase = "active" | "feedback" | "summary";
