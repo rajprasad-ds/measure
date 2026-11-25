@@ -2292,14 +2292,43 @@ function App() {
     : null;
   const recalledFacts = factReviews.filter((review) => review.outcome === "recalled").length;
   const forgottenFacts = factReviews.filter((review) => review.outcome === "forgot").length;
+  const totalSyllabusChapters = jeeSyllabus.subjects.reduce((sum, subject) => sum + subject.chapters.length, 0);
+  const coveredChapterIds = new Set(savedSessions
+    .filter((record) => record.sessionKind !== "question_revision" && record.chapterId)
+    .map((record) => record.chapterId));
+  const syllabusCoverage = totalSyllabusChapters
+    ? Math.round((coveredChapterIds.size / totalSyllabusChapters) * 100)
+    : null;
+  const practiceDayKeys = Array.from(new Set(savedSessions
+    .filter((record) => record.sessionKind !== "question_revision")
+    .map((record) => new Date(record.endedAt).toLocaleDateString("en-CA")))).sort();
+  const practiceDaySet = new Set(practiceDayKeys);
+  const dateKey = (date: Date) => date.toLocaleDateString("en-CA");
+  const todayDate = new Date();
+  const streakAnchor = practiceDaySet.has(dateKey(todayDate))
+    ? todayDate
+    : new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate() - 1);
+  let currentStreak = 0;
+  for (let offset = 0; ; offset += 1) {
+    const day = new Date(streakAnchor.getFullYear(), streakAnchor.getMonth(), streakAnchor.getDate() - offset);
+    if (!practiceDaySet.has(dateKey(day))) break;
+    currentStreak += 1;
+  }
+  let highestStreak = 0;
+  let runningStreak = 0;
+  let previousDay = "";
+  for (const key of practiceDayKeys) {
+    const day = new Date(`${key}T00:00:00`);
+    const prior = previousDay ? new Date(`${previousDay}T00:00:00`) : null;
+    runningStreak = prior && day.getTime() - prior.getTime() === 86_400_000 ? runningStreak + 1 : 1;
+    highestStreak = Math.max(highestStreak, runningStreak);
+    previousDay = key;
+  }
   const todayKey = new Date().toLocaleDateString();
   const todaySessions = savedSessions.filter((record) =>
     new Date(record.endedAt).toLocaleDateString() === todayKey &&
     record.sessionKind !== "question_revision"
   );
-  const formatAverage = (milliseconds: number | null) => milliseconds === null
-    ? "—"
-    : formatStopwatch(milliseconds);
 
   return (
     <main className="setup-shell measure-home measure-screen-enter">
@@ -2355,11 +2384,11 @@ function App() {
           <div className="measure-insight-bottom">
             <div className="measure-kpi">
               <span className="measure-kpi-icon" aria-hidden="true">☷</span>
-              <div><strong>—</strong><span>Syllabus covered</span></div>
+              <div><strong>{syllabusCoverage === null ? "—" : `${syllabusCoverage}%`}</strong><span>Syllabus covered · {coveredChapterIds.size}/{totalSyllabusChapters} chapters</span></div>
             </div>
             <div className="measure-kpi measure-kpi-streak">
               <span className="measure-kpi-icon" aria-hidden="true">♨</span>
-              <div><strong>— <small>days</small></strong><span>Current streak · Highest —</span></div>
+              <div><strong>{currentStreak} <small>days</small></strong><span>Current streak · Highest {highestStreak}</span></div>
             </div>
           </div>
           <p className="measure-insight-footnote">Totals from your saved practice and revision records.</p>
