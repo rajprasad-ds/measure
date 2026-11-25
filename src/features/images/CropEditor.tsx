@@ -85,6 +85,18 @@ export default function CropEditor({ file, onCancel, onUse, saving = false }: Pr
     ctx.beginPath(); ctx.moveTo(x + w / 3, y); ctx.lineTo(x + w / 3, y + h); ctx.moveTo(x + 2 * w / 3, y); ctx.lineTo(x + 2 * w / 3, y + h); ctx.moveTo(x, y + h / 3); ctx.lineTo(x + w, y + h / 3); ctx.moveTo(x, y + 2 * h / 3); ctx.lineTo(x + w, y + 2 * h / 3); ctx.stroke();
   }, [stageSize, rect, zoom, pan, sourceSize]);
 
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || !stageSize.width || !stageSize.height) return;
+    const w = stageSize.width, h = stageSize.height;
+    const minX = rect.right*w-w/2-w*zoom/2, maxX = rect.left*w-w/2+w*zoom/2;
+    const minY = rect.bottom*h-h/2-h*zoom/2, maxY = rect.top*h-h/2+h*zoom/2;
+    setPan(old => {
+      const next = { x: clamp(old.x,minX,maxX), y: clamp(old.y,minY,maxY) };
+      return next.x === old.x && next.y === old.y ? old : next;
+    });
+  }, [rect, zoom, stageSize]);
+
   function setAspect(next: string) {
     setRatio(next);
     if (next === "free" || !stageSize.width || !stageSize.height) return;
