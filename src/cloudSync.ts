@@ -12,6 +12,7 @@ import type {
   QuestionFactLink,
 } from "./features/cards/types";
 import { supabase } from "./supabase";
+import { syncStudySchedule } from "./features/study-interval/studyIntervalRepository";
 
 const LOCAL_CLOUD_CACHE_LIMIT = 50;
 
@@ -732,6 +733,8 @@ export async function syncAccountSessions(
   onFactCardProgress?: (card: FactCard, status: "syncing" | "synced") => void,
 ): Promise<SessionRecord[]> {
   const client = requireSupabase();
+  // The schedule is reconciled separately; offline failures leave its local copy intact.
+  await syncStudySchedule(user.id);
   const unresolvedImageIds = await syncPendingImages(user.id);
   await syncPendingCards(user.id, unresolvedImageIds, onFactCardProgress);
   const localRecords = await database.sessions.toArray();
