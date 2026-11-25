@@ -2290,6 +2290,24 @@ function App() {
   const averageAttemptMs = totalAttempts
     ? Math.round(completedAttempts.reduce((sum, attempt) => sum + attempt.timeMs, 0) / totalAttempts)
     : null;
+  const yesterdayDate = new Date();
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterdayAttempts = completedAttempts.filter((attempt) =>
+    new Date(attempt.createdAt).toLocaleDateString() === yesterdayDate.toLocaleDateString());
+  const yesterdayAverageMs = yesterdayAttempts.length
+    ? yesterdayAttempts.reduce((sum, attempt) => sum + attempt.timeMs, 0) / yesterdayAttempts.length
+    : null;
+  const yesterdayAccuracy = yesterdayAttempts.length
+    ? Math.round(yesterdayAttempts.filter((attempt) => attempt.result === "right").length / yesterdayAttempts.length * 100)
+    : null;
+  const averageDeltaMs = averageAttemptMs !== null && yesterdayAverageMs !== null
+    ? Math.round(averageAttemptMs - yesterdayAverageMs) : null;
+  const accuracyDelta = accuracy !== null && yesterdayAccuracy !== null
+    ? accuracy - yesterdayAccuracy : null;
+  const formatDeltaTime = (value: number) => {
+    const abs = Math.abs(value);
+    return `${value > 0 ? "+" : value < 0 ? "−" : ""}${Math.floor(abs / 60000)}:${String(Math.floor(abs / 1000) % 60).padStart(2, "0")}`;
+  };
   const recalledFacts = factReviews.filter((review) => review.outcome === "recalled").length;
   const forgottenFacts = factReviews.filter((review) => review.outcome === "forgot").length;
   const totalSyllabusChapters = jeeSyllabus.subjects.reduce((sum, subject) => sum + subject.chapters.length, 0);
@@ -2353,11 +2371,11 @@ function App() {
         <section className="measure-insights" aria-label="Practice overview">
           <div className="measure-insight-pair">
             <article className={`measure-stat measure-stat-slow`}>
-              <div className="measure-stat-value"><strong>{averageAttemptMs === null ? "—" : `${Math.floor(averageAttemptMs / 60000)}:${String(Math.floor(averageAttemptMs / 1000) % 60).padStart(2, "0")}.${String(Math.floor(averageAttemptMs % 1000 / 100))}`}</strong><em className="measure-delta is-neutral">—</em></div>
+              <div className="measure-stat-value"><strong>{averageAttemptMs === null ? "—" : `${Math.floor(averageAttemptMs / 60000)}:${String(Math.floor(averageAttemptMs / 1000) % 60).padStart(2, "0")}.${String(Math.floor(averageAttemptMs % 1000 / 100))}`}</strong><em className={`measure-delta ${averageDeltaMs === null || averageDeltaMs === 0 ? "is-neutral" : averageDeltaMs > 0 ? "is-negative" : "is-positive"}`}>{averageDeltaMs === null ? "—" : formatDeltaTime(averageDeltaMs)}</em></div>
               <span>Average time per question</span>
             </article>
             <article className="measure-stat">
-              <div className="measure-stat-value"><strong>{accuracy === null ? "—" : `${accuracy}%`}</strong><em className="measure-delta is-neutral">—</em></div>
+              <div className="measure-stat-value"><strong>{accuracy === null ? "—" : `${accuracy}%`}</strong><em className={`measure-delta ${accuracyDelta === null || accuracyDelta === 0 ? "is-neutral" : accuracyDelta > 0 ? "is-positive" : "is-negative"}`}>{accuracyDelta === null ? "—" : `${accuracyDelta > 0 ? "+" : ""}${accuracyDelta}%`}</em></div>
               <span>Accuracy</span>
             </article>
           </div>
