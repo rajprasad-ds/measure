@@ -61,9 +61,14 @@ export function validateStudyIntervals(
   const errors: string[] = [];
   const ids = new Set<string>();
   const normalized = intervals.map((interval, index) => {
-    if (!interval.id.trim()) errors.push(`Interval ${index + 1} needs an ID.`);
-    if (ids.has(interval.id)) errors.push("Interval IDs must be unique.");
-    ids.add(interval.id);
+    const normalizedId = interval.id.trim();
+    if (!normalizedId) {
+      errors.push(`Interval ${index + 1} needs an ID.`);
+    } else if (ids.has(normalizedId)) {
+      errors.push("Interval IDs must be unique.");
+    } else {
+      ids.add(normalizedId);
+    }
 
     const start = timeToMinutes(interval.start);
     const end = timeToMinutes(interval.end);
