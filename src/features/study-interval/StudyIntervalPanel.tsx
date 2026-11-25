@@ -324,7 +324,7 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
     const dragHigh = dragStart === null || dragEnd === null ? 0 : Math.max(dragStart, dragEnd);
 
     return (
-      <section className="study-schedule-screen" aria-labelledby="study-schedule-title">
+      <section className="study-schedule-screen measure-sheet-enter" aria-labelledby="study-schedule-title">
         <div className="study-schedule-topbar">
           <button type="button" onClick={() => { setIsEditing(false); setError(null); }}>
             Cancel
