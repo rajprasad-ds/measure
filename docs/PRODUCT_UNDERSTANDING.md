@@ -1175,3 +1175,23 @@ An independent fact-card creation attempt exposed a save-flow bug on `phase-1b-c
 
 ### Verification
 Code changes are committed to `phase-1b-cards`. Manual verification is still required: create one independent image-based fact card, confirm exactly one card appears, verify its photos are queued under the signed-in account, and confirm a failed save displays a visible error without creating repeated cards. Existing duplicate records are not automatically deleted by this fix.
+
+
+## 17.8 Mobile crop editor redesign (25 Nov 2026)
+
+The earlier crop editor relied on a zoomed canvas with direct drag and pinch gestures. Mobile testing reported that pinch/zoom did not work reliably and that the interaction did not provide a proper crop box. The approved direction is a crop-box-first editor.
+
+### Intended interaction
+- Show a visible crop rectangle with eight touch handles (four corners and four edges), a rule-of-thirds grid, and dimmed content outside the selection.
+- Drag the photo to reposition it underneath the crop frame.
+- Pinch to zoom around the midpoint between the two fingers; retain a visible zoom slider as a non-gesture alternative.
+- Provide Free, Original, 1:1, 4:3, and 16:9 crop presets.
+- Keep rotate, reset, cancel, and use-photo actions accessible on mobile.
+- Use one shared crop transform for preview and JPEG export so the saved photo matches the crop shown.
+- Keep the editor full-screen on narrow mobile viewports and prevent browser touch scrolling while manipulating the image.
+
+### Implementation status
+- A dedicated `CropEditor` component has been introduced on the `mobile-crop-editor` branch and integrated into `ImageInput`.
+- The component uses Pointer Events for drag/pinch, explicit crop handles, aspect presets, and canvas-based JPEG export.
+- This is an initial implementation and has **not yet been build-verified or tested on a physical mobile device**. In particular, verify touch pointer capture, handle resizing, pinch midpoint behavior, rotated images, and pixel-accurate export before considering it complete.
+- Do not merge to `main` until the user has tested it on mobile and approved the result.
