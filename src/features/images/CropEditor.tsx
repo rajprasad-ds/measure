@@ -119,9 +119,20 @@ export default function CropEditor({ file, onCancel, onUse, saving = false }: Pr
       const nextZoom = clamp(g.zoom * distance / Math.max(1,g.distance || 1), 1, 5);
       const scale = nextZoom / g.zoom;
       setZoom(nextZoom);
-      setPan({ x: mid.x - (mid.x - g.pan.x) * scale, y: mid.y - (mid.y - g.pan.y) * scale });
+      const frameLeft = rect.left * bounds.width, frameRight = rect.right * bounds.width;
+      const frameTop = rect.top * bounds.height, frameBottom = rect.bottom * bounds.height;
+      const nextX = mid.x - (mid.x - g.pan.x) * scale, nextY = mid.y - (mid.y - g.pan.y) * scale;
+      setPan({ x: clamp(nextX, frameRight-bounds.width/2-bounds.width*nextZoom/2, frameLeft-bounds.width/2+bounds.width*nextZoom/2), y: clamp(nextY, frameBottom-bounds.height/2-bounds.height*nextZoom/2, frameTop-bounds.height/2+bounds.height*nextZoom/2) });
     } else if (g.kind === "move") {
-      setPan({ x: g.pan.x + e.clientX - g.start.x, y: g.pan.y + e.clientY - g.start.y });
+      const nextZoom = g.zoom;
+      const frameLeft = rect.left * bounds.width, frameRight = rect.right * bounds.width;
+      const frameTop = rect.top * bounds.height, frameBottom = rect.bottom * bounds.height;
+      const nextX = g.pan.x + e.clientX - g.start.x, nextY = g.pan.y + e.clientY - g.start.y;
+      const minX = frameRight - bounds.width / 2 - bounds.width * nextZoom / 2;
+      const maxX = frameLeft - bounds.width / 2 + bounds.width * nextZoom / 2;
+      const minY = frameBottom - bounds.height / 2 - bounds.height * nextZoom / 2;
+      const maxY = frameTop - bounds.height / 2 + bounds.height * nextZoom / 2;
+      setPan({ x: clamp(nextX, minX, maxX), y: clamp(nextY, minY, maxY) });
     }
   }
   function pointerUp(e: PointerEvent<HTMLCanvasElement>) {
@@ -133,10 +144,10 @@ export default function CropEditor({ file, onCancel, onUse, saving = false }: Pr
     }
   }
 
-  function resizeCrop(handle: string, dx: number, dy: number) {
+  function resizeCrop(handle: string, dx: number, dy: number, base: Rect) {
     const min = .12;
-    setRect(old => {
-      let { left, right, top, bottom } = old;
+    setRect(() => {
+      let { left, right, top, bottom } = base;
       const x = dx / Math.max(1, stageSize.width), y = dy / Math.max(1, stageSize.height);
       if (handle.includes("w")) left = clamp(left + x, 0, right - min);
       if (handle.includes("e")) right = clamp(right + x, left + min, 1);
@@ -163,7 +174,7 @@ export default function CropEditor({ file, onCancel, onUse, saving = false }: Pr
   }
   function handleMove(e: PointerEvent<HTMLButtonElement>) {
     const g = gesture.current;
-    if (g?.kind === "resize" && g.handle) resizeCrop(g.handle, e.clientX-g.start.x, e.clientY-g.start.y);
+    if (g?.kind === "resize" && g.handle) resizeCrop(g.handle, e.clientX-g.start.x, e.clientY-g.start.y, g.rect);
   }
   function handleUp() { gesture.current = null; }
 
