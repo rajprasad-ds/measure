@@ -1,5 +1,6 @@
 import { database, type StudyDaySnapshotRecord, type WeeklyStudyScheduleRecord } from "../../database";
 import { supabase } from "../../supabase";
+import { DEFAULT_FEEDBACK_GRACE_HOURS, isFeedbackGraceHours } from "./feedbackDeadline";
 import {
   getLocalDateKey,
   getWeekday,
@@ -83,6 +84,7 @@ export async function saveWeeklyStudySchedule(
   schedule: WeeklyStudySchedule,
   timezone = currentTimezone(),
   now = new Date(),
+  feedbackGraceHours: 2 | 6 | 12 = DEFAULT_FEEDBACK_GRACE_HOURS,
 ): Promise<WeeklyStudyScheduleRecord> {
   if (!userId.trim()) throw new Error("A signed-in account is required.");
   const errors = validateWeeklyStudySchedule(schedule);
@@ -92,6 +94,7 @@ export async function saveWeeklyStudySchedule(
     id: userId,
     ownerUserId: userId,
     schedule: structuredClone(schedule),
+    feedbackGraceHours,
     timezone,
     updatedAt: now.toISOString(),
     syncStatus: "pending",
@@ -131,6 +134,7 @@ export async function getOrCreateStudyDaySnapshot(
       dateKey,
       weekday,
       schedule: structuredClone(daySchedule),
+      feedbackGraceHours: ownedWeekly && isFeedbackGraceHours(ownedWeekly.feedbackGraceHours) ? ownedWeekly.feedbackGraceHours : DEFAULT_FEEDBACK_GRACE_HOURS,
       timezone: ownedWeekly?.timezone || currentTimezone(),
       capturedAt: now.toISOString(),
     };
@@ -159,7 +163,7 @@ export async function syncStudySchedule(
   try {
     const { data, error } = await supabase
       .from("weekly_study_schedules")
-      .select("user_id,schedule,timezone,updated_at")
+      .select("user_id,schedule,timezone,updated_at,feedback_grace_hours")
       .eq("user_id", userId)
       .maybeSingle();
 
@@ -170,6 +174,7 @@ export async function syncStudySchedule(
           id: userId,
           ownerUserId: userId,
           schedule: data.schedule,
+          feedbackGraceHours: isFeedbackGraceHours(data.feedback_grace_hours) ? data.feedback_grace_hours : DEFAULT_FEEDBACK_GRACE_HOURS,
           timezone: data.timezone || currentTimezone(),
           updatedAt: data.updated_at,
           syncStatus: "synced" as const,
@@ -190,6 +195,7 @@ export async function syncStudySchedule(
           {
             user_id: userId,
             schedule: local.schedule,
+            feedback_grace_hours: isFeedbackGraceHours(local.feedbackGraceHours) ? local.feedbackGraceHours : DEFAULT_FEEDBACK_GRACE_HOURS,
             timezone: local.timezone,
             updated_at: local.updatedAt,
           },
