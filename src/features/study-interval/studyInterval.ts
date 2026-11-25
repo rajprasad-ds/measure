@@ -36,7 +36,7 @@ export type PracticeTimelineSegment = {
 };
 
 const MINUTES_PER_DAY = 24 * 60;
-const TIME_PATTERN = /^(?:[01]\\d|2[0-3]):[0-5]\\d$/;
+const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 
 export function getLocalDateKey(date: Date): string {
   const year = date.getFullYear();
