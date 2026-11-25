@@ -1753,7 +1753,7 @@ function App() {
   }
 
   async function resumeRecoveredSession() {
-    if (!recoveryCandidate) return;
+    if (!recoveryCandidate || !authUser) return;
     const resumedAt = Date.now();
     let candidate = recoveryCandidate;
     if (candidate.session.sessionKind === "practice" && candidate.session.phase === "active") {
