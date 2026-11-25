@@ -54,7 +54,7 @@ function toMinutes(value: string): number {
 }
 
 function toClock(value: number): string {
-  const safe = Math.max(0, Math.min(1439, value));
+  const safe = Math.max(0, Math.min(1435, value));
   return `${String(Math.floor(safe / 60)).padStart(2, "0")}:${String(safe % 60).padStart(2, "0")}`;
 }
 
@@ -222,7 +222,7 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
       }
     }
     if (
-      endAt > 1439 ||
+      endAt > 1435 ||
       endAt - startAt < 15 ||
       existing.some((interval) =>
         startAt < toMinutes(interval.end) && endAt > toMinutes(interval.start),
@@ -242,12 +242,18 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
   }
 
   function updateInterval(id: string, key: "start" | "end", value: string) {
-    updateDay(selectedDay, (current) => ({
-      ...current,
-      intervals: current.intervals.map((interval) =>
+    updateDay(selectedDay, (current) => {
+      const intervals = current.intervals.map((interval) =>
         interval.id === id ? { ...interval, [key]: value } : interval,
-      ),
-    }));
+      );
+      intervals.sort((left, right) => {
+        const leftStart = toMinutes(left.start);
+        const rightStart = toMinutes(right.start);
+        return (Number.isFinite(leftStart) ? leftStart : 1440) -
+          (Number.isFinite(rightStart) ? rightStart : 1440);
+      });
+      return { ...current, intervals };
+    });
     setSelectedIntervalId(id);
     setError(null);
   }
@@ -256,7 +262,7 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
     const rect = event.currentTarget.getBoundingClientRect();
     return Math.max(
       0,
-      Math.min(1439, Math.round(((event.clientX - rect.left) / rect.width * 1440) / 30) * 30),
+      Math.min(1435, Math.round(((event.clientX - rect.left) / rect.width * 1440) / 30) * 30),
     );
   }
 
@@ -267,7 +273,7 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
       return;
     }
     const start = Math.min(dragStart, dragEnd);
-    const end = Math.min(1439, Math.max(dragStart, dragEnd));
+    const end = Math.min(1435, Math.max(dragStart, dragEnd));
     setDragStart(null);
     setDragEnd(null);
     if (end - start < 30) {
