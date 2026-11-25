@@ -622,7 +622,11 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
           {homeIntervals.length === 0 ? (
             <span className="study-interval-no-tracks">
               {todaySchedule?.off
-                ? "No study intervals today"
+                ? !hasSavedSchedule
+                  ? "Today's first-use schedule is OFF. Set your weekly hours; they begin tomorrow."
+                  : !schedule[todayWeekday].off
+                    ? "Today's OFF schedule is already locked. Your new weekly hours begin tomorrow."
+                    : "No study intervals scheduled for today."
                 : hasSavedSchedule
                   ? "No study intervals today"
                   : "Set your weekly study schedule"}
