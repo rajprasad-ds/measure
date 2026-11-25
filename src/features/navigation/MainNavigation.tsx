@@ -23,7 +23,7 @@ function TabIcon({ tab }: { tab: Tab }) {
 }
 
 export default function MainNavigation({ activeTab, onNavigate }: Props) {
-  return (
+  return createPortal(
     <nav className="bottom-navigation" aria-label="Main navigation">
       {TABS.map(({ id, label }) => (
         <button
