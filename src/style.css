@@ -2953,6 +2953,24 @@ h1 {
 }
 .study-interval-status.status-active { color: #2f6844; font-weight: 700; }
 .study-interval-editor { display: grid; gap: 0.85rem; }
+
+.study-interval-grace-setting {
+  display: grid;
+  gap: 0.35rem;
+  max-width: 22rem;
+  color: #344238;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.study-interval-grace-setting select {
+  width: 100%;
+  border: 1px solid #d4dbd0;
+  border-radius: 0.55rem;
+  padding: 0.6rem;
+  color: #26382c;
+  background: white;
+  font: inherit;
+}
 .study-interval-day {
   min-width: 0;
   margin: 0;
