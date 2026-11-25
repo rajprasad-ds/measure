@@ -347,7 +347,12 @@ function App() {
         setAttemptRecords([]);
         setFactReviews([]);
       }
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+      // Drive authorization belongs to the current app account, not to an
+      // individual Supabase auth event. SIGNED_IN can fire again for the same
+      // user (including during Drive OAuth); clearing here would erase the
+      // freshly returned Google token. The authUser identity-change effect
+      // above handles actual account switches and sign-outs.
+      if (event === "SIGNED_OUT") {
         clearDriveAuthorization();
         setDriveConnectionStatus("idle");
         setDriveConnectionError(null);
