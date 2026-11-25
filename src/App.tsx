@@ -20,7 +20,6 @@ import {
   createFactCard,
   createFactCardAndLink,
   linkQuestionAndFact,
-  recordQuestionSeen,
   softDeleteFactCard,
   softDeleteQuestionCard,
   unlinkQuestionAndFact,
@@ -1390,7 +1389,6 @@ function App() {
     const feedback = session?.feedback[questionNumber];
     if (!session || !feedback) throw new Error("The attempt is no longer available.");
     // Existing-card use remains a reference to an already-persisted card.
-    await recordQuestionSeen(card.id, authUser?.id);
     updateFeedbackForQuestion(questionNumber, (current) => ({
       ...current,
       attemptId: current.attemptId ?? globalThis.crypto.randomUUID(),
@@ -1440,15 +1438,11 @@ function App() {
       attemptId,
       factDraft: undefined,
       linkedFactIds: Array.from(new Set([...(current.linkedFactIds ?? []), card.id])),
+      unlinkedFactIds: (current.unlinkedFactIds ?? []).filter((id) => id !== card.id),
     }));
 
-    // Existing questions can be linked now. For a draft question, linkedFactIds
-    // records the intended relationship and saveSession creates it atomically
-    // when it creates the question card.
+    // Link changes remain staged in feedback and are committed with the session.
     if (authUser) await queueImagesForUpload(authUser.id, [input.promptImageId, input.contentImageId].filter((id): id is string => Boolean(id)));
-    if (feedback.questionId) {
-      await linkQuestionAndFact(feedback.questionId, card.id, { userId: authUser?.id });
-    }
     await refreshCardData();
   }
 
@@ -1467,12 +1461,10 @@ function App() {
 
     // Remove only the relationship. The fact card remains in the independent
     // fact library and remains searchable.
-    if (feedback.questionId) {
-      await unlinkQuestionAndFact(feedback.questionId, factId);
-    }
     updateFeedbackForQuestion(questionNumber, (current) => ({
       ...current,
       linkedFactIds: (current.linkedFactIds ?? []).filter((id) => id !== factId),
+      unlinkedFactIds: Array.from(new Set([...(current.unlinkedFactIds ?? []), factId])),
     }));
     await refreshCardData();
   }
@@ -1500,9 +1492,20 @@ function App() {
     const draftQuestions: QuestionCard[] = [];
     const draftFacts: FactCard[] = [];
     const draftLinks: QuestionFactLink[] = [];
+    const pendingUnlinks = timedQuestions.flatMap(({ questionNumber }) => {
+      const feedback = session.feedback[questionNumber];
+      if (!feedback?.questionId) return [];
+      return (feedback.unlinkedFactIds ?? []).map((factId) => ({
+        questionId: feedback.questionId as string,
+        factId,
+      }));
+    });
+    const pendingUnlinkKeys = new Set(
+      pendingUnlinks.map(({ questionId, factId }) => `${questionId}::${factId}`),
+    );
     const linkKeys = new Set(
       questionFactLinks
-        .filter((link) => !link.deletedAt)
+        .filter((link) => !link.deletedAt && !pendingUnlinkKeys.has(`${link.questionId}::${link.factId}`))
         .map((link) => `${link.questionId}::${link.factId}`),
     );
 
@@ -1632,7 +1635,7 @@ function App() {
     );
     const finalizedFactIds = new Set([
       ...questionFactLinks
-        .filter((link) => finalizedQuestionIds.has(link.questionId) && !link.deletedAt)
+        .filter((link) => finalizedQuestionIds.has(link.questionId) && !link.deletedAt && !pendingUnlinkKeys.has(`${link.questionId}::${link.factId}`))
         .map((link) => link.factId),
       ...draftLinks.filter((link) => finalizedQuestionIds.has(link.questionId)).map((link) => link.factId),
     ]);
@@ -1779,6 +1782,17 @@ function App() {
               }
             }
           }
+          for (const { questionId, factId } of pendingUnlinks) {
+            const existingLink = await database.questionFactLinks.get([questionId, factId]);
+            if (existingLink && !existingLink.deletedAt) {
+              await database.questionFactLinks.put({
+                ...existingLink,
+                deletedAt: timestamp,
+                updatedAt: timestamp,
+                syncStatus: authUser ? "pending" : "local",
+              });
+            }
+          }
           if (draftLinks.length) await database.questionFactLinks.bulkPut(draftLinks);
           await database.attempts.bulkPut(attempts);
           for (const feedback of feedbackWithCards.values()) {
@@ -1800,6 +1814,25 @@ function App() {
             const updated: QuestionCard = {
               ...card,
               topicIds: Array.from(new Set([...card.topicIds, ...topicIds])),
+              updatedAt: timestamp,
+              syncStatus: card.ownerUserId ? "pending" : "local",
+            };
+            await database.questions.put(updated);
+            updatedQuestionCards.set(questionId, updated);
+          }
+          const questionSeenCounts = new Map<string, number>();
+          attempts.forEach((attempt) => {
+            if (attempt.questionId) {
+              questionSeenCounts.set(attempt.questionId, (questionSeenCounts.get(attempt.questionId) ?? 0) + 1);
+            }
+          });
+          for (const [questionId, seenCount] of questionSeenCounts) {
+            const card = await database.questions.get(questionId);
+            if (!card) continue;
+            const updated: QuestionCard = {
+              ...card,
+              timesSeen: card.timesSeen + seenCount,
+              lastSeenAt: timestamp,
               updatedAt: timestamp,
               syncStatus: card.ownerUserId ? "pending" : "local",
             };
