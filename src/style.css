@@ -3018,3 +3018,188 @@ h1 {
   .study-interval-editor-row { grid-template-columns: 1fr 1fr; }
   .study-interval-remove { grid-column: 2; justify-self: end; }
 }
+
+
+/* Study Interval — v4 mockup-aligned home card and schedule editor */
+.study-interval-loading {
+  display:flex; align-items:center; gap:.65rem; max-width:430px; margin:14px auto;
+  padding:18px 20px; border:1px solid #262626; border-radius:24px;
+  background:#121214; color:#aaa; font-size:13px;
+}
+.study-interval-loading-dot { width:8px; height:8px; flex:none; border-radius:50%; background:#a3ff3c; }
+.study-interval-home {
+  width:min(100%,430px); margin:14px auto; overflow:hidden;
+  border:1px solid #262626; border-radius:34px; background:#121214; color:#fff;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+.study-interval-home-open {
+  display:block; width:100%; padding:22px 20px 18px; border:0; border-radius:inherit;
+  background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.study-interval-home-open:focus-visible { outline:2px solid #a3ff3c; outline-offset:-4px; }
+.study-interval-home-heading { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:18px; }
+.study-interval-home-heading>strong { min-width:0; font-size:clamp(23px,6vw,30px); line-height:1.1; font-weight:750; letter-spacing:-.03em; }
+.study-interval-home-heading>span { flex:none; color:#aaa; font-size:14px; white-space:nowrap; }
+.study-interval-home-heading>span b { color:#a3ff3c; font-weight:750; }
+.study-interval-home-heading>span i { margin-left:5px; color:#777; font-size:22px; font-style:normal; vertical-align:-1px; }
+.study-interval-home-tracks { display:flex; align-items:flex-start; gap:10px; overflow-x:auto; scrollbar-width:none; }
+.study-interval-home-tracks::-webkit-scrollbar { display:none; }
+.study-interval-home-track-wrap { display:block; flex:1 0 0; min-width:0; text-align:center; }
+.study-interval-home-track {
+  position:relative; display:block; height:42px; overflow:hidden; border:2px solid transparent;
+  border-radius:24px; background:#232325;
+}
+.study-interval-home-track.is-current { border-color:#e6e6e6; }
+.study-interval-home-track.is-future { border-color:#232325; background:#0b0b0c; }
+.study-interval-home-track>i { position:absolute; top:0; bottom:0; min-width:1px; background:#a3ff3c; }
+.study-interval-home-track>u {
+  position:absolute; top:0; bottom:0; width:2px; background:#fff; text-decoration:none;
+  transform:translateX(-1px);
+}
+.study-interval-home-track-wrap>span:last-child {
+  display:block; margin-top:8px; color:#777; font-size:12px; white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.study-interval-home-track-wrap>span.is-current-label { color:#fff; font-weight:700; }
+.study-interval-no-tracks { display:block; width:100%; padding:13px 12px; border:1px solid #262626; border-radius:22px; color:#999; text-align:center; font-size:13px; }
+.study-interval-home-notice { margin:0; padding:0 20px 16px; color:#aaa; font-size:12px; }
+.study-interval-home-notice.is-error { color:#ff8585; }
+
+/* The editor is a dedicated mobile-first screen, as in the mockup. */
+.study-schedule-screen {
+  position:fixed; z-index:1200; inset:0; width:min(100%,430px); margin:0 auto;
+  padding:max(14px,env(safe-area-inset-top)) 14px max(28px,env(safe-area-inset-bottom));
+  overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain;
+  background:#141414; color:#fff; box-shadow:0 0 0 100vmax #141414;
+  color-scheme:dark; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.study-schedule-screen * { box-sizing:border-box; }
+.study-schedule-topbar { display:flex; align-items:center; justify-content:space-between; min-height:42px; margin:0 2px 12px; }
+.study-schedule-topbar button {
+  min-height:38px; padding:5px 8px; border:0; background:transparent; color:#a3ff3c;
+  font:inherit; font-size:13px; font-weight:650; cursor:pointer;
+}
+.study-schedule-topbar button.is-done { font-weight:800; }
+.study-schedule-topbar button:disabled { opacity:.38; cursor:not-allowed; }
+.study-schedule-screen h1 {
+  margin:0 2px 4px; color:#fff; font-size:26px; line-height:1.12;
+  font-weight:800; letter-spacing:-.035em;
+}
+.study-schedule-intro { margin:0 2px 20px; max-width:330px; color:#999; font-size:12px; line-height:1.45; }
+.study-weekday-picker { display:flex; align-items:center; justify-content:space-between; gap:6px; margin:0 0 16px; }
+.study-weekday {
+  position:relative; display:grid; place-items:center; flex:0 0 38px; width:38px; height:38px;
+  padding:0; border:1px solid transparent; border-radius:50%; background:#202023; color:#f4f4f4;
+  font:inherit; font-size:12px; font-weight:750; cursor:pointer; touch-action:manipulation;
+}
+.study-weekday.is-selected { border-color:#fff; background:#fff; color:#111; }
+.study-weekday.is-today:not(.is-selected)::after {
+  position:absolute; bottom:3px; width:4px; height:4px; border-radius:50%; background:#a3ff3c; content:"";
+}
+.study-weekday i { position:absolute; bottom:3px; width:4px; height:4px; border-radius:50%; background:#a3ff3c; }
+.study-weekday.is-selected i { background:#141414; }
+.study-weekday.is-off:not(.is-selected) { color:#777; }
+.study-day-summary { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 2px 12px; }
+.study-day-summary strong { color:#fff; font-size:15px; font-weight:750; }
+.study-day-summary span { color:#aaa; font-size:11px; text-align:right; }
+.study-day-off-row {
+  display:flex; align-items:center; justify-content:space-between; min-height:42px;
+  margin:0 0 12px; padding:0 12px; border:1px solid #262626; border-radius:14px;
+  background:#101012; color:#f4f4f4; font-size:13px; font-weight:650;
+}
+.study-switch { position:relative; display:inline-flex; width:42px; height:24px; cursor:pointer; }
+.study-switch input { position:absolute; width:1px; height:1px; opacity:0; }
+.study-switch i { position:absolute; inset:0; border-radius:20px; background:#39393d; transition:background .16s ease; }
+.study-switch i::after { position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; content:""; transition:transform .16s ease; }
+.study-switch input:checked+i { background:#a3ff3c; }
+.study-switch input:checked+i::after { transform:translateX(18px); background:#141414; }
+.study-switch input:focus-visible+i { outline:2px solid #fff; outline-offset:3px; }
+.study-editor-timeline {
+  position:relative; height:46px; overflow:hidden; border:1px solid #262626; border-radius:12px;
+  background:#101012; touch-action:none; user-select:none; -webkit-user-select:none;
+}
+.study-editor-block {
+  position:absolute; top:5px; bottom:5px; min-width:3px; padding:0; border:0; border-radius:8px;
+  background:#a3ff3c; cursor:pointer; touch-action:none;
+}
+.study-editor-block.is-selected { outline:2px solid #fff; outline-offset:1px; z-index:2; }
+.study-editor-block.has-error { background:#ff6262; }
+.study-editor-drag-range { position:absolute; z-index:3; top:3px; bottom:3px; border:2px dashed #fff; border-radius:7px; background:#a3ff3c55; pointer-events:none; }
+.study-editor-ticks { display:flex; justify-content:space-between; margin:5px 1px 0; color:#777; font-size:9px; font-variant-numeric:tabular-nums; }
+.study-schedule-hint { margin:8px 3px 14px; color:#999; font-size:10px; line-height:1.4; }
+.study-interval-edit-list { overflow:hidden; border-radius:13px; background:#101012; }
+.study-interval-edit-item {
+  position:relative; display:flex; align-items:center; gap:7px; min-height:49px; padding:8px 11px;
+  border-bottom:1px solid #262626; background:#101012;
+}
+.study-interval-edit-item:last-child { border-bottom:0; }
+.study-interval-edit-item.is-selected { background:#19191c; }
+.study-time-input { display:block; flex:none; }
+.study-time-input input {
+  width:70px; height:32px; padding:0 7px; border:1px solid #242427; border-radius:8px;
+  background:#202023; color:#fff; font:inherit; font-size:14px; font-weight:750;
+  font-variant-numeric:tabular-nums; text-align:center; color-scheme:dark;
+}
+.study-time-arrow { color:#777; font-size:14px; }
+.study-interval-duration { flex:1; min-width:0; color:#999; font-size:10px; text-align:right; white-space:nowrap; }
+.study-interval-delete { width:28px; height:30px; flex:none; border:0; background:transparent; color:#ff4141; font-size:20px; line-height:1; cursor:pointer; }
+.study-interval-validation { flex-basis:100%; margin:-2px 0 1px; color:#ff8585; font-size:10px; }
+.study-interval-empty-row { margin:0; padding:14px; color:#999; font-size:12px; }
+.study-schedule-actions { overflow:hidden; margin-top:10px; border-radius:13px; background:#101012; }
+.study-schedule-actions button {
+  display:block; width:100%; min-height:42px; padding:10px 12px; border:0; border-bottom:1px solid #262626;
+  background:transparent; color:#a3ff3c; text-align:left; font:inherit; font-size:12px; font-weight:650; cursor:pointer;
+}
+.study-schedule-actions button:last-child { border-bottom:0; }
+.study-schedule-weekly-total { margin:10px 3px 0; color:#aaa; font-size:10px; }
+.study-schedule-off-note { margin:12px 2px; color:#999; font-size:12px; line-height:1.5; }
+.study-grace-setting { margin-top:14px; padding:11px 12px; border:1px solid #262626; border-radius:12px; background:#101012; }
+.study-grace-setting summary { display:flex; align-items:center; justify-content:space-between; gap:10px; color:#ddd; font-size:11px; font-weight:650; cursor:pointer; list-style:none; }
+.study-grace-setting summary::-webkit-details-marker { display:none; }
+.study-grace-setting summary::after { color:#a3ff3c; content:"+"; font-size:17px; }
+.study-grace-setting[open] summary::after { content:"−"; }
+.study-grace-setting summary span { color:#999; font-size:10px; font-weight:500; text-align:right; }
+.study-grace-setting label { display:block; margin:12px 0 5px; color:#aaa; font-size:11px; }
+.study-grace-setting select { width:100%; min-height:38px; padding:7px 9px; border:1px solid #333; border-radius:8px; background:#202023; color:#fff; font:inherit; font-size:12px; }
+.study-grace-setting p { margin:8px 0 0; color:#999; font-size:10px; line-height:1.45; }
+.study-schedule-error,.study-schedule-notice { margin:12px 2px 0; padding:10px 11px; border-radius:9px; font-size:11px; line-height:1.45; }
+.study-schedule-error { background:#351b1b; color:#ffaaaa; }
+.study-schedule-notice { background:#1d2a17; color:#c4ff9a; }
+.study-copy-overlay {
+  position:fixed; z-index:1210; inset:0; display:flex; align-items:flex-end; justify-content:center;
+  padding:12px; background:#000a; backdrop-filter:blur(8px);
+}
+.study-copy-sheet {
+  width:min(100%,406px); padding:20px 16px max(18px,env(safe-area-inset-bottom));
+  border:1px solid #303034; border-radius:24px; background:#19191c; color:#fff;
+  box-shadow:0 18px 60px #0009;
+}
+.study-copy-sheet h2 { margin:0 0 6px; font-size:19px; letter-spacing:-.02em; }
+.study-copy-sheet>p { margin:0 0 15px; color:#999; font-size:11px; }
+.study-copy-days { display:flex; gap:8px; margin-bottom:17px; }
+.study-copy-days button {
+  display:flex; flex:1; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  min-width:0; min-height:58px; border:1px solid #35353a; border-radius:12px; background:#222226; color:#fff; cursor:pointer;
+}
+.study-copy-days button.is-selected { border-color:#a3ff3c; background:#29351e; color:#a3ff3c; }
+.study-copy-days button span { font-size:14px; font-weight:750; }
+.study-copy-days button small { color:#999; font-size:8px; }
+.study-copy-confirm,.study-copy-cancel {
+  width:100%; min-height:43px; border:0; border-radius:999px; font:inherit; font-size:13px; font-weight:750; cursor:pointer;
+}
+.study-copy-confirm { background:#a3ff3c; color:#111; }
+.study-copy-confirm:disabled { opacity:.35; cursor:not-allowed; }
+.study-copy-cancel { margin-top:7px; background:transparent; color:#aaa; }
+.study-interval-home-notice { max-width:430px; margin:8px auto; padding:0 8px; color:#aaa; font-size:11px; }
+@media (max-width:360px) {
+  .study-schedule-screen { padding-right:11px; padding-left:11px; }
+  .study-weekday { flex-basis:35px; width:35px; height:35px; }
+  .study-time-input input { width:65px; font-size:13px; }
+  .study-interval-edit-item { gap:5px; padding-right:8px; padding-left:8px; }
+  .study-interval-duration { font-size:9px; }
+}
+@media (min-width:700px) {
+  .study-schedule-screen { border-right:1px solid #262626; border-left:1px solid #262626; }
+}
