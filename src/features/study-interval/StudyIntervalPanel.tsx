@@ -68,6 +68,8 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
     setError(null);
     void (async () => {
       try {
+        // Pull the signed-in account schedule first; offline errors preserve local data.
+        await syncStudySchedule(userId);
         const record = await getWeeklyStudySchedule(userId);
         if (cancelled) return;
         if (record) {
