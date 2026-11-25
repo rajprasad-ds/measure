@@ -117,17 +117,21 @@ export async function getOrCreateStudyDaySnapshot(
     if (existing) return existing;
 
     const weekly = await database.weeklySchedules.get(userId);
-    if (!weekly || weekly.ownerUserId !== userId) return null;
-
+    const ownedWeekly = weekly?.ownerUserId === userId ? weekly : undefined;
     const weekday = getWeekday(now);
-    const daySchedule = weekly.schedule[weekday];
+    // If no recurring schedule exists when this local day is first observed,
+    // freeze it as OFF. A schedule created later in the day starts tomorrow.
+    const daySchedule = ownedWeekly?.schedule[weekday] ?? {
+      off: true,
+      intervals: [],
+    };
     const snapshot: StudyDaySnapshotRecord = {
       id,
       ownerUserId: userId,
       dateKey,
       weekday,
       schedule: structuredClone(daySchedule),
-      timezone: weekly.timezone || currentTimezone(),
+      timezone: ownedWeekly?.timezone || currentTimezone(),
       capturedAt: now.toISOString(),
     };
     await database.studyDaySnapshots.add(snapshot);
