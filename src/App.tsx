@@ -269,7 +269,7 @@ function App() {
     const candidateIds = Array.from(candidateImageIds).filter((id) => !referencedImageIds.has(id));
     if (candidateIds.length === 0) return;
     const rows = await database.localImages.bulkGet(candidateIds);
-    const deletableIds = candidateIds.filter((id, index) =>
+    const deletableIds = candidateIds.filter((_, index) =>
       rows[index]?.ownerUserId === ownerUserId &&
       ["local", "pending", "failed"].includes(rows[index]!.status),
     );
