@@ -615,7 +615,7 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
         aria-label="Open study schedule editor"
       >
         <span className="study-interval-home-heading">
-          <strong>{activeInterval ? `${leftLabel} left` : todaySchedule?.off ? "Day off" : "No active interval"}</strong>
+          <strong>{activeInterval ? `${leftLabel} left` : todaySchedule?.off ? "Today is locked as OFF" : "No active interval"}</strong>
           <span><b>{spentLabel}</b> spent <i aria-hidden="true">›</i></span>
         </span>
         <span className="study-interval-home-tracks">
@@ -623,10 +623,10 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
             <span className="study-interval-no-tracks">
               {todaySchedule?.off
                 ? !hasSavedSchedule
-                  ? "Today's first-use schedule is OFF. Set your weekly hours; they begin tomorrow."
+                  ? "No weekly hours existed when today began, so today was frozen as OFF. Set hours to preview a working day from tomorrow."
                   : !schedule[todayWeekday].off
-                    ? "Today's OFF schedule is already locked. Your new weekly hours begin tomorrow."
-                    : "No study intervals scheduled for today."
+                    ? "Today's OFF snapshot is already locked. Your edited weekly hours begin tomorrow."
+                    : "This weekday is marked OFF in your weekly schedule. Edit it to add study hours."
                 : hasSavedSchedule
                   ? "No study intervals today"
                   : "Set your weekly study schedule"}
