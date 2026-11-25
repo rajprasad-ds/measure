@@ -233,6 +233,50 @@ function App() {
     await database.activeSession.delete("current");
     setPersistenceError(null);
   }
+  async function discardExpiredPendingSession(pendingSession: ActiveSession) {
+    // Remove the pending session snapshot, then clean only its unreferenced,
+    // account-owned local image drafts. Never cascade into independently saved cards.
+    await clearActiveSessionSnapshot();
+    const candidateImageIds = new Set<string>();
+    Object.values(pendingSession.feedback).forEach((feedback) => {
+      const questionDraft = feedback.questionDraft;
+      const smarterDraft = feedback.smarterApproachDraft;
+      const factDraft = feedback.factDraft;
+      [
+        questionDraft?.promptImageId,
+        questionDraft?.solutionImageId,
+        ...(questionDraft?.solutionImageIds ?? []),
+        smarterDraft?.solutionImageId,
+        ...(smarterDraft?.solutionImageIds ?? []),
+        factDraft?.promptImageId,
+        factDraft?.contentImageId,
+      ].forEach((id) => { if (id) candidateImageIds.add(id); });
+    });
+    if (candidateImageIds.size === 0) return;
+    const [questions, facts] = await Promise.all([
+      database.questions.toArray(),
+      database.factCards.toArray(),
+    ]);
+    const referencedImageIds = new Set<string>();
+    questions.forEach((card) => [
+      card.promptImageId, card.solutionImageId, card.smarterApproachImageId,
+      ...(card.solutionImageIds ?? []),
+    ].forEach((id) => { if (id) referencedImageIds.add(id); }));
+    facts.forEach((card) => [card.promptImageId, card.contentImageId]
+      .forEach((id) => { if (id) referencedImageIds.add(id); }));
+    const candidateIds = Array.from(candidateImageIds).filter((id) => !referencedImageIds.has(id));
+    if (candidateIds.length === 0) return;
+    const rows = await database.localImages.bulkGet(candidateIds);
+    const deletableIds = candidateIds.filter((id, index) =>
+      rows[index]?.ownerUserId === authUser?.id &&
+      ["local", "pending", "failed"].includes(rows[index]!.status),
+    );
+    if (deletableIds.length === 0) return;
+    await database.transaction("rw", database.localImages, database.localImageBlobs, async () => {
+      await database.localImages.bulkDelete(deletableIds);
+      await database.localImageBlobs.bulkDelete(deletableIds);
+    });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -333,7 +377,7 @@ function App() {
           : null;
         if (cancelled) return;
         if (isFeedbackExpired(deadlineAt, Date.now())) {
-          await database.activeSession.delete("current");
+          await discardExpiredPendingSession(recoveryCandidate.session);
           if (!cancelled) {
             setRecoveryCandidate(null);
             setStudyIntervalError("The feedback deadline has passed. The unfinished practice session was discarded. Independently saved fact cards were kept.");
@@ -1433,7 +1477,7 @@ function App() {
   async function saveSession() {
     if (!session) return;
     if (isFeedbackExpired(session.feedbackDeadlineAt, Date.now())) {
-      await clearActiveSessionSnapshot();
+      await discardExpiredPendingSession(session);
       setSession(null);
       setStudyIntervalError("The feedback deadline has passed. This unfinished practice session was discarded; independently saved fact cards were kept.");
       return;
