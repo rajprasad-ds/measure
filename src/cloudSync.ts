@@ -26,6 +26,7 @@ type CloudSession = {
   syllabus_exam: string | null;
   started_at: string;
   ended_at: string;
+  feedback_submitted_at: string | null;
   planned_duration_minutes: number;
   status: "completed" | "ended_early";
   session_kind: "practice" | "question_revision";
@@ -241,6 +242,7 @@ function toCloudSession(
     syllabus_exam: record.syllabusExam ?? null,
     started_at: record.startedAt,
     ended_at: record.endedAt,
+    feedback_submitted_at: record.feedbackSubmittedAt ?? null,
     planned_duration_minutes: record.plannedDurationMinutes,
     status: record.status,
     session_kind: record.sessionKind ?? "practice",
@@ -271,6 +273,7 @@ function fromCloudSession(
     syllabusExam: row.syllabus_exam ?? undefined,
     startedAt: row.started_at,
     endedAt: row.ended_at,
+    ...(row.feedback_submitted_at ? { feedbackSubmittedAt: row.feedback_submitted_at } : {}),
     plannedDurationMinutes: row.planned_duration_minutes,
     status: row.status,
     sessionKind: row.session_kind ?? "practice",
@@ -760,6 +763,13 @@ export async function syncAccountSessions(
     if (error) {
       throw new Error(`Could not sync a session: ${error.message}`);
     }
+    if (record.feedbackSubmittedAt) {
+      const { error: timestampError } = await client.from("sessions")
+        .update({ feedback_submitted_at: record.feedbackSubmittedAt })
+        .eq("id", record.id)
+        .eq("user_id", user.id);
+      if (timestampError) throw new Error(`Could not sync the feedback submission timestamp: ${timestampError.message}`);
+    }
     await database.sessions.update(record.id, { syncStatus: "synced" });
     onSessionProgress?.({ ...record, syncStatus: "synced" }, "synced");
   }
@@ -802,7 +812,7 @@ export async function syncAccountSessions(
   const { data: sessionData, error: sessionError } = await client
     .from("sessions")
     .select(
-      "id,user_id,subject_id,subject_name,chapter_id,chapter_name,syllabus_exam,started_at,ended_at,planned_duration_minutes,status,session_kind,right_count,wrong_count,couldnt_solve_count,timed_question_count,active_time_ms,avg_time_per_question_ms",
+      "id,user_id,subject_id,subject_name,chapter_id,chapter_name,syllabus_exam,started_at,ended_at,feedback_submitted_at,planned_duration_minutes,status,session_kind,right_count,wrong_count,couldnt_solve_count,timed_question_count,active_time_ms,avg_time_per_question_ms",
     )
     .eq("user_id", user.id)
     .order("started_at", { ascending: false })
