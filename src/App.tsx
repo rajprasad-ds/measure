@@ -755,7 +755,7 @@ function App() {
   }, [authUser]);
 
   useEffect(() => {
-    if (!session || session.phase !== "feedback") return;
+    if (!session || session.sessionKind !== "practice" || session.phase !== "feedback") return;
     const timer = window.setInterval(() => setNow(Date.now()), 1_000);
     return () => window.clearInterval(timer);
   }, [session?.phase]);
