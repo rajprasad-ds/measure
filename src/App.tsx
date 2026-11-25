@@ -2310,13 +2310,6 @@ function App() {
   };
   const recalledFacts = factReviews.filter((review) => review.outcome === "recalled").length;
   const forgottenFacts = factReviews.filter((review) => review.outcome === "forgot").length;
-  const totalSyllabusChapters = jeeSyllabus.subjects.reduce((sum, subject) => sum + subject.chapters.length, 0);
-  const coveredChapterIds = new Set(savedSessions
-    .filter((record) => record.sessionKind !== "question_revision" && record.chapterId)
-    .map((record) => record.chapterId));
-  const syllabusCoverage = totalSyllabusChapters
-    ? Math.round((coveredChapterIds.size / totalSyllabusChapters) * 100)
-    : null;
   const practiceDayKeys = Array.from(new Set(savedSessions
     .filter((record) => record.sessionKind !== "question_revision")
     .map((record) => new Date(record.endedAt).toLocaleDateString("en-CA")))).sort();
