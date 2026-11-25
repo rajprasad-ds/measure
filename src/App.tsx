@@ -253,7 +253,8 @@ function App() {
         factDraft?.contentImageId,
       ].forEach((id) => { if (id) candidateImageIds.add(id); });
     });
-    if (candidateImageIds.size === 0) return;
+    if (!authUser || candidateImageIds.size === 0) return;
+    const ownerUserId = authUser.id;
     const [questions, facts] = await Promise.all([
       database.questions.toArray(),
       database.factCards.toArray(),
@@ -269,7 +270,7 @@ function App() {
     if (candidateIds.length === 0) return;
     const rows = await database.localImages.bulkGet(candidateIds);
     const deletableIds = candidateIds.filter((id, index) =>
-      rows[index]?.ownerUserId === authUser?.id &&
+      rows[index]?.ownerUserId === ownerUserId &&
       ["local", "pending", "failed"].includes(rows[index]!.status),
     );
     if (deletableIds.length === 0) return;
@@ -1762,7 +1763,6 @@ function App() {
           if (isFeedbackExpired(session.feedbackDeadlineAt, Date.now())) {
             throw new Error("The feedback deadline passed before the session could be committed.");
           }
-          record.feedbackSubmittedAt = new Date().toISOString();
           await database.sessions.add(record);
           if (draftQuestions.length) await database.questions.bulkAdd(draftQuestions);
           if (draftFacts.length) await database.factCards.bulkAdd(draftFacts);
@@ -1806,6 +1806,11 @@ function App() {
             await database.questions.put(updated);
             updatedQuestionCards.set(questionId, updated);
           }
+          if (isFeedbackExpired(session.feedbackDeadlineAt, Date.now())) {
+            throw new Error("The feedback deadline passed before the session could be committed.");
+          }
+          record.feedbackSubmittedAt = new Date().toISOString();
+          await database.sessions.update(record.id, { feedbackSubmittedAt: record.feedbackSubmittedAt });
           await database.activeSession.delete("current");
         },
       );
