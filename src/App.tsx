@@ -2281,28 +2281,149 @@ function App() {
     );
   }
 
+  const completedAttempts = attemptRecords.filter((attempt) => attempt.result !== "wrong_question");
+  const rightAttempts = completedAttempts.filter((attempt) => attempt.result === "right").length;
+  const wrongAttempts = completedAttempts.filter((attempt) => attempt.result === "wrong").length;
+  const stuckAttempts = completedAttempts.filter((attempt) => attempt.result === "couldnt_solve").length;
+  const totalAttempts = completedAttempts.length;
+  const accuracy = totalAttempts ? Math.round((rightAttempts / totalAttempts) * 100) : null;
+  const averageAttemptMs = totalAttempts
+    ? Math.round(completedAttempts.reduce((sum, attempt) => sum + attempt.timeMs, 0) / totalAttempts)
+    : null;
+  const recalledFacts = factReviews.filter((review) => review.outcome === "recalled").length;
+  const forgottenFacts = factReviews.filter((review) => review.outcome === "forgot").length;
+  const todayKey = new Date().toLocaleDateString();
+  const todaySessions = savedSessions.filter((record) =>
+    new Date(record.endedAt).toLocaleDateString() === todayKey &&
+    record.sessionKind !== "question_revision"
+  );
+  const formatAverage = (milliseconds: number | null) => milliseconds === null
+    ? "—"
+    : formatStopwatch(milliseconds);
+
   return (
-    <main className="setup-shell">
-      <section className="setup-card" aria-labelledby="app-title">
-        <p className="eyebrow">JEE PRACTICE</p>
-        <h1 id="app-title">Set up your session.</h1>
-        <p className="intro">
-          Choose what you’re practicing. Your session opens in a landscape-style
-          view.
-        </p>
+    <main className="setup-shell measure-home">
+      <section className="setup-card measure-home-card" aria-labelledby="app-title">
+        <header className="measure-home-heading">
+          <div>
+            <p className="eyebrow">MEASURE · YOUR PRACTICE</p>
+            <h1 id="app-title">Today</h1>
+          </div>
+          <span className="measure-date">{new Date().toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}</span>
+        </header>
 
         <StudyIntervalPanel userId={authUser.id} sessions={savedSessions} />
+
+        <section className="measure-insights" aria-label="Practice overview">
+          <div className="measure-insight-pair">
+            <article className="measure-stat measure-stat-slow">
+              <strong>{formatAverage(averageAttemptMs)}</strong>
+              <span>Average time per question</span>
+            </article>
+            <article className="measure-stat measure-stat-good">
+              <strong>{accuracy === null ? "—" : `${accuracy}%`}</strong>
+              <span>Accuracy</span>
+            </article>
+          </div>
+          <div className="measure-insight-main">
+            <div className="measure-count-block">
+              <span className="measure-overline">Questions practised</span>
+              <strong>{totalAttempts.toLocaleString()}</strong>
+              <div className="measure-result-breakdown">
+                <span className="is-right">{rightAttempts} <small>Right</small></span>
+                <span className="is-wrong">{wrongAttempts} <small>Wrong</small></span>
+                <span>{stuckAttempts} <small>Couldn't solve</small></span>
+              </div>
+            </div>
+            <div className="measure-insight-divider" />
+            <div className="measure-count-block">
+              <span className="measure-overline">Fact reviews</span>
+              <strong>{(recalledFacts + forgottenFacts).toLocaleString()}</strong>
+              <div className="measure-result-breakdown">
+                <span className="is-right">{recalledFacts} <small>Recalled</small></span>
+                <span className="is-wrong">{forgottenFacts} <small>Forgot</small></span>
+              </div>
+            </div>
+          </div>
+          <p className="measure-insight-footnote">Totals from your saved practice and revision records.</p>
+        </section>
 
         <section className="home-sync-card" aria-label="Sync status">
           <button type="button" className="home-sync-open" onClick={() => setActiveTab("sync")}>
             <span className="home-sync-icon" aria-hidden="true">↻</span>
             <span className="home-sync-copy">
               <strong>{!authUser ? "Back up your practice" : syncStatus === "syncing" ? "Syncing your data…" : syncStatus === "error" ? "Sync needs attention" : pendingPhotoCount > 0 ? "Photos waiting for backup" : syncStatus === "synced" ? "Everything is backed up" : "Check your backup"}</strong>
-              <span>{!authUser ? "See what stays on this device and how to back it up" : pendingPhotoCount > 0 ? `${pendingPhotoCount} photo${pendingPhotoCount === 1 ? "" : "s"} waiting · View sync details` : "View sessions, cards and photo backup"}</span>
+              <span>{!authUser ? "Your data stays on this device until you connect a backup" : pendingPhotoCount > 0 ? `${pendingPhotoCount} photo${pendingPhotoCount === 1 ? "" : "s"} waiting · View sync details` : "View sessions, cards and photo backup"}</span>
             </span>
             <span className="home-sync-chevron" aria-hidden="true">›</span>
           </button>
         </section>
+
+        <section className="measure-create-card" aria-labelledby="measure-create-title">
+          <div>
+            <p className="measure-overline">READY WHEN YOU ARE</p>
+            <h2 id="measure-create-title">Start a new<br />practice session</h2>
+            <p>Choose a subject, chapter and time. Pick up where your next study interval allows.</p>
+          </div>
+          <form className="setup-form" onSubmit={startSession}>
+            {studyIntervalError && <p className="database-error" role="alert">{studyIntervalError}</p>}
+            <SearchSelect
+              label="Subject"
+              value={setup.subjectId}
+              options={jeeSyllabus.subjects.map((subject) => ({ id: subject.id, label: subject.name }))}
+              placeholder="Search subjects"
+              emptyMessage="No subjects match."
+              onChange={(subjectId) => setSetup((current) => ({
+                ...current, subjectId: subjectId as SyllabusSubjectId, chapterId: "",
+              }))}
+            />
+            <SearchSelect
+              label="Chapter"
+              value={setup.chapterId}
+              options={setupSubject?.chapters.map((chapter) => ({
+                id: chapter.id, label: chapter.name, detail: `Unit ${chapter.unit}`,
+              })) ?? []}
+              placeholder="Search chapters"
+              emptyMessage="No chapters match. Try another search."
+              onChange={(chapterId) => updateSetup("chapterId", chapterId)}
+            />
+            <fieldset className="duration-field">
+              <legend>Duration</legend>
+              <div className="duration-options">
+                {DURATIONS.map((duration) => (
+                  <button
+                    className={setup.duration === duration ? "duration-option selected" : "duration-option"}
+                    key={duration}
+                    type="button"
+                    aria-pressed={setup.duration === duration}
+                    onClick={() => updateSetup("duration", duration)}
+                  >
+                    {duration} min
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <label>
+              Starting question number
+              <input
+                type="number" min="1" step="1" value={setup.startingQuestion}
+                onChange={(event) => updateSetup(
+                  "startingQuestion",
+                  event.target.value === "" ? 0 : Number(event.target.value),
+                )}
+                required
+              />
+            </label>
+            <button
+              className="start-button" type="submit"
+              disabled={!setup.chapterId || setup.startingQuestion < 1 || isStartingSession}
+            >
+              {isStartingSession ? "Checking schedule…" : "Start session"}
+              <span aria-hidden="true">→</span>
+            </button>
+          </form>
+        </section>
+
         <AccountPanel
           configured={supabaseConfigured}
           email={authUser?.email}
@@ -2315,130 +2436,35 @@ function App() {
           onSignOut={() => void signOut()}
           onImportLocalSessions={() => void importLocalSessions()}
         />
-
         <p className="storage-note">
           {authUser
             ? "Sessions are stored locally first and synced securely when online."
             : "Sessions are saved on this device. Sign in to enable cloud backup and sync."}
         </p>
-        {persistenceError && (
-          <p className="database-error" role="alert">
-            {persistenceError}
-          </p>
-        )}
-        {databaseError && (
-          <p className="database-error" role="alert">
-            {databaseError}
-          </p>
-        )}
+        {persistenceError && <p className="database-error" role="alert">{persistenceError}</p>}
+        {databaseError && <p className="database-error" role="alert">{databaseError}</p>}
 
-        <form className="setup-form" onSubmit={startSession}>
-          {studyIntervalError && <p className="database-error" role="alert">{studyIntervalError}</p>}
-          <SearchSelect
-            label="Subject"
-            value={setup.subjectId}
-            options={jeeSyllabus.subjects.map((subject) => ({
-              id: subject.id,
-              label: subject.name,
-            }))}
-            placeholder="Search subjects"
-            emptyMessage="No subjects match."
-            onChange={(subjectId) =>
-              setSetup((current) => ({
-                ...current,
-                subjectId: subjectId as SyllabusSubjectId,
-                chapterId: "",
-              }))
-            }
-          />
-
-          <SearchSelect
-            label="Chapter"
-            value={setup.chapterId}
-            options={
-              setupSubject?.chapters.map((chapter) => ({
-                id: chapter.id,
-                label: chapter.name,
-                detail: `Unit ${chapter.unit}`,
-              })) ?? []
-            }
-            placeholder="Search chapters"
-            emptyMessage="No chapters match. Try another search."
-            onChange={(chapterId) => updateSetup("chapterId", chapterId)}
-          />
-
-          <fieldset className="duration-field">
-            <legend>Duration</legend>
-            <div className="duration-options">
-              {DURATIONS.map((duration) => (
-                <button
-                  className={
-                    setup.duration === duration ? "duration-option selected" : "duration-option"
-                  }
-                  key={duration}
-                  type="button"
-                  aria-pressed={setup.duration === duration}
-                  onClick={() => updateSetup("duration", duration)}
-                >
-                  {duration} min
-                </button>
-              ))}
-            </div>
-          </fieldset>
-
-          <label>
-            Starting question number
-            <input
-              type="number"
-              min="1"
-              step="1"
-              value={setup.startingQuestion}
-              onChange={(event) =>
-                updateSetup(
-                  "startingQuestion",
-                  event.target.value === "" ? 0 : Number(event.target.value),
-                )
-              }
-              required
-            />
-          </label>
-
-          <button
-            className="start-button"
-            type="submit"
-            disabled={!setup.chapterId || setup.startingQuestion < 1 || isStartingSession}
-          >
-            {isStartingSession ? "Checking schedule…" : "Start session"}
-          </button>
-        </form>
-
-        <section
-          className="saved-sessions"
-          aria-labelledby="saved-sessions-title"
-        >
-          <h2 id="saved-sessions-title">Recent sessions</h2>
+        <section className="saved-sessions measure-today-history" aria-labelledby="saved-sessions-title">
+          <div className="measure-section-heading">
+            <div><p className="measure-overline">YOUR DAY</p><h2 id="saved-sessions-title">Today's practice history</h2></div>
+            <button type="button" onClick={() => setActiveTab("history")}>See all <span aria-hidden="true">›</span></button>
+          </div>
           {isLoadingSessions ? (
             <p className="history-empty">Loading saved sessions…</p>
-          ) : savedSessions.length === 0 ? (
-            <p className="history-empty">Your saved sessions will appear here.</p>
+          ) : todaySessions.length === 0 ? (
+            <p className="history-empty">Your completed sessions for today will appear here.</p>
           ) : (
             <ul>
-              {savedSessions.slice(0, 5).map((record) => {
-                const questionCount =
-                  record.rightCount +
-                  record.wrongCount +
-                  record.couldntSolveCount;
+              {todaySessions.slice(0, 4).map((record) => {
+                const questionCount = record.rightCount + record.wrongCount + record.couldntSolveCount;
                 return (
                   <li key={record.id}>
                     <div className="history-session-title">
                       <strong>{record.chapter}</strong>
-                      <span>
-                        {record.subject} ·{" "}
-                        {new Date(record.endedAt).toLocaleDateString()}
-                      </span>
+                      <span>{record.subject} · {record.plannedDurationMinutes} min planned</span>
                     </div>
                     <div className="history-session-stats">
-                      <span>{questionCount} timed</span>
+                      <span>{questionCount} attempted</span>
                       <span>{record.rightCount} right</span>
                       <span>{formatStopwatch(record.activeTimeMs)} active</span>
                     </div>
@@ -2452,6 +2478,7 @@ function App() {
       </section>
     </main>
   );
+}
 }
 
 export default App;
