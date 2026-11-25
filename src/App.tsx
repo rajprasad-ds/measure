@@ -258,6 +258,32 @@ function App() {
       database.questions.toArray(),
       database.factCards.toArray(),
     ]);
+    // A fact card is independent of the practice session that prompted it.
+    // Detach its optional attempt provenance when that attempt is discarded.
+    const discardedAttemptIds = new Set(
+      Object.values(pendingSession.feedback)
+        .map((feedback) => feedback.attemptId)
+        .filter((id): id is string => Boolean(id)),
+    );
+    const factsToDetach = facts.filter((card) =>
+      card.ownerUserId === authUser.id &&
+      Boolean(card.createdFromAttemptId && discardedAttemptIds.has(card.createdFromAttemptId)),
+    );
+    if (factsToDetach.length > 0) {
+      const detachedAt = new Date().toISOString();
+      await database.transaction("rw", database.factCards, async () => {
+        for (const card of factsToDetach) {
+          const detached: FactCard = {
+            ...card,
+            syncStatus: "pending",
+            updatedAt: detachedAt,
+          };
+          delete detached.createdFromAttemptId;
+          await database.factCards.put(detached);
+        }
+      });
+      await refreshCardData();
+    }
     const referencedImageIds = new Set<string>();
     questions.forEach((card) => [
       card.promptImageId, card.solutionImageId, card.smarterApproachImageId,
