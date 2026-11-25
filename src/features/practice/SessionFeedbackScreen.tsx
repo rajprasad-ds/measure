@@ -222,7 +222,7 @@ export default function SessionFeedbackScreen({
   }, [questionNumber, questionCard?.id, questionCard?.solutionImageIds?.length]);
   const linkedFactIds = new Set([
     ...links
-      .filter((link) => link.questionId === feedback?.questionId && !link.deletedAt)
+      .filter((link) => link.questionId === feedback?.questionId && !link.deletedAt && !feedback?.unlinkedFactIds?.includes(link.factId))
       .map((link) => link.factId),
     ...(feedback?.linkedFactIds ?? []),
   ]);
@@ -262,7 +262,7 @@ export default function SessionFeedbackScreen({
       }),
       session.questionTimesMs[number],
       session.sessionKind,
-      links.filter((link) => link.questionId === item.questionId && !link.deletedAt).length +
+      links.filter((link) => link.questionId === item.questionId && !link.deletedAt && !item.unlinkedFactIds?.includes(link.factId)).length +
         (item.linkedFactIds?.length ?? 0) + (item.factDraft ? 1 : 0),
     );
   });
