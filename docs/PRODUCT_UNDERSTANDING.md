@@ -1313,3 +1313,25 @@ No Supabase migration, backend implementation, UI implementation or test complet
 - Timezone changes during a day and multi-device simultaneous edits are not fully serialized by a server-side compare-and-swap operation. The current reconciliation uses timestamps; this is a known limitation to address before claiming conflict-proof multi-device editing.
 - Automated tests cover schedule shape, OFF-day consistency, required intervals and overlap validation. Dexie migration/reload behavior and Supabase RLS must still be verified in the local app and Supabase project.
 - No Supabase migration has been applied to the live project from this repository change. The owner must run the new SQL migration in Supabase SQL Editor before cloud schedule sync can work.
+
+
+## Step 3 — weekly schedule editor and Home timeline
+
+Implemented on `phase-1`:
+
+- Added `StudyIntervalPanel` to the signed-in Home screen, above the backup status card.
+- Added a weekly editor for Monday–Sunday, with OFF days, multiple same-day intervals, 24-hour time inputs, and add/remove controls.
+- Schedule validation is enforced by the repository before local persistence: valid times, end after start, unique interval IDs, and no overlaps. Adjacent intervals remain valid.
+- Saving writes to IndexedDB first and then starts best-effort Supabase schedule sync. The panel also reconciles the account schedule when it loads.
+- The Home timeline reads the immutable local-day snapshot. Editing the recurring schedule after the snapshot has been created does not rewrite today's intervals.
+- Green timeline sections are positioned from the actual start/end timestamps of saved normal question-practice sessions. They are not cumulative fill; unused gaps remain visible between sessions.
+- Only saved normal question-practice sessions are represented and counted. Question-revision sessions are excluded. Since session records are created by the existing feedback-save flow, an unsubmitted session does not appear as committed practice activity.
+- The timeline refreshes its current-time marker every 30 seconds.
+
+Not yet implemented in Step 3:
+
+- Practice start is not yet blocked outside a scheduled interval.
+- An active practice session is not yet automatically ended at an interval boundary.
+- Feedback expiry/grace-period cleanup is not implemented.
+- The Home panel currently requires a signed-in account, consistent with the current app's authenticated Home flow.
+- Automated build/tests have not been run in this remote-edit workflow. Supabase migration and browser behavior still require local verification after the feature is complete.
