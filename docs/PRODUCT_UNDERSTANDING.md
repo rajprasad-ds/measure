@@ -1371,6 +1371,7 @@ Implemented on `phase-1`:
 - For a normal question-practice session, the deadline is calculated from the end of that day's **final scheduled interval**, plus the captured grace period. It is not calculated from the end of the individual practice session or the first interval.
 - The feedback screen displays the deadline. Feedback can be completed after study intervals close, but not after the deadline.
 - Submission checks the deadline before preparing the save and again inside the same IndexedDB transaction that writes the session, attempts, question-card updates and links. A session receives `feedbackSubmittedAt` inside that transaction; the UI moves to the summary only after the transaction successfully resolves. Photo upload and cloud sync are post-commit work and do not determine whether feedback was submitted.
+- Question-card seen counters and fact-link additions/removals made during feedback are staged and applied only in the successful feedback transaction. An expired session therefore does not leave a question-history increment or a partially applied fact link. Independently created fact cards remain first-class records.
 - The local submission timestamp is included in the cloud session metadata and synced separately from photo upload. The migration adds `sessions.feedback_submitted_at` and `weekly_study_schedules.feedback_grace_hours`.
 - On recovery, the app resolves the original day's frozen snapshot and deadline. Expired pending feedback is discarded instead of being offered for resume. While the feedback screen is open, a local timer enforces expiry even when offline or after the scheduled intervals have ended.
 - Expiry removes only the pending active-session snapshot. It does not delete independently saved fact cards or their images, and it does not create session, attempt, question-history or revision-planning records.
@@ -1378,7 +1379,7 @@ Implemented on `phase-1`:
 
 ### Verification status and limitations
 
-- Added unit tests for deadline calculation from the final interval, 2/6/12-hour grace values, OFF days, and the inclusive deadline boundary. GitHub Actions validation run `45576861463` on commit `e82fc19bec61c1db963fd782633b1a1d9517c1ec` passed: **7 test files / 56 tests**, TypeScript check, and production Vite build.
+- Added unit tests for deadline calculation from the final interval, 2/6/12-hour grace values, OFF days, and the inclusive deadline boundary. GitHub Actions validation run `45577289189` on commit `9e8d027ea2c62b698a92433c6160b507f7f67d33` passed: **7 test files / 56 tests**, TypeScript check, and production Vite build.
 - The new Supabase migration has been committed but has **not** been applied to the live Supabase project. Apply it after the weekly schedule migration and before expecting the new grace setting or cloud submission timestamp to sync.
 - Offline expiry is based on the device clock. Clock tampering remains out of scope.
 - Expiry cleanup removes only draft image IDs found in the pending feedback snapshot when they are not referenced by any persisted question/fact card and their local image rows belong to the current account in a local, pending or failed state. It does not delete uploaded images, ambiguous/unowned images, or any independently saved fact-card image. This is targeted cleanup, not a global orphan-image sweep.
