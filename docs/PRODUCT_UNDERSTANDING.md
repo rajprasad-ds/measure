@@ -1335,3 +1335,23 @@ Not yet implemented in Step 3:
 - Feedback expiry/grace-period cleanup is not implemented.
 - The Home panel currently requires a signed-in account, consistent with the current app's authenticated Home flow.
 - Automated build/tests have not been run in this remote-edit workflow. Supabase migration and browser behavior still require local verification after the feature is complete.
+
+
+## Step 4 — enforce Study Intervals for normal question practice
+
+Implemented on `phase-1`:
+
+- Starting a normal question-practice session now requires a signed-in account and a captured schedule snapshot for the current local day.
+- A session can start only when the current timestamp falls inside one of today's scheduled intervals. OFF days and gaps between intervals are blocked with an explanation on the setup screen.
+- The selected session duration is capped at the active interval's end. If the chosen duration would extend past the interval, the interval boundary wins.
+- The existing active-session timer checks the capped `endsAt` and transitions the session into the existing feedback phase at that exact timestamp. The existing `finishSessionAt` logic closes a running question timer at that same boundary.
+- Recovery re-reads the immutable snapshot for the session's original local date and re-applies the interval boundary before resuming. If a legacy/recovered normal-practice session did not start inside a valid interval, it is closed at its start rather than allowed to continue outside the schedule.
+- Question-revision session behavior has not been changed. Fact revision is also untouched.
+- Added unit coverage for the shared practice-session cutoff calculation.
+
+Important scope boundary:
+
+- This step does not yet implement a feedback grace period, pending-feedback expiry, or discard cleanup. Feedback remains available through the existing flow until Step 5 adds the configurable deadline.
+- A user who has not configured a weekly schedule must configure one before starting normal practice.
+- The app uses the device's local date/time and the previously captured local-day snapshot. Device clock tampering and cross-device snapshot serialization remain out of scope.
+- Tests/build have not been executed in this remote-edit workflow; local browser testing and Supabase migration verification remain pending.
