@@ -111,7 +111,7 @@ export async function getOrCreateStudyDaySnapshot(
   const dateKey = getLocalDateKey(now);
   const id = `${userId}:${dateKey}`;
 
-  return database.transaction("rw", database.studyDaySnapshots, async () => {
+  return database.transaction("rw", database.studyDaySnapshots, database.weeklySchedules, async () => {
     const existing = await database.studyDaySnapshots.get(id);
     if (existing) return existing;
 
