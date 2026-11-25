@@ -2302,7 +2302,7 @@ function App() {
     : formatStopwatch(milliseconds);
 
   return (
-    <main className="setup-shell measure-home">
+    <main className="setup-shell measure-home measure-screen-enter">
       <section className="setup-card measure-home-card" aria-labelledby="app-title">
         <header className="measure-home-heading">
           <div>
