@@ -252,7 +252,7 @@ function App() {
         factDraft?.contentImageId,
       ].forEach((id) => { if (id) candidateImageIds.add(id); });
     });
-    if (!authUser || candidateImageIds.size === 0) return;
+    if (!authUser) return;
     const ownerUserId = authUser.id;
     const [questions, facts] = await Promise.all([
       database.questions.toArray(),
@@ -284,6 +284,7 @@ function App() {
       });
       await refreshCardData();
     }
+    if (candidateImageIds.size === 0) return;
     const referencedImageIds = new Set<string>();
     questions.forEach((card) => [
       card.promptImageId, card.solutionImageId, card.smarterApproachImageId,
