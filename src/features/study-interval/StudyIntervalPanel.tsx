@@ -157,7 +157,6 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
   }, [userId]);
 
   const today = useMemo(() => new Date(now), [now]);
-  const todayKey = getLocalDateKey(today);
   const todayWeekday = getWeekday(today);
   const todaySchedule = snapshot?.schedule;
   const resolvedIntervals = useMemo(
