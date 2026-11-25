@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Measure – redesign mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap">
+<style>
+:root{--bg:#141414;--card:#050505;--line:#262626;--text:#fff;--mute:#8d8d8d;--lime:#a3ff3c;--limeSoft:#bdff8a;--red:#ff3b3b;--green:#5fd35f;--blue:#34c8ff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.app{max-width:430px;margin:0 auto;padding:14px 14px 110px;min-height:100vh}
+.screen{display:none}.screen.on{display:block}
+h1{font-size:34px;letter-spacing:-.02em;margin:6px 4px 14px;font-weight:800}
+.card{background:var(--card);border-radius:28px;padding:18px;margin-bottom:14px;border:1px solid var(--line)}
+.hero{background:#121214;border-radius:34px;overflow:hidden;margin-bottom:14px;border:1px solid var(--line)}
+.band{padding:22px 20px 16px;border-bottom:1px solid #232325}
+.hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px}
+#left{font-size:30px;font-weight:700;letter-spacing:-.02em}
+.sp{font-size:15px;color:#aaa}.sp em{font-style:normal;color:var(--lime);font-weight:700}
+.tracks{display:flex;gap:10px}
+.iv{min-width:0;text-align:center}
+.tk{position:relative;height:42px;border-radius:21px;background:#232325;overflow:hidden;border:2px solid transparent}
+.tk.cur{border-color:#e6e6e6}
+.tk.fut{background:#0b0b0c;border-color:#232325}
+.tk b{position:absolute;top:0;bottom:0;background:var(--lime)}
+.tk u{position:absolute;top:0;bottom:0;width:2px;background:#fff}
+.iv span{display:block;font-size:12px;color:#666;margin-top:8px}.iv span.on{color:#fff;font-weight:700}
+.gp{border:1px solid #1f7a3a;border-radius:34px;padding:12px 26px;text-align:center;min-width:150px}
+.gp.slow{border-color:#7a2a2a}
+.gp .v{display:flex;justify-content:center;align-items:baseline;gap:6px;font-size:26px;font-weight:700;line-height:1}
+.gp .v em{font-style:normal;font-size:13px;font-weight:700}
+.gp .lb{display:block;font-size:12px;color:#aaa;margin-top:5px}
+.inner{background:#0a0a0b;position:relative;padding:22px 12px 22px}
+.pills{display:flex;gap:8px;justify-content:center;margin:2px 0 18px}
+.pill{border:2px solid var(--green);border-radius:20px;padding:6px 14px;text-align:center;font-weight:700;font-size:20px}
+.pill small{display:block;font-size:10px;font-weight:600;color:var(--mute)}
+.pill.r{border-color:var(--red)}
+.big{display:grid;grid-template-columns:1fr 1px 1fr;gap:10px;align-items:center;text-align:center}
+.big .n{font-size:68px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.big .l{font-size:12px;color:var(--mute);margin-bottom:4px}
+.big .sub{display:flex;justify-content:center;gap:12px;font-size:20px;font-weight:700;margin-top:6px}
+.big .sub small{display:block;font-size:10px;font-weight:500;color:var(--mute)}
+.vr{width:1px;height:90px;background:linear-gradient(transparent,#555,transparent)}
+.g{color:var(--green)}.r{color:var(--red)}.m{color:var(--mute)}
+.title{font-size:30px;font-weight:800;text-align:center;line-height:1.15;margin:10px 0 18px}
+.cta{display:flex;align-items:center;justify-content:space-between;background:var(--lime);color:#000;border:0;border-radius:40px;padding:7px 7px 7px 28px;font-size:26px;font-weight:800;width:100%;cursor:pointer;font-family:inherit}
+.cta .ic{width:54px;height:54px;border-radius:50%;background:var(--limeSoft);border:1px solid #6aa82e;display:grid;place-items:center;font-size:30px;font-weight:400}
+.cta.off{background:#2a2a2a;color:#666;pointer-events:none}.cta.off .ic{background:#333;border-color:#444}
+.sec{font-size:13px;color:var(--mute);text-align:center;margin:20px 0 10px;font-weight:600}
+.row{display:flex;align-items:center;gap:12px;background:#111;border:1px solid var(--line);border-radius:22px;padding:12px 14px;margin-bottom:8px}
+.row .t{flex:1;min-width:0}.row b{display:block;font-size:16px}.row span{font-size:12px;color:var(--mute)}
+.row .st{text-align:center;font-size:20px;font-weight:700}.row .st small{display:block;font-size:10px;color:var(--mute);font-weight:500}
+.sync{display:flex;align-items:center;gap:12px;border-radius:22px;padding:12px 16px;margin-bottom:14px;background:var(--card);border:1px solid var(--line);cursor:pointer;width:100%;color:inherit;font-family:inherit;text-align:left}
+.sync b{display:block;font-size:15px}.sync span{font-size:12px;color:var(--mute)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--lime);box-shadow:0 0 10px var(--lime)}
+.pick{background:var(--card);border-radius:34px;border:1px solid var(--line);overflow:hidden}
+.pick .top{background:var(--lime);color:#000;text-align:center;font-weight:800;font-size:15px;padding:12px}
+.pick h2{color:var(--lime);text-align:center;font-size:26px;margin:14px 0 6px}
+.opt{display:flex;align-items:center;justify-content:space-between;width:calc(100% - 20px);margin:4px 10px;background:none;border:0;color:#fff;font-size:34px;font-weight:800;text-align:left;padding:10px 16px;border-radius:40px;font-family:inherit;cursor:pointer;letter-spacing:-.02em}
+.opt.sel{background:var(--lime);color:#000}
+.opt .ar{width:46px;height:46px;border-radius:50%;background:var(--limeSoft);display:none;place-items:center;font-size:22px;font-weight:400}
+.opt.sel .ar{display:grid}
+.opt.ch{font-size:19px;letter-spacing:0}
+.search{width:calc(100% - 20px);margin:6px 10px 10px;background:#111;border:1px solid var(--line);border-radius:30px;color:#fff;padding:14px 18px;font-size:16px;font-family:inherit}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:6px 12px 12px;justify-content:center}
+.chip{border:1px solid #3a3a3a;background:none;color:#fff;border-radius:30px;padding:12px 20px;font-size:17px;font-weight:700;font-family:inherit;cursor:pointer}
+.chip.sel{background:var(--lime);color:#000;border-color:var(--lime)}
+.cancel{display:flex;align-items:center;justify-content:center;gap:12px;margin:18px auto 0;background:#c80000;border:1px solid #f33;color:#6b0000;font-weight:800;font-size:19px;border-radius:30px;padding:8px 8px 8px 34px;font-family:inherit;cursor:pointer}
+.cancel i{width:40px;height:40px;border-radius:50%;background:#ff3636;display:grid;place-items:center;font-style:normal;color:#6b0000;font-size:22px}
+.seg{display:flex;gap:6px;background:#0c0c0c;border:1px solid var(--line);border-radius:30px;padding:5px;margin-bottom:12px}
+.seg button{flex:1;border:0;background:none;color:var(--mute);font-weight:700;font-size:14px;padding:10px;border-radius:24px;font-family:inherit;cursor:pointer}
+.seg button.on{background:var(--lime);color:#000}
+.empty{border:1px dashed #3a3a3a;border-radius:24px;padding:26px;text-align:center;color:var(--mute);font-size:14px}
+.rings{flex:none}
+.mt{display:flex;align-items:center;gap:7px;font-size:12px;color:#ccc;margin-top:5px}
+.mt i{width:7px;height:7px;border-radius:50%;flex:none}
+.stt{font-size:13px;font-weight:700;color:var(--lime);margin-top:8px}
+.stt.w{color:#ffb020}
+.drive{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:12px 14px;margin-bottom:12px}
+.drive b{display:block;font-size:15px}.drive span{font-size:12px;color:var(--mute)}
+.drive .dt{width:10px;height:10px;border-radius:50%;flex:none}
+.btn-s{margin-left:auto;background:var(--lime);color:#000;border:0;border-radius:20px;padding:9px 16px;font-weight:700;font-size:13px;font-family:inherit;cursor:pointer;flex:none}
+.btn-s.btn-g{background:none;color:var(--mute);border:1px solid #3a3a3a}
+.legend{display:flex;gap:16px;justify-content:center;font-size:12px;color:var(--mute);margin:6px 0 14px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));width:calc(100% - 28px);max-width:402px;display:flex;background:rgba(30,30,30,.82);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid #333;border-radius:34px;padding:6px;z-index:5}
+nav button{flex:1;border:0;background:none;color:var(--mute);font-size:11px;font-weight:600;padding:8px 0 6px;border-radius:26px;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
+nav button b{font-size:19px;font-weight:400;line-height:1}
+nav button.on{color:var(--lime);background:#222}
+nav.hide{display:none}
+.note{font-size:11px;color:#666;text-align:center;margin-top:20px}
+button:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.top2,.bot{display:flex;gap:10px;justify-content:center}
+.top2{margin-bottom:22px}.bot{margin-top:22px}
+.kp{display:flex;align-items:center;gap:8px;border:2px solid var(--green);border-radius:26px;padding:7px 14px 6px 12px}
+.kp.slow{border-color:var(--red)}.kp.grey{border-color:#555}
+.kp svg{flex:none}
+.kp .v{display:flex;align-items:baseline;gap:4px;font-size:26px;font-weight:700;line-height:1}
+.kp .v em{font-style:normal;font-size:11px;font-weight:700}
+.kp .lb{display:block;font-size:9px;color:#bbb;font-weight:500;margin-top:3px;text-align:center}
+.kp .sep{width:1px;align-self:stretch;background:#555;margin:0 4px}
+.kp .hi{display:block;font-size:9px;color:var(--green);font-weight:500}
+.kp .v2{display:block;font-size:22px;font-weight:700;color:#aaa;line-height:1.1}
+.cols{display:grid;grid-template-columns:1fr 1px 1fr;align-items:center;text-align:center;gap:4px}
+.cols .lb{font-size:13px;color:#ddd;font-weight:500}
+.cols .n{font-size:64px;font-weight:900;letter-spacing:-.03em;line-height:1.05}
+.tri{display:flex;justify-content:center;gap:14px;margin-top:4px;font-size:18px;font-weight:700}
+.tri small{display:block;font-size:9px;font-weight:500;color:inherit}
+.hist{background:#0e0e0e;border-radius:26px;padding:12px;max-height:230px;overflow-y:auto}
+.hrow{display:grid;grid-template-columns:1.2fr 1fr .9fr 1.1fr;align-items:center;border:1px solid #333;border-radius:26px;padding:10px 0;margin-bottom:8px;text-align:center}
+.hrow>div{padding:0 6px;border-left:1px solid #333;min-width:0}
+.hrow>div:first-child{border:0;text-align:left;padding-left:16px}
+.hrow b{display:block;font-size:20px;font-weight:700}
+.hrow .sb{display:block;color:#888;font-size:13px;font-weight:700}
+.hrow .pl{display:block;color:var(--green);font-size:11px;font-weight:700;margin-top:4px}
+.hrow .u{display:block;color:var(--red);font-size:10px;font-weight:700}
+.hrow .nn{display:block;font-size:26px;font-weight:700;line-height:1.05}
+.hrow .tl{display:block;font-size:8px;color:#ccc}
+/* setup flow: same language as Home (dark cards, thin borders, lime only for progress and the main action) */
+.pick{background:#0a0a0b;border-radius:34px;border:1px solid var(--line);overflow:hidden}
+.pick .top{background:#121214;color:#fff;text-align:left;font-weight:700;font-size:26px;letter-spacing:-.02em;padding:22px 20px 14px}
+.prog{display:flex;gap:6px;padding:0 20px 18px;background:#121214;border-bottom:1px solid #232325}
+.prog i{flex:1;height:4px;border-radius:2px;background:#2a2a2c;transition:background .3s}
+.prog i.on{background:var(--lime)}
+.pick h2{color:#aaa;text-align:left;font-size:15px;font-weight:500;margin:18px 20px 12px}
+.opt{width:calc(100% - 24px);margin:0 12px 8px;background:#101012;border:1px solid #2a2a2a;border-radius:26px;color:#fff;font-size:22px;font-weight:500;padding:16px 18px;letter-spacing:-.01em}
+.opt.sel{background:#101012;color:#fff;border-color:var(--lime)}
+.opt.ch{font-size:17px}
+.opt .ar{display:grid;width:28px;height:28px;border-radius:50%;background:none;color:#666;font-size:20px}
+.opt.sel .ar{display:grid;background:var(--lime);color:#000;font-size:16px}
+.pick .search{width:calc(100% - 24px);margin:0 12px 12px;background:#101012;border:1px solid #2a2a2a;border-radius:26px;padding:15px 18px}
+.chips{justify-content:flex-start;padding:0 12px 16px}
+.chip{border:1px solid #2a2a2a;background:#101012;border-radius:26px;padding:14px 20px;font-size:16px;font-weight:500}
+.chip.sel{background:#101012;border-color:var(--lime);color:var(--lime)}
+.cancel{display:block;margin:16px auto 0;background:none;border:1px solid #4a2222;color:#ff6b6b;padding:12px 26px;font-size:15px;font-weight:700;border-radius:26px;font-family:inherit;cursor:pointer}
+.bk{background:#121214;padding:16px 14px 0}
+.back{background:none;border:0;color:var(--lime);font-size:16px;font-weight:500;font-family:inherit;cursor:pointer;padding:6px 8px 6px 4px}
+.lbl{display:block;font-size:13px;color:#aaa;margin:6px 20px 8px;font-weight:500}
+.ta{display:block;width:calc(100% - 24px);margin:0 12px 14px;min-height:96px;resize:vertical;background:#101012;border:1px solid #2a2a2a;border-radius:22px;color:#fff;padding:14px 16px;font-size:16px;font-family:inherit}
+.ta:focus,.pick .search:focus{outline:none;border-color:var(--lime)}
+.photo{display:flex;align-items:center;justify-content:space-between;width:calc(100% - 24px);margin:0 12px 6px;background:none;border:1px dashed #3a3a3a;border-radius:22px;color:#ccc;padding:14px 16px;font-size:15px;font-family:inherit;cursor:pointer;text-align:left}
+.photo .m{font-size:12px}
+.photo.on{border-style:solid;border-color:var(--blue);color:#fff}
+.fx{padding:0 12px 16px}
+.mini{font-size:12px;color:#8d8d8d;margin:2px 20px 12px}
+.done{text-align:center;padding:30px 16px 14px}
+.done .ck{width:64px;height:64px;border-radius:50%;background:var(--lime);color:#000;display:grid;place-items:center;font-size:32px;margin:0 auto 14px}
+.done h3{margin:0 0 6px;font-size:24px}.done p{margin:0 0 18px;color:#aaa;font-size:14px}
+.prev{text-align:left;background:#101012;border:1px solid #2a2a2a;border-radius:22px;padding:14px 16px;margin-bottom:16px}
+.prev small{display:block;color:#888;font-size:11px;margin-bottom:3px}
+.prev b{display:block;font-size:16px;font-weight:500;margin-bottom:10px;white-space:pre-wrap}
+.ghost{display:block;margin:10px auto 0;background:none;border:0;color:#aaa;font-size:15px;font-weight:500;font-family:inherit;cursor:pointer;padding:10px}
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:calc(100% - 24px);margin:0 12px 12px;min-height:210px;background:#101012;border:1.5px dashed #3a3a3a;border-radius:26px;color:#fff;font-family:inherit;cursor:pointer}
+.drop .dc{width:56px;height:56px;border-radius:50%;background:var(--lime);color:#000;display:grid;place-items:center;font-size:32px;margin-bottom:8px}
+.drop b{font-size:18px;font-weight:700}.drop span:last-child{font-size:13px;color:#888}
+.shot{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;margin:0 12px 12px;min-height:210px;background:linear-gradient(160deg,#16222a,#0e1418);border:1px solid var(--blue);border-radius:26px;text-align:center}
+.shot .gl{font-size:44px;color:var(--blue);line-height:1}.shot b{font-size:17px;margin-top:6px}.shot span{font-size:12px;color:#8d8d8d}
+.shot .sa{display:flex;gap:8px;margin-top:12px}
+.shot .sa button{background:none;border:1px solid #3a3a3a;color:#ddd;border-radius:20px;padding:8px 16px;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer}
+.addtx{display:block;width:calc(100% - 24px);margin:0 12px 12px;background:none;border:0;color:var(--lime);text-align:left;padding:10px 8px;font-size:15px;font-weight:500;font-family:inherit;cursor:pointer}
+.addtx em{font-style:normal;color:#777;font-size:12px;margin-left:6px}
+.tx{display:block;width:calc(100% - 24px);margin:0 12px 14px;background:#101012;border:1px solid #2a2a2a;border-radius:22px;color:#fff;text-align:left;padding:12px 16px;font-size:16px;font-family:inherit;cursor:pointer;white-space:pre-wrap}
+.tx small{display:block;font-size:11px;color:#888;margin-bottom:3px}
+.pvp{background:#16222a;border:1px solid var(--blue);border-radius:14px;color:var(--blue);padding:10px 12px;font-size:13px;margin-bottom:10px}
+.fc{display:block;perspective:1100px;background:none;border:0;padding:0;cursor:pointer;width:100%;max-width:300px;aspect-ratio:4/5;margin:0 auto 10px;font-family:inherit;color:inherit}
+.fc .in{display:block;position:relative;width:100%;height:100%;transition:transform .6s cubic-bezier(.3,.7,.2,1);transform-style:preserve-3d}
+.fc.flip .in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:18px;border-radius:28px;-webkit-backface-visibility:hidden;backface-visibility:hidden;text-align:left}
+.face.front{background:linear-gradient(160deg,#1b1b1e,#0c0c0d);border:1px solid #333;box-shadow:0 18px 40px rgba(0,0,0,.55)}
+.face.back{background:var(--lime);color:#000;transform:rotateY(180deg);box-shadow:0 18px 40px rgba(163,255,60,.18)}
+.ct{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700}
+.kd{border:1px solid currentColor;border-radius:14px;padding:4px 10px}.front .kd{color:var(--lime)}
+.sd{opacity:.6}
+.cb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:10px 0}
+.cb p{margin:0;font-size:22px;font-weight:700;line-height:1.25;letter-spacing:-.01em;white-space:pre-wrap}
+.cp{width:100%;flex:1;max-height:62%;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:40px}
+.cp span{font-size:12px;margin-top:2px}
+.front .cp{background:#16222a;color:var(--blue)}.back .cp{background:rgba(0,0,0,.1)}
+.cf{font-size:11px;opacity:.55;text-align:center}
+.hint{text-align:center;font-size:12px;color:#777;margin-bottom:18px}
+@media (prefers-reduced-motion:reduce){.fc .in{transition:none}}
+.chips2{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding-bottom:2px}
+.chips2 button{flex:none;border:1px solid #2a2a2a;background:#101012;color:#ccc;border-radius:22px;padding:9px 16px;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer}
+.chips2 button.on{border-color:var(--lime);color:var(--lime)}
+.gh{display:flex;justify-content:space-between;color:#aaa;font-size:13px;font-weight:500;margin:6px 6px 10px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.fgrid .fc{max-width:none;margin:0}
+.fgrid .face{padding:12px;border-radius:22px}
+.fgrid .cb p{font-size:14px;line-height:1.3}
+.fgrid .cp{font-size:28px}.fgrid .kd{padding:3px 8px;font-size:10px}.fgrid .ct{font-size:10px}.fgrid .cf{font-size:9px}
+.qc{display:flex;gap:12px;background:#101012;border:1px solid #2a2a2a;border-radius:24px;padding:12px;margin-bottom:10px}
+.qt{flex:none;width:64px;height:64px;border-radius:16px;background:#16222a;color:var(--blue);display:grid;place-items:center;font-size:26px}
+.qb{min-width:0}.qb b{display:block;font-size:15px;font-weight:500;line-height:1.3}
+.qb>span{display:block;font-size:12px;color:#888;margin:3px 0 8px}
+.tg{display:flex;flex-wrap:wrap;gap:6px}
+.tg i{font-style:normal;font-size:11px;border:1px solid #333;border-radius:12px;padding:3px 9px;color:#bbb}
+.tg i.Easy{color:var(--green);border-color:#1f5a2e}.tg i.Medium{color:#ffb020;border-color:#6b4a10}.tg i.Hard{color:var(--red);border-color:#6b2020}
+/* session timer (landscape) */
+#timer{position:fixed;inset:0;z-index:30;background:#000;display:none;flex-direction:column;padding:max(18px,env(safe-area-inset-top)) max(26px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(26px,env(safe-area-inset-left))}
+#timer.on{display:flex}
+.tb{display:flex;justify-content:space-between;align-items:flex-start}
+.tl small{display:block;font-size:11px;letter-spacing:.14em;color:#777;font-weight:700}
+.tl b{display:block;font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.tl .bar{height:3px;border-radius:2px;background:#222;margin-top:8px;width:130px;overflow:hidden}.tl .bar i{display:block;height:100%;background:var(--lime)}
+.glass{background:rgba(70,70,74,.5);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid #333;color:#fff;border-radius:40px;padding:11px 20px;font:600 15px Roboto,sans-serif;cursor:pointer}
+.tm{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.4vh;min-height:0}
+.qn{font-size:13px;font-weight:700;color:#aaa;letter-spacing:.16em;text-transform:uppercase;border:1px solid #2a2a2a;border-radius:20px;padding:7px 16px}
+.dg{display:flex;align-items:flex-start;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.03em;line-height:1;font-size:min(16vw,30vh)}
+.dg div{text-align:center}.dg small{display:block;font-size:12px;letter-spacing:.2em;color:#666;font-weight:700;margin-top:8px}
+.dg .cl{color:#3a3a3a;padding:0 .05em}
+.tbt{display:flex;gap:12px;min-height:62px}
+.tbt button{border:0;border-radius:40px;padding:18px 46px;font:700 20px Roboto,sans-serif;cursor:pointer}
+.tbt .go{background:var(--lime);color:#000}.tbt .stp{background:#ff453a;color:#fff}.tbt .sk{border:1px solid #333;padding:18px 34px}
+.tdone{display:flex;gap:8px;overflow-x:auto;justify-content:center;min-height:30px}
+.tdone i{font-style:normal;font-size:12px;border:1px solid #2a2a2a;border-radius:14px;padding:5px 12px;color:#aaa;white-space:nowrap;font-variant-numeric:tabular-nums}
+.rot{display:none;text-align:center;font-size:12px;color:#777;margin-top:6px}
+@media (orientation:portrait){.rot{display:block}.dg{font-size:15vw}}
+#sheet{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);display:none;place-items:center}
+#sheet.on{display:grid}
+.sh{background:rgba(28,28,30,.94);border:1px solid #333;border-radius:30px;padding:24px 22px 18px;width:calc(100% - 40px);max-width:340px;text-align:center}
+.sh h3{margin:0 0 6px;font-size:20px}.sh p{margin:0 0 18px;color:#aaa;font-size:14px;line-height:1.4}
+.sh .cta{font-size:18px;justify-content:center;padding:15px}
+/* feedback */
+.app2{max-width:430px;margin:0 auto;padding:14px 14px 40px}.app2:not(:has(.on)){display:none}
+#rtitle{font-size:22px}
+.shot.has{padding:0 0 12px;min-height:0;gap:0;overflow:hidden}.shot.has img{width:100%;max-height:320px;object-fit:contain;background:#000;display:block}.shot.has .sa{margin-top:12px;flex-wrap:wrap;justify-content:center}
+.cpi{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px}
+#ped{position:fixed;inset:0;z-index:60;background:#000;display:flex;flex-direction:column;overflow:hidden;gap:10px;padding:max(12px,env(safe-area-inset-top)) 14px max(14px,env(safe-area-inset-bottom));user-select:none;-webkit-user-select:none}
+.pe-top{display:flex;justify-content:space-between;align-items:center}.pe-top b{display:block;font-size:16px}.pe-top small{color:#9a9aa0;font-size:12px;font-variant-numeric:tabular-nums}
+.pe-t{background:none;border:0;color:var(--lime);font-size:15px;font-weight:600;font-family:inherit;min-height:44px;padding:0 8px;cursor:pointer}
+#pe-st{flex:1;min-height:0;display:grid;place-items:center;touch-action:none}
+#pe-w{position:relative;line-height:0}#pe-cv{display:block}
+#pe-box{position:absolute;border:1.5px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.62);touch-action:none;cursor:move;background-image:linear-gradient(90deg,transparent calc(33.33% - .5px),rgba(255,255,255,.3) calc(33.33% - .5px) calc(33.33% + .5px),transparent calc(33.33% + .5px) calc(66.66% - .5px),rgba(255,255,255,.3) calc(66.66% - .5px) calc(66.66% + .5px),transparent calc(66.66% + .5px)),linear-gradient(transparent calc(33.33% - .5px),rgba(255,255,255,.3) calc(33.33% - .5px) calc(33.33% + .5px),transparent calc(33.33% + .5px) calc(66.66% - .5px),rgba(255,255,255,.3) calc(66.66% - .5px) calc(66.66% + .5px),transparent calc(66.66% + .5px))}
+#pe-box i{position:absolute;width:44px;height:44px;z-index:2;touch-action:none}
+#pe-box i::before{content:"";position:absolute;width:22px;height:22px;border:0 solid #fff}
+#pe-box i[data-h=nw]{left:-22px;top:-22px}#pe-box i[data-h=nw]::before{left:20px;top:20px;border-width:4px 0 0 4px}
+#pe-box i[data-h=ne]{right:-22px;top:-22px}#pe-box i[data-h=ne]::before{right:20px;top:20px;border-width:4px 4px 0 0}
+#pe-box i[data-h=sw]{left:-22px;bottom:-22px}#pe-box i[data-h=sw]::before{left:20px;bottom:20px;border-width:0 0 4px 4px}
+#pe-box i[data-h=se]{right:-22px;bottom:-22px}#pe-box i[data-h=se]::before{right:20px;bottom:20px;border-width:0 4px 4px 0}
+#pe-box u{position:absolute;text-decoration:none;touch-action:none}
+#pe-box u::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:2px}
+#pe-box u[data-h=n],#pe-box u[data-h=s]{left:22px;right:22px;height:36px}#pe-box u[data-h=n]{top:-18px}#pe-box u[data-h=s]{bottom:-18px}
+#pe-box u[data-h=e],#pe-box u[data-h=w]{top:22px;bottom:22px;width:36px}#pe-box u[data-h=e]{right:-18px}#pe-box u[data-h=w]{left:-18px}
+#pe-box u[data-h=n]::before,#pe-box u[data-h=s]::before{width:28px;height:4px}#pe-box u[data-h=e]::before,#pe-box u[data-h=w]::before{width:4px;height:28px}
+#pe-box.lock u{display:none}
+.pe-ch{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px}.pe-ch button{flex:none;min-height:40px;padding:0 16px;border-radius:20px;border:1px solid #333;background:#111;color:#ddd;font-size:14px;font-family:inherit;cursor:pointer}.pe-ch .on{background:#fff;color:#000;border-color:#fff}
+.pe-sl{display:flex;align-items:center;gap:10px}.pe-sl>div{flex:1;display:flex;align-items:center;gap:4px}.pe-sl input{flex:1;accent-color:var(--lime);height:44px;min-width:0}.pe-sl .glass{width:48px;height:48px;padding:0;font-size:22px}#pe-av{min-width:48px;color:#ddd;font-variant-numeric:tabular-nums;font-weight:500;font-size:14px}
+.pe-act{display:flex;gap:10px}.pe-act .glass{flex:1;min-height:52px;font-size:17px;text-align:center}#pe-ok{flex:2;background:var(--lime);color:#000;border:0}
+[hidden]{display:none!important}
+#rbody .opt{border:0;border-bottom:1px solid #232325;border-radius:0;margin:0 12px;width:calc(100% - 24px);padding:15px 16px;font-size:17px;background:#101012}
+#rbody .opt:not(.opt+.opt){border-radius:20px 20px 0 0}
+#rbody .opt:not(:has(+.opt)){border-radius:0 0 20px 20px;border-bottom:0}
+#rbody .opt:not(.opt+.opt):not(:has(+.opt)){border-radius:20px}
+#rbody .opt.sel{background:#17171b}
+#rbody .opt .ar{color:#555;font-size:22px}
+#rbody .opt.sel .ar{background:none;color:var(--lime);font-size:0}
+#rbody .opt.sel .ar::after{content:"✓";font-size:20px;font-weight:700}
+.mini,.lbl{color:#a0a0a8}.iv span{color:#8a8a8f}.tl small,.dg small{color:#9a9aa0}.tdone i{color:#bbb}
+.chip,.opt,.btn-s,.seg button{min-height:44px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,20px);opacity:0;pointer-events:none;z-index:35;background:rgba(50,50,54,.8);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid #3a3a3a;border-radius:30px;padding:10px 12px 10px 18px;font-size:14px;transition:.25s;white-space:nowrap}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{margin-left:12px;background:var(--lime);color:#000;border:0;border-radius:20px;padding:7px 14px;font-weight:700;font-size:13px;font-family:inherit;cursor:pointer}
+#timer .dg{transition:color .4s}
+.seg .d-Easy{color:#5fd35f}.seg .d-Medium{color:#ff9f0a}.seg .d-Hard{color:#ff453a}
+.seg .d-Easy.on{background:#5fd35f;color:#000}.seg .d-Medium.on{background:#ff9f0a;color:#000}.seg .d-Hard.on{background:#ff453a;color:#fff}
+@media (prefers-reduced-motion:reduce){circle,.toast,#timer .dg{transition:none!important}}
+.qh{display:flex;justify-content:space-between;align-items:center;padding:16px 20px 0}
+.qh b{font-size:15px}.qh span{font-size:12px;color:#aaa;background:#16161a;border-radius:14px;padding:4px 10px;font-variant-numeric:tabular-nums}
+.opt small{display:block;font-size:12px;color:#888;font-weight:400;margin-top:3px}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}
+.sg div{background:#101012;border:1px solid #2a2a2a;border-radius:20px;padding:12px 14px}.sg small{display:block;color:#888;font-size:12px}.sg b{font-size:24px;font-variant-numeric:tabular-nums}
+.band{cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent}.band:active{background:#0e0e0f}.band:focus-visible{outline:2px solid var(--lime);outline-offset:-2px}
+.band .sp{margin-left:auto}.chev{color:#666;font-size:24px;line-height:1;margin-left:8px}
+.lt{font-size:34px;font-weight:800;letter-spacing:-.02em;margin:6px 4px 0}.sn{font-size:13px;color:#a0a0a8;line-height:1.45}
+.scn{display:flex;justify-content:space-between;padding-top:6px}.pe-t:disabled,.cta:disabled{opacity:.35}
+.wk{display:flex;justify-content:space-between;gap:6px;margin:0 0 16px}
+.wd{width:44px;height:44px;border-radius:50%;border:0;background:#1c1c1e;color:#fff;font-size:15px;font-weight:600;position:relative;cursor:pointer;font-family:inherit;padding:0}
+.wd.on{background:#fff;color:#000}.wd.off{color:#666}.wd.today:not(.on){color:var(--lime)}.wd.err{box-shadow:0 0 0 2px #ff453a}
+.wd i{position:absolute;bottom:5px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--lime)}.wd.on i{background:#000}
+.sh .wk{justify-content:center;margin:4px 0 16px}.sh .wd{width:36px;height:36px;font-size:13px}
+.sum{display:flex;justify-content:space-between;align-items:baseline;margin:0 4px 12px}.sum b{font-size:20px}.sum span{color:#a0a0a8;font-size:14px}
+.gl2{background:#101012;border-radius:20px;margin:0 0 14px;overflow:hidden}
+.gr{display:flex;align-items:center;gap:10px;padding:10px 16px;min-height:56px;border-bottom:1px solid #232325;font-size:17px}.gr:last-child{border-bottom:0}
+.gr.sel{background:#17171b}.gr.add{width:100%;background:none;border-top:0;border-left:0;border-right:0;color:var(--lime);font-family:inherit;cursor:pointer;text-align:left}
+.tp{position:relative;background:#1c1c1e;border-radius:10px;padding:9px 12px;font-size:20px;font-weight:500;font-variant-numeric:tabular-nums;cursor:pointer}
+.tp input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px}
+.arw{color:#666}.ld{margin-left:auto;color:#8d8d8d;font-size:13px;white-space:nowrap}
+.xb{flex:none;width:44px;height:44px;margin-right:-10px;border-radius:50%;border:0;background:none;color:#ff453a;font-size:26px;cursor:pointer}
+.er{background:#101012;color:#ff6b6b;font-size:13px;padding:0 16px 10px}
+.sw{position:relative;width:51px;height:31px;margin-left:auto;flex:none}.sw input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;z-index:1}
+.sw i{position:absolute;inset:0;border-radius:16px;background:#39393d;transition:.2s}.sw i::after{content:"";position:absolute;left:2px;top:2px;width:27px;height:27px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 2px 4px rgba(0,0,0,.3)}
+.sw input:checked+i{background:#ff9f0a}.sw input:checked+i::after{transform:translateX(20px)}
+.scst{position:relative;height:60px;border-radius:16px;background:#101012 repeating-linear-gradient(90deg,#1e1e20 0 1px,transparent 1px 12.5%);border:1px solid #232325;touch-action:pan-y;cursor:crosshair}
+.scst b{position:absolute;top:8px;bottom:8px;min-width:6px;border-radius:9px;background:var(--lime);cursor:pointer}.scst b.sel{box-shadow:0 0 0 2px #fff}.scst b.bad{background:var(--red)}
+.scst i{position:absolute;top:8px;bottom:8px;border-radius:9px;background:rgba(163,255,60,.3);border:1px dashed var(--lime);pointer-events:none}
+.scst u{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:#fff;pointer-events:none;z-index:3;text-decoration:none}.scst u em{position:absolute;top:3px;left:50%;background:#fff;color:#000;font-style:normal;font-size:11px;font-weight:700;padding:2px 6px;border-radius:8px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.scst u.t em{top:-42px;font-size:15px;padding:5px 11px;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+.sctk{display:flex;justify-content:space-between;font-size:11px;color:#8a8a8f;margin:6px 2px 0;font-variant-numeric:tabular-nums}
+#sccs{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);display:none;place-items:center}#sccs.on{display:grid}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HOME -->
+<section class="screen on" id="home">
+  <div class="hero">
+    <div class="band"><div class="hd"><span id="left"></span><span class="sp" id="spent"></span><span class="chev" aria-hidden="true">›</span></div><div class="tracks" id="dots" role="img"></div></div>
+    <div class="inner">
+      <div class="top2">
+        <div class="gp slow"><div class="v">3:50<em class="r">+0:25</em></div><span class="lb">avg time per question</span></div>
+        <div class="gp"><div class="v">85%<em class="g">+2%</em></div><span class="lb">Accuracy</span></div>
+      </div>
+      <div class="cols">
+        <div><div class="lb">question practiced</div><div class="n">801</div><div class="tri"><span class="g">400<small>Right</small></span><span class="r">200<small>wrong</small></span><span class="m">201<small>couldn't solve</small></span></div></div>
+        <div class="vr"></div>
+        <div><div class="lb">facts added</div><div class="n">300</div><div class="tri"><span class="g">0<small>remembered</small></span><span class="r">300<small>not remembered</small></span></div></div>
+      </div>
+      <div class="bot">
+        <div class="kp"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5fd35f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l2 2 3-3M3 14l2 2 3-3M12 7h9M12 15h9"/></svg><div><div class="v">40%<em class="g">+0.5</em></div><span class="lb">syllabus covered</span></div></div>
+        <div class="kp grey"><svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-4 2-7 2 1 3 2 4-5z"/></svg><span class="v">3</span><i class="sep"></i><div><span class="hi">Highest</span><span class="v2">6</span></div></div>
+      </div>
+    </div>
+  </div>
+  <button class="sync" id="resume" data-go="review" hidden><span class="dot" style="background:#ffb020;box-shadow:0 0 10px #ffb020"></span><div><b>Feedback in progress</b><span>Continue where you left off. Nothing is saved yet.</span></div></button>
+  <button class="sync" data-go="sync"><span class="dot"></span><div><b>All data synced</b><span>Sessions and photos are backed up</span></div></button>
+  <div class="card">
+    <div class="title">Start New<br>Practice Session</div>
+    <button class="cta" data-go="setup">Create <span class="ic">+</span></button>
+    <div class="sec">Today's Practice History</div>
+    <div class="hist">
+      <div class="hrow"><div><b>Physics</b><span class="sb">mechanics</span><span class="pl">60 min</span></div><div><span class="u">45 min</span><span class="nn">15</span><span class="tl">total attempt</span></div><div><span class="nn">85%</span><span class="tl">Accuracy</span></div><div><span class="nn">2:50</span><span class="tl">avg time per question</span></div></div>
+      <div class="hrow"><div><b>Maths</b><span class="sb">vector algebra</span><span class="pl">45 min</span></div><div><span class="u">32 min</span><span class="nn">9</span><span class="tl">total attempt</span></div><div><span class="nn">56%</span><span class="tl">Accuracy</span></div><div><span class="nn">3:32</span><span class="tl">avg time per question</span></div></div>
+      <div class="hrow"><div><b>Chemistry</b><span class="sb">atomic structure</span><span class="pl">30 min</span></div><div><span class="u">28 min</span><span class="nn">7</span><span class="tl">total attempt</span></div><div><span class="nn">71%</span><span class="tl">Accuracy</span></div><div><span class="nn">4:00</span><span class="tl">avg time per question</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- SETUP -->
+<section class="screen" id="setup">
+  <div class="pick">
+    <div class="bk" id="bk" hidden><button class="back" id="back">‹ Back</button></div>
+    <div class="top" id="stepLabel">New practice session</div>
+    <div class="prog" id="prog"><i class="on"></i><i></i><i></i></div>
+    <div id="step1">
+      <h2>Choose subject</h2>
+      <button class="opt" data-sub="Physics">Physics<span class="ar">→</span></button>
+      <button class="opt" data-sub="Maths">Maths<span class="ar">→</span></button>
+      <button class="opt" data-sub="Chemistry">Chemistry<span class="ar">→</span></button>
+      <button class="opt" data-sub="Mixed">Mixed<span class="ar">→</span></button>
+      <div style="height:10px"></div>
+    </div>
+    <div id="step2" hidden>
+      <h2>Choose chapter</h2>
+      <input class="search" id="q" placeholder="Search chapters" aria-label="Search chapters">
+      <div id="chapters"></div>
+      <div style="height:10px"></div>
+    </div>
+    <div id="step3" hidden>
+      <h2>How long?</h2>
+      <div class="chips" id="dur"></div>
+      <div style="padding:6px 12px 16px"><button class="cta" id="start">Start <span class="ic">→</span></button></div>
+    </div>
+  </div>
+  <button class="cancel" id="cancel">Cancel session</button>
+</section>
+
+<!-- HISTORY -->
+<section class="screen" id="history">
+  <h1>History</h1>
+  <div class="row"><div class="t"><b>Limit, Continuity and Differentiability</b><span>Maths · today</span></div><div class="st">4<small>timed</small></div><div class="st g">1<small>right</small></div></div>
+  <div class="row"><div class="t"><b>Binomial Theorem</b><span>Maths · today</span></div><div class="st">3<small>timed</small></div><div class="st g">2<small>right</small></div></div>
+  <div class="row"><div class="t"><b>Vector Algebra</b><span>Maths · today</span></div><div class="st">3<small>timed</small></div><div class="st g">1<small>right</small></div></div>
+  <div class="row"><div class="t"><b>Atomic Structure</b><span>Chemistry · today</span></div><div class="st">3<small>timed</small></div><div class="st g">1<small>right</small></div></div>
+  <div class="row"><div class="t"><b>Units and Measurements</b><span>Physics · yesterday</span></div><div class="st">4<small>timed</small></div><div class="st g">2<small>right</small></div></div>
+  <div class="note">Sample data</div>
+</section>
+
+<!-- CARDS -->
+<section class="screen" id="cards">
+  <h1>Cards</h1>
+  <div class="seg" id="cseg"><button class="on" data-k="all">All</button><button data-k="q">Questions</button><button data-k="f">Facts</button></div>
+  <input class="search" id="cq" style="width:100%;margin:0 0 10px" placeholder="Search cards, chapters, topics" aria-label="Search cards">
+  <div class="chips2" id="csub"><button class="on" data-s="">All subjects</button><button data-s="Maths">Maths</button><button data-s="Physics">Physics</button><button data-s="Chemistry">Chemistry</button></div>
+  <div id="cres"></div>
+  <div style="margin-top:14px"><button class="cta" data-go="fact" style="font-size:20px">New fact card <span class="ic" style="width:44px;height:44px">+</span></button></div>
+</section>
+
+<!-- NEW FACT CARD -->
+<section class="screen" id="fact">
+  <div class="pick">
+    <div class="bk" id="fbk" hidden><button class="back" id="fback">‹ Back</button></div>
+    <div class="top" id="ftitle">New fact card</div>
+    <div class="prog" id="fprog"></div>
+    <div id="fbody"></div>
+  </div>
+  <button class="cancel" id="fcancel">Cancel</button>
+</section>
+
+<!-- SYNC -->
+<section class="screen" id="sync">
+  <h1>Sync</h1>
+  <div class="drive" id="drive"></div>
+  <div class="legend"><span><i style="background:var(--green)"></i>Supabase data</span><span><i style="background:var(--blue)"></i>Google Drive photos</span></div>
+  <div class="card" style="padding:14px">
+    <div class="row" id="s1"></div>
+    <div class="row" id="s2"></div>
+    <div class="row" id="s3"></div>
+  </div>
+  <div class="sec" style="text-align:left">Completed · 13</div>
+  <div class="note">Sample data. Inner ring is dashed when a session has no photos.</div>
+</section>
+
+</div>
+
+<div class="app2">
+<section class="screen" id="review"><div class="pick">
+ <div class="bk" id="rbk"><button class="back" id="rback">‹ Back</button></div>
+ <div class="top" id="rtitle">Session review</div>
+ <div class="prog" id="rprog"></div>
+ <div class="qh" id="rhead"></div>
+ <div id="rbody"></div>
+</div></section>
+<section class="screen" id="sched">
+ <div class="scn"><button class="pe-t" id="sccancel">Cancel</button><button class="pe-t" id="scdone" style="font-weight:700">Done</button></div>
+ <h1 class="lt">Study schedule</h1>
+ <p class="sn" style="margin:4px 4px 16px">Your weekly routine. Changes start tomorrow; today’s intervals stay as they are.</p>
+ <div class="wk" id="scwk" role="group" aria-label="Day of the week"></div>
+ <div class="sum" id="scsum"></div>
+ <div class="gl2"><div class="gr"><span>Day off</span><label class="sw"><input type="checkbox" id="scoff" aria-label="Day off"><i></i></label></div></div>
+ <div class="sn" id="scoffmsg" hidden style="margin:0 4px"></div>
+ <div id="scbody">
+  <div class="scst" id="scst"><span id="scblk"></span><i id="scgh" hidden></i><u id="scln" hidden><em></em></u></div>
+  <div class="sctk"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
+  <div class="sn" style="margin:8px 4px 18px">Drag across the line to add an interval, or use the list below.</div>
+  <div class="gl2" id="sclist"></div>
+  <div class="gl2"><button class="gr add" id="scadd">+ Add interval</button><button class="gr add" id="sccopy">Copy to other days…</button></div>
+  <div class="sn" id="sctot" style="margin:0 4px"></div>
+ </div>
+</section>
+<section class="screen" id="summary"></section>
+</div>
+
+<section id="timer" aria-label="Practice timer">
+ <div class="tb"><div class="tl"><small>SESSION TIME LEFT</small><b id="tleft">--:--</b><div class="bar"><i id="tbar"></i></div></div><button class="glass" data-t="end">End session</button></div>
+ <div class="tm"><div class="qn" id="tq"></div><div class="dg" id="tdg" role="timer"></div><div class="tbt" id="tbt"></div><div class="tdone" id="tdone"></div></div>
+ <div style="text-align:center"><button class="glass" data-t="demo" style="padding:7px 14px;font-size:12px;color:#aaa">Demo: skip to feedback with 5 sample questions</button><div class="rot">Rotate your phone to landscape for the full view</div><div class="toast" id="toast"></div></div>
+</section>
+<div id="ped" hidden>
+ <div class="pe-top"><div><b>Rotate and crop</b><small id="pe-dim"></small></div><button class="pe-t" id="pe-rs">Reset</button></div>
+ <div id="pe-st"><div id="pe-w"><canvas id="pe-cv"></canvas><div id="pe-box"><i data-h="nw"></i><i data-h="ne"></i><i data-h="sw"></i><i data-h="se"></i><u data-h="n"></u><u data-h="e"></u><u data-h="s"></u><u data-h="w"></u></div></div></div>
+ <div class="pe-ch" id="pe-ch"><button class="on" data-r="0">Free</button><button data-r="o">Original</button><button data-r="1">Square</button><button data-r="1.3333">4:3</button><button data-r="0.75">3:4</button><button data-r="1.7778">16:9</button></div>
+ <div class="pe-sl"><button class="glass" id="pe-l" aria-label="Rotate left">&#10226;</button><div><input type="range" id="pe-a" min="-45" max="45" step="0.5" value="0" aria-label="Straighten"><button class="pe-t" id="pe-av" aria-label="Reset straighten">0&deg;</button></div><button class="glass" id="pe-r" aria-label="Rotate right">&#10227;</button></div>
+ <div class="pe-act"><button class="glass" id="pe-x">Cancel</button><button class="glass" id="pe-ok">Use photo</button></div>
+</div>
+<div id="sccs"><div class="sh"><h3 id="scch3"></h3><p>Replaces that day’s schedule on the days you pick.</p><div class="wk" id="sccw"></div><button class="cta" id="sccok">Copy</button><button class="ghost" id="sccx">Cancel</button></div></div>
+<div class="toast" id="gtoast"></div>
+<div id="sheet"><div class="sh"><h3 id="sht"></h3><p id="shm"></p><button class="cta" id="sho"></button><button class="ghost" id="shx"></button></div></div>
+
+<nav id="nav">
+  <button class="on" data-go="home"><b>◉</b>Home</button>
+  <button data-go="cards"><b>▤</b>Cards</button>
+  <button data-go="history"><b>☰</b>History</button>
+  <button data-go="sync"><b>⟳</b>Sync</button>
+</nav>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function go(id){
+  $$('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
+  $$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.go===id));
+  $('#nav').classList.toggle('hide',['setup','fact','review','summary','sched'].includes(id));
+  window.scrollTo(0,0);
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b)go(b.dataset.go)});
+
+const chapters={Physics:['Units and Measurements','Kinematics','Laws of Motion','Work, Energy and Power','Rotational Motion','Thermodynamics'],
+Maths:['Sets, Relations and Functions','Complex Numbers and Quadratic Equations','Matrices and Determinants','Binomial Theorem','Vector Algebra','Limit, Continuity and Differentiability'],
+Chemistry:['Atomic Structure','Chemical Bonding','Equilibrium','Thermodynamics','Organic Basics'],Mixed:['Mixed practice']};
+let sub='',chap='',dur=60;
+let cur=1;
+function step(n){cur=n;$('#bk').hidden=n===1;[1,2,3].forEach(i=>$('#step'+i).hidden=i!==n);
+  $('#stepLabel').textContent=n===1?'New practice session':sub+(chap?' · '+chap:'');
+  $$('#prog i').forEach((e,k)=>e.classList.toggle('on',k<n))}
+function listChapters(){
+  const q=$('#q').value.toLowerCase();
+  $('#chapters').innerHTML=(chapters[sub]||[]).filter(c=>c.toLowerCase().includes(q))
+   .map(c=>`<button class="opt ch${c===chap?' sel':''}" data-ch="${c}">${c}<span class="ar">→</span></button>`).join('')||'<div class="empty" style="margin:10px">No chapter matches.</div>';
+}
+$$('[data-sub]').forEach(b=>b.onclick=()=>{
+  $$('[data-sub]').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');sub=b.dataset.sub;chap='';
+  setTimeout(()=>{$('#q').value='';listChapters();step(2)},180)});
+$('#chapters').onclick=e=>{const b=e.target.closest('[data-ch]');if(!b)return;
+  b.classList.add('sel');chap=b.dataset.ch;setTimeout(()=>step(3),180)};
+$('#q').oninput=listChapters;
+$('#back').onclick=()=>step(cur-1);
+
+// ---- New fact card flow: subject > chapter > topics > kind > front > back > saved ----
+const KINDS=['Fact','Formula','Reaction','Misconception','Trap'];
+const TOPS={'Binomial Theorem':['General term','Middle term','Binomial coefficients','Applications'],'Vector Algebra':['Dot product','Cross product','Scalar triple product','Projections'],'Atomic Structure':['Bohr model','Quantum numbers','Electronic configuration','Spectra'],'Units and Measurements':['Dimensions','Significant figures','Errors']};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let F,fs;
+const ok=s=>F[s+'Photo']||F[s].trim()!=='';
+function fChaps(){const q=($('#fq')?$('#fq').value:'').toLowerCase();
+ const l=(chapters[F.sub]||[]).filter(c=>c.toLowerCase().includes(q));
+ return l.map(c=>`<button class="opt ch${c===F.chap?' sel':''}" data-a="chap" data-v="${esc(c)}">${esc(c)}<span class="ar">›</span></button>`).join('')||'<div class="empty" style="margin:0 12px 12px">No chapter matches.</div>'}
+function fSaveState(){const s=$('#fsave');if(s)s.classList.toggle('off',!ok(fs===5?'front':'back'))}
+function fReset(){F={sub:'',chap:'',tops:[],kind:'',front:'',back:'',frontPhoto:false,backPhoto:false,frontOpen:false,backOpen:false};fs=1;fDraw()}
+function fSide(side){
+ const f=side==='front',lab=f?'Recall prompt':'Text answer';
+ const photo=F[side+'Photo']
+  ?shotH(F[side+'Photo'],'photo','edph','unphoto',side)
+  :`<button class="drop" data-a="photo" data-v="${side}"><span class="dc">+</span><b>Add photo</b><span>Take a picture or choose one</span></button>`;
+ const text=F[side+'Open']
+  ?`<textarea class="ta" id="ft" data-f="${side}" placeholder="${lab}" aria-label="${lab}">${esc(F[side])}</textarea>`
+  :F[side].trim()
+   ?`<button class="tx" data-a="opentext" data-v="${side}"><small>${lab}</small>${esc(F[side])}</button>`
+   :`<button class="addtx" data-a="opentext" data-v="${side}">+ ${f?'Add a recall prompt':'Add a text answer'} <em>optional</em></button>`;
+ return `<h2>${f?'Front of the card':'Back of the card'}</h2><div class="mini">Side ${f?1:2} of 2 · ${f?'what you see when you try to recall':'what you check yourself against'}</div>${photo}${text}<div class="fx"><button class="cta${ok(side)?'':' off'}" id="fsave" data-a="${f?'next2':'save'}" style="font-size:20px">${f?'Continue':'Save card'} <span class="ic" style="width:44px;height:44px;font-size:24px">${f?'→':'✓'}</span></button></div>`}
+function fFace(side){const f=side==='front';
+ const body=(F[side+'Photo']?`<img class="cpi" src="${F[side+'Photo']}" alt="">`:'')+(F[side].trim()?`<p>${esc(F[side])}</p>`:'');
+ return `<span class="face ${side}"><span class="ct"><span class="kd">${esc(F.kind)}</span><span class="sd">${f?'Front':'Back'}</span></span><span class="cb">${body}</span><span class="cf">${esc(F.sub)} · ${esc(F.chap)}</span></span>`}
+function fcard(){return `<button class="fc" id="fc" data-a="flip" aria-label="Fact card. Tap to flip."><span class="in">${fFace('front')}${fFace('back')}</span></button><div class="hint">Tap the card to flip it</div>`}
+function pv(side){return `<small>${side==='front'?'Front':'Back'}</small>`+(F[side+'Photo']?'<div class="pvp">▣ Photo</div>':'')+(F[side].trim()?`<b>${esc(F[side])}</b>`:'')}
+function fDraw(){
+ const b=$('#fbody'),big='style="font-size:20px"',ic='class="ic" style="width:44px;height:44px;font-size:24px"';
+ $('#fprog').style.display=fs===7?'none':'flex';
+ $('#fprog').innerHTML=[1,2,3,4,5,6].map(k=>`<i class="${k<=fs?'on':''}"></i>`).join('');
+ $('#fbk').hidden=fs===1||fs===7;
+ $('#fcancel').style.display=fs===7?'none':'block';
+ $('#ftitle').textContent=fs>=3&&fs<7?F.sub+' · '+F.chap:'New fact card';
+ if(fs===1)b.innerHTML='<h2>Choose subject</h2>'+['Physics','Maths','Chemistry'].map(s=>`<button class="opt${F.sub===s?' sel':''}" data-a="sub" data-v="${s}">${s}<span class="ar">›</span></button>`).join('')+'<div style="height:8px"></div>';
+ else if(fs===2)b.innerHTML='<h2>Choose chapter</h2><input class="search" id="fq" placeholder="Search chapters" aria-label="Search chapters"><div id="flist">'+fChaps()+'</div><div style="height:8px"></div>';
+ else if(fs===3){const t=TOPS[F.chap]||['Basics','Key results','Applications','Common errors'];
+  b.innerHTML='<h2>Choose topics</h2><div class="mini">Pick one or more.</div><div class="chips">'+t.map(x=>`<button class="chip${F.tops.includes(x)?' sel':''}" data-a="top" data-v="${esc(x)}">${esc(x)}</button>`).join('')+`</div><div class="fx"><button class="cta${F.tops.length?'':' off'}" data-a="next" ${big}>Continue <span ${ic}>→</span></button></div>`}
+ else if(fs===4)b.innerHTML='<h2>What kind of card is it?</h2>'+KINDS.map(k=>`<button class="opt ch${F.kind===k?' sel':''}" data-a="kind" data-v="${k}">${k}<span class="ar">›</span></button>`).join('')+'<div style="height:8px"></div>';
+ else if(fs===5||fs===6)b.innerHTML=fSide(fs===5?'front':'back');
+ else b.innerHTML=`<div class="done"><div class="ck">✓</div><h3>Fact card saved</h3><p>Saved on this device. It backs up the next time you sync.</p>${fcard()}<button class="cta" data-a="again" ${big}>Add another <span ${ic}>+</span></button><button class="ghost" data-a="finish">Back to cards</button></div>`;
+}
+function fAct(a,v){
+ if(a==='flip'){$('#fc').classList.toggle('flip');return}
+ if(a==='sub'){F.sub=v;F.chap='';F.tops=[];fs=2}
+ else if(a==='chap'){F.chap=v;F.tops=[];fs=3}
+ else if(a==='top'){F.tops=F.tops.includes(v)?F.tops.filter(x=>x!==v):[...F.tops,v]}
+ else if(a==='next'){if(!F.tops.length)return;fs=4}
+ else if(a==='kind'){F.kind=v;fs=5}
+ else if(a==='photo')return getPhoto(u=>{F[v+'Photo']=u;fDraw()});
+ else if(a==='edph')return editPhoto(F[v+'Photo'],u=>{F[v+'Photo']=u;fDraw()});
+ else if(a==='unphoto')F[v+'Photo']='';
+ else if(a==='opentext')F[v+'Open']=true;
+ else if(a==='next2'){if(!ok('front'))return;fs=6}
+ else if(a==='save'){if(!ok('back'))return;fs=7}
+ else if(a==='again'){fReset();return}
+ else if(a==='finish'){fReset();go('cards');return}
+ fDraw();
+ if(a==='opentext'){const t=$('#ft');if(t)t.focus()}}
+$('#fbody').onclick=e=>{const t=e.target.closest('[data-a]');if(t)fAct(t.dataset.a,t.dataset.v)};
+$('#fbody').oninput=e=>{const t=e.target;if(t.dataset.f){F[t.dataset.f]=t.value;fSaveState()}else if(t.id==='fq')$('#flist').innerHTML=fChaps()};
+$('#fback').onclick=()=>{fs=Math.max(1,fs-1);fDraw()};
+$('#fcancel').onclick=()=>{fReset();go('cards')};
+
+// ---- Cards tab: working filter, search and flippable fact cards (sample data) ----
+const FACTS=[
+ {k:'Formula',s:'Maths',c:'Binomial Theorem',t:'General term',f:'General term of (x + a)^n',b:'T(r+1) = nCr · x^(n−r) · a^r'},
+ {k:'Formula',s:'Maths',c:'Vector Algebra',t:'Dot product',f:'a · b in terms of the angle',b:'|a||b| cos θ',bp:1},
+ {k:'Fact',s:'Chemistry',c:'Atomic Structure',t:'Quantum numbers',f:'Max electrons in a subshell',b:'2(2l + 1)'},
+ {k:'Trap',s:'Maths',c:'Limit, Continuity and Differentiability',t:'Limits',f:'Is lim sin x / x = 1 for any x → a?',b:'Only as x → 0, with x in radians'},
+ {k:'Reaction',s:'Chemistry',c:'Organic Basics',t:'Addition reactions',f:'HBr adds to propene. Product?',b:'2-bromopropane (Markovnikov)'},
+ {k:'Misconception',s:'Physics',c:'Laws of Motion',t:'Newton\'s first law',f:'Does constant motion need a net force?',b:'No. Constant velocity means zero net force'},
+ {k:'Formula',s:'Physics',c:'Kinematics',t:'Equations of motion',f:'Displacement in the nth second',b:'s_n = u + a(2n − 1)/2',fp:1},
+ {k:'Fact',s:'Chemistry',c:'Chemical Bonding',t:'Bond order',f:'Bond order of O₂',b:'2 (paramagnetic)'}];
+const QS=[
+ {s:'Maths',c:'Limit, Continuity and Differentiability',t:'Limits',d:'Hard',o:'Wrong',cause:'Forgot a formula',txt:'Evaluate lim x→0 (1 − cos 2x) / x²'},
+ {s:'Maths',c:'Vector Algebra',t:'Projections',d:'Medium',o:'Couldn\'t solve',cause:'No approach',txt:'Projection of a vector on the line through two points'},
+ {s:'Physics',c:'Units and Measurements',t:'Dimensions',d:'Easy',o:'Right but slow',cause:'Faster method saved',txt:'Dimensional formula of Planck\'s constant'},
+ {s:'Chemistry',c:'Atomic Structure',t:'Quantum numbers',d:'Medium',o:'Wrong',cause:'Calculation slip',txt:'Number of radial nodes for a 3p orbital'}];
+let ck='all',cs='';
+function mface(c,side){const f=side==='front',ph=f?c.fp:c.bp,tx=f?c.f:c.b;
+ return `<span class="face ${side}"><span class="ct"><span class="kd">${esc(c.k)}</span><span class="sd">${f?'Front':'Back'}</span></span><span class="cb">${ph?'<span class="cp">▣<span>Photo</span></span>':''}${f||c.b?`<p>${esc(tx)}</p>`:''}</span><span class="cf">${esc(c.c)}</span></span>`}
+function cRender(){
+ const q=$('#cq').value.trim().toLowerCase();
+ const m=o=>(!cs||o.s===cs)&&(!q||Object.values(o).join(' ').toLowerCase().includes(q));
+ const fl=ck==='q'?[]:FACTS.filter(m),ql=ck==='f'?[]:QS.filter(m);
+ let h='';
+ if(fl.length)h+=`<div class="gh"><span>Fact cards</span><span>${fl.length}</span></div><div class="fgrid">`+fl.map(c=>`<button class="fc" aria-label="Fact card. Tap to flip."><span class="in">${mface(c,'front')}${mface(c,'back')}</span></button>`).join('')+'</div>';
+ if(ql.length)h+=`<div class="gh"><span>Question cards</span><span>${ql.length}</span></div>`+ql.map(c=>`<div class="qc"><div class="qt">▣</div><div class="qb"><b>${esc(c.txt)}</b><span>${esc(c.c)} · ${esc(c.t)}</span><div class="tg"><i class="${c.d}">${c.d}</i><i>${esc(c.o)}</i><i>${esc(c.cause)}</i></div></div></div>`).join('');
+ $('#cres').innerHTML=h||`<div class="empty">${q?'No cards match “'+esc(q)+'”.':'No cards here yet.'}</div>`}
+$('#cseg').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;ck=b.dataset.k;$$('#cseg button').forEach(x=>x.classList.toggle('on',x===b));cRender()};
+$('#csub').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;cs=b.dataset.s;$$('#csub button').forEach(x=>x.classList.toggle('on',x===b));cRender()};
+$('#cq').oninput=cRender;
+$('#cres').onclick=e=>{const c=e.target.closest('.fc');if(c)c.classList.toggle('flip')};
+cRender();
+fReset();
+$('#dur').innerHTML=[30,45,60,90,120].map(m=>`<button class="chip${m===60?' sel':''}" data-m="${m}">${m} min</button>`).join('');
+$('#dur').onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;
+  $$('#dur .chip').forEach(c=>c.classList.remove('sel'));b.classList.add('sel');dur=b.dataset.m};
+$('#start').onclick=()=>startSession();
+$('#cancel').onclick=()=>{$$('.opt').forEach(o=>o.classList.remove('sel'));sub=chap='';step(1);go('home')};
+
+// two concentric rings: outer = Supabase, inner = Drive (null = not needed)
+function rings(o,i){
+  const c=2*Math.PI*26,d=2*Math.PI*16;
+  return `<svg class="rings" width="68" height="68" viewBox="0 0 68 68" role="img" aria-label="Supabase ${Math.round(o*100)}%, photos ${i===null?'not needed':Math.round(i*100)+'%'}">
+  <g transform="rotate(-90 34 34)" fill="none" stroke-linecap="round">
+   <circle cx="34" cy="34" r="26" stroke="#1f2f1f" stroke-width="7"/>
+   <circle cx="34" cy="34" r="26" stroke="var(--green)" stroke-width="7" stroke-dasharray="${c*o} ${c}" style="transition:stroke-dasharray .6s"/>
+   <circle cx="34" cy="34" r="16" stroke="${i===null?'#333':'#0f2a33'}" stroke-width="7" ${i===null?'stroke-dasharray="2 5"':''}/>
+   ${i===null?'':`<circle cx="34" cy="34" r="16" stroke="var(--blue)" stroke-width="7" stroke-dasharray="${d*i} ${d}" style="transition:stroke-dasharray .6s"/>`}
+  </g></svg>`}
+function item(id,title,sub,when,dat,pho,o,i,status){
+  $(id).innerHTML=rings(o,i)+`<div class="t"><b>${title}</b><span>${sub} · ${when}</span>
+  <div class="mt"><i style="background:var(--green)"></i>${dat}</div>
+  <div class="mt"><i style="background:${i===null?'#444':'var(--blue)'}"></i>${pho}</div>
+  <div class="stt${o<1?' w':''}">${status}</div></div>`}
+item('#s1','Vector Algebra','Maths','Today, 2:15–3:05 PM','7 attempts · 3 cards synced','4 of 6 photos uploaded',1,0.67,'Uploading photos');
+item('#s2','Binomial Theorem','Maths','Today, 11:30 AM–12:10 PM','5 attempts · 2 cards waiting','0 of 3 photos uploaded',0,0,'Waiting for connection');
+item('#s3','Atomic Structure','Chemistry','Today, 9:00–9:40 AM','6 attempts · 1 card synced','No photos',1,null,'Done');
+// Drive connection status (demo toggle): button appears only when not connected
+let driveOn=false;
+function drive(){
+ $('#drive').innerHTML=driveOn
+  ?`<i class="dt" style="background:var(--blue);box-shadow:0 0 8px var(--blue)"></i><div><b>Google Drive connected</b><span>rajprasad280323@gmail.com</span></div><button class="btn-s btn-g" id="dbtn">Disconnect</button>`
+  :`<i class="dt" style="background:#ffb020"></i><div><b>Google Drive not connected</b><span>3 photos are waiting to upload</span></div><button class="btn-s" id="dbtn">Connect</button>`;
+ $('#dbtn').onclick=()=>{driveOn=!driveOn;drive()}}
+drive();
+// Today's study intervals (minutes). segs = practised stretches inside each interval; el = minutes already elapsed.
+(function(){
+ const iv=[{l:'07–12',len:300,el:300,segs:[[0,140],[160,240]]},{l:'13–18',len:300,el:255,cur:1,segs:[[0,60],[75,110]]},{l:'19–23',len:240,el:0,segs:[]}];
+ const f=m=>Math.floor(m/60)+'h '+(m%60)+'m';
+ let spent=0,left=0;
+ $('#dots').innerHTML=iv.map(v=>{
+  spent+=v.segs.reduce((a,s)=>a+s[1]-s[0],0);left+=v.len-v.el;
+  const seg=v.segs.map(s=>`<b style="left:${s[0]/v.len*100}%;width:${(s[1]-s[0])/v.len*100}%"></b>`).join('');
+  const ph=v.cur?`<u style="left:${v.el/v.len*100}%"></u>`:'';
+  return `<div class="iv" style="flex:${v.len}"><div class="tk${v.cur?' cur':''}${v.el===0?' fut':''}">${seg}${ph}</div><span class="${v.cur?'on':''}">${v.l}</span></div>`}).join('');
+ $('#left').textContent=f(left)+' left';
+ $('#spent').innerHTML=`<em>${f(spent)}</em> spent`;
+ $('#dots').setAttribute('aria-label',f(left)+' of study time left today, '+f(spent)+' spent');
+})();
+// ===== Session timer =====
+const SLOW=180000,pad=(n,l=2)=>String(n).padStart(l,'0'),fmt=ms=>pad(Math.floor(ms/60000))+':'+pad(Math.floor(ms/1000)%60);
+let T=null,ti=0,R=null;
+function startSession(){T={sub,chap:chap||'Mixed practice',total:dur*60000,end:Date.now()+dur*60000,n:1,run:0,qs:[],how:'Completed'};
+ $('#timer').classList.add('on');document.body.style.overflow='hidden';try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(l=>T.wl=l).catch(()=>{})}catch(e){}tDraw();ti=setInterval(tLoop,47)}
+function tLoop(){const l=T.end-Date.now();if(l<=0){T.how='Time ran out';endNow();return}
+ $('#tleft').textContent=fmt(l+999);$('#tdg').style.color=T.run&&Date.now()-T.run>SLOW?'#ffb020':'';$('#tbar').style.width=(l/T.total*100)+'%';
+ const ms=T.run?Date.now()-T.run:0;
+ $('#tdg').innerHTML=`<div>${pad(Math.floor(ms/60000))}<small>MIN</small></div><span class="cl">:</span><div>${pad(Math.floor(ms/1000)%60)}<small>SEC</small></div><span class="cl">:</span><div>${pad(ms%1000,3)}<small>MS</small></div>`}
+function tDraw(){$('#tq').textContent='Question '+T.n;
+ $('#tbt').innerHTML=T.run?'<button class="stp" data-t="stop">Stop</button>':`<button class="go" data-t="start">Start</button><button class="glass sk" data-t="skip">Skip Q${T.n}</button>`;
+ $('#tdone').innerHTML=T.qs.map(q=>`<i>Q${q.n} · ${fmt(q.ms)}</i>`).join('');tLoop()}
+function sheet(t,m,ok,fn,x){$('#sht').textContent=t;$('#shm').textContent=m;$('#sho').textContent=ok;$('#sho').onclick=()=>{$('#sheet').classList.remove('on');fn()};$('#shx').textContent=x||'';$('#shx').hidden=!x;$('#sheet').classList.add('on')}
+$('#shx').onclick=()=>$('#sheet').classList.remove('on');
+let tt=0;function toast(m){$('#toast').innerHTML=m+' <button data-t="undo">Undo</button>';$('#toast').classList.add('on');clearTimeout(tt);tt=setTimeout(hideToast,5000)}
+function hideToast(){$('#toast').classList.remove('on')}
+function resetSetup(){$('#resume').hidden=true;$$('.opt').forEach(o=>o.classList.remove('sel'));sub=chap='';step(1)}
+$('#timer').onclick=e=>{const b=e.target.closest('[data-t]');if(!b||!T)return;const a=b.dataset.t;
+ if(a==='start'){T.run=Date.now();hideToast()}
+ else if(a==='stop'){const m=Date.now()-T.run;T.qs.push({n:T.n,ms:m});T.run=0;toast('Q'+T.n+' saved · '+fmt(m));T.n++}
+ else if(a==='undo'){const q=T.qs.pop();if(q){T.n=q.n;T.run=Date.now()-q.ms}hideToast()}
+ else if(a==='skip')T.n++;
+ else if(a==='end'){const c=T.qs.length+(T.run?1:0);return sheet('End session?',(c?c+' timed question'+(c>1?'s':'')+' will go to feedback.':'No questions are timed yet.')+(T.run?' Q'+T.n+' is still running and will be counted.':''),'End and review',()=>{T.how='Ended early';endNow()},'Keep going')}
+ else if(a==='demo'){T.qs=[95,262,205,341,41].map((s,i)=>({n:i+1,ms:s*1000}));T.run=0;T.how='Ended early';return endNow()}
+ tDraw()};
+function endNow(){clearInterval(ti);if(T.run){T.qs.push({n:T.n,ms:Date.now()-T.run});T.run=0}
+ $('#timer').classList.remove('on');document.body.style.overflow='';hideToast();try{T.wl&&T.wl.release()}catch(e){}
+ if(!T.qs.length)return sheet('No questions timed','Nothing to review, so nothing was saved.','Back to home',()=>{resetSetup();go('home')},'');
+ R={qs:T.qs.map(q=>({...q,...blank()})),qi:0,si:-1,edit:false};$('#resume').hidden=false;go('review');rDraw()}
+// ===== Feedback after the session =====
+TOPS['Limit, Continuity and Differentiability']=['Limits','Continuity','Differentiability','L’Hôpital’s rule','Standard expansions'];
+const blank=()=>({o:'',cause:'',faster:null,photo:false,solT:'',solOpen:false,solI:0,sols:[],diff:'',tops:[],fact:{mode:'',id:-1,kind:'',front:'',back:'',frontPhoto:false,backPhoto:false,frontOpen:false,backOpen:false}});
+const OUT={right:'Got it right',wrong:'Got it wrong',cant:'Couldn’t solve',wq:'Wrong question'};
+const CAUSE=[['concept','Conceptual misunderstanding'],['fact','Forgotten fact or formula'],['slip','Calculation or execution slip'],['approach',''],['read','Didn’t understand the question'],['other','Other / unsure']];
+const cl=(c,o)=>c==='approach'?(o==='wrong'?'Used the wrong approach':'Couldn’t identify an approach'):CAUSE.find(x=>x[0]===c)[1];
+const OK={faster:q=>q.faster!==null,cause:q=>!!q.cause,qphoto:q=>q.photo,sol:q=>!!(q.solT.trim()||q.solI),diff:q=>!!q.diff,tops:q=>q.tops.length>0,dt:q=>!!q.diff&&q.tops.length>0,fact:q=>q.fact.mode==='new'||(q.fact.mode==='link'&&q.fact.id>=0),fk:q=>!!q.fact.kind,ff:q=>!!(q.fact.frontPhoto||q.fact.front.trim()),fb:q=>!!(q.fact.backPhoto||q.fact.back.trim())};
+function seq(q){const s=[];
+ if(q.o==='right'&&q.ms>SLOW){s.push('faster');if(q.faster)s.push('qphoto','sol','dt')}
+ else if(q.o==='wrong'||q.o==='cant'){s.push('cause','qphoto','sol','dt');if(q.cause==='fact'){s.push('fact');if(q.fact.mode==='new')s.push('fk','ff','fb')}}
+ return s}
+const opt=(a,v,l,sel,sub)=>`<button class="opt${sel?' sel':''}" data-a="${a}" data-v="${esc(v)}"><span>${l}${sub?'<small>'+sub+'</small>':''}</span><span class="ar">›</span></button>`;
+const cta=(t,on)=>`<div class="fx"><button class="cta${on?'':' off'}" id="rcta" data-a="go" style="font-size:20px">${t} <span class="ic" style="width:44px;height:44px;font-size:24px">→</span></button></div>`;
+const topChips=(q,s)=>(TOPS[T.chap]||['Basics','Key results','Applications','Common errors']).filter(t=>t.toLowerCase().includes(s||'')).map(t=>`<button class="chip${q.tops.includes(t)?' sel':''}" data-a="top" data-v="${esc(t)}">${esc(t)}</button>`).join('')||'<div class="empty" style="margin:0 12px">No topic matches.</div>';
+const factRows=(q,s)=>FACTS.map((c,i)=>({c,i})).filter(x=>!s||Object.values(x.c).join(' ').toLowerCase().includes(s)).sort((a,b)=>(b.c.s===T.sub)-(a.c.s===T.sub)).slice(0,4).map(x=>`<button class="opt ch${q.fact.mode==='link'&&q.fact.id===x.i?' sel':''}" data-a="flink" data-v="${x.i}"><span>${esc(x.c.f)}<small>${esc(x.c.c)} · ${x.c.k}</small></span><span class="ar">›</span></button>`).join('')||'<div class="empty" style="margin:0 12px 12px">No fact card matches.</div>';
+function rStep(q,k,last){const nt=last?'Save question':'Continue',img=q.photo?shotH(q.photo,'qph','qed','qrm'):'<button class="drop" data-a="qph"><span class="dc">+</span><b>Add photo</b><span>Take a picture or choose one</span></button>';
+ if(k==='out')return '<h2>How did it go?</h2>'+Object.entries(OUT).map(([v,l])=>opt('out',v,l,q.o===v)).join('')+'<div class="mini">A wrong question is not counted against you.</div>';
+ if(k==='faster')return `<h2>Do you know a faster way?</h2><div class="mini">You took ${fmt(q.ms)}. A faster method is saved with this question.</div>`+opt('faster','1','Yes, I do',q.faster===true)+opt('faster','0','No',q.faster===false);
+ if(k==='cause')return '<h2>What made it difficult?</h2><div class="mini">Choose the main reason.</div>'+CAUSE.filter(c=>!(q.o==='cant'&&c[0]==='slip')).map(c=>opt('cause',c[0],cl(c[0],q.o),q.cause===c[0])).join('');
+ if(k==='qphoto')return '<h2>Question photo</h2><div class="mini">Required for every saved question.</div>'+img+cta(nt,OK.qphoto(q));
+ if(k==='sol')return `<h2>${q.o==='right'?'Your faster method':'Correct solution'}</h2><div class="mini">Add photos, text, or both. At least one is required.</div>`+q.sols.map((u,i)=>shotH(u,'srp','sed','srm',i,'Solution image '+(i+1))).join('')+(q.solI?'<button class="addtx" data-a="sph">+ Add another photo</button>':'<button class="drop" style="min-height:150px" data-a="sph"><span class="dc">+</span><b>Add solution photo</b><span>Take a picture or choose one</span></button>')+(q.solOpen||q.solT?`<textarea class="ta" id="rt" data-f="solT" placeholder="Text solution">${esc(q.solT)}</textarea>`:'<button class="addtx" data-a="sopen">+ Add a text solution <em>optional</em></button>')+cta(nt,OK.sol(q));
+ if(k==='dt'){if(!q.tops.length&&!q._pre){q._pre=1;const p=R.qs.slice(0,R.qi).reverse().find(x=>x.tops.length);if(p)q.tops=[...p.tops]}
+  return `<h2>How hard, and which topics?</h2><div class="mini">Rate the question itself, not how it felt today. Topics carry over from your last question.</div><div class="seg" style="margin:0 12px 14px">${['Easy','Medium','Hard'].map(d=>`<button class="d-${d}${q.diff===d?' on':''}" data-a="dif" data-v="${d}">${d}</button>`).join('')}</div><input class="search" id="rsq" placeholder="Search topics" aria-label="Search topics"><div class="chips" id="rlist">${topChips(q,'')}</div>`+cta(nt,OK.dt(q))}
+ if(k==='diff')return '<h2>How hard is this question?</h2><div class="mini">Judge the question itself, not how it felt today.</div>'+['Easy','Medium','Hard'].map(d=>opt('diff',d,d,q.diff===d)).join('');
+ if(k==='tops')return `<h2>Which topics?</h2><div class="mini">Pick one or more.</div><input class="search" id="rsq" placeholder="Search topics" aria-label="Search topics"><div class="chips" id="rlist">${topChips(q,'')}</div>`+cta(nt,OK.tops(q));
+ if(k==='fact')return `<h2>Link the fact you forgot</h2><div class="mini">Search your fact cards first.</div><input class="search" id="rsq" placeholder="Search fact cards" aria-label="Search fact cards"><div id="rlist">${factRows(q,'')}</div><button class="addtx" data-a="fnew">+ Create a new fact card instead</button>`+cta('Continue',OK.fact(q));
+ const f=q.fact;
+ if(k==='fk')return '<h2>What kind of card is it?</h2><div class="mini">Saved under '+esc(T.sub)+' · '+esc(T.chap)+', tagged with this question’s topics.</div>'+KINDS.map(x=>opt('fkind',x,x,f.kind===x)).join('');
+ if(k==='ff'||k==='fb'){const s=k==='ff'?'front':'back',lab=s==='front'?'Recall prompt':'Text answer';
+  return `<h2>${s==='front'?'Front of the card':'Back of the card'}</h2><div class="mini">Side ${s==='front'?1:2} of 2 · ${s==='front'?'what you see when you try to recall':'what you check yourself against'}</div>`+(f[s+'Photo']?shotH(f[s+'Photo'],'fph','fed','frm',s):`<button class="drop" data-a="fph" data-v="${s}"><span class="dc">+</span><b>Add photo</b><span>Take a picture or choose one</span></button>`)+(f[s+'Open']||f[s]?`<textarea class="ta" id="rt" data-f="${k}" placeholder="${lab}">${esc(f[s])}</textarea>`:`<button class="addtx" data-a="ftx" data-v="${s}">+ Add ${s==='front'?'a recall prompt':'a text answer'} <em>optional</em></button>`)+cta(k==='fb'?'Save question':'Continue',OK[k](q))}
+ return `<h2>New fact card</h2><div class="mini">Saved under ${esc(T.sub)} · ${esc(T.chap)}, tagged with this question’s topics.</div><div class="chips">${KINDS.map(x=>`<button class="chip${q.fact.kind===x?' sel':''}" data-a="fkind" data-v="${x}">${x}</button>`).join('')}</div><label class="lbl">Front · what you try to recall</label><textarea class="ta" data-f="ff">${esc(q.fact.front)}</textarea><label class="lbl">Back · the answer</label><textarea class="ta" data-f="fb">${esc(q.fact.back)}</textarea>`+cta(nt,OK.fnew(q))}
+function qSum(q){if(q.o==='right')return q.ms>SLOW?'Right but slow'+(q.faster?' · faster method saved':''):'Right and fast';
+ if(q.o==='wq')return 'Wrong question';return OUT[q.o]+' · '+cl(q.cause,q.o)+(q.tops.length?' · '+q.tops.join(', '):'')}
+function rDraw(){window.scrollTo(0,0);const M=R.qs.length;$('#rtitle').textContent=T.chap;
+ $('#rprog').innerHTML=R.qs.map((_,i)=>`<i class="${i<=R.qi?'on':''}"></i>`).join('');
+ $('#rbk').hidden=R.qi===0&&R.si<0;
+ if(R.qi>=M){$('#rhead').innerHTML=`<b>Review</b><span>${M} question${M>1?'s':''}</span>`;
+  $('#rbody').innerHTML='<h2>Check, then save</h2><div class="mini">Nothing is saved until you tap Save session. Tap a question to change it.</div>'+R.qs.map((q,i)=>`<button class="opt ch" data-a="edit" data-v="${i}"><span>Q${q.n} · ${fmt(q.ms)}<small>${esc(qSum(q))}</small></span><span class="ar">›</span></button>`).join('')+'<div class="fx" style="padding-top:8px"><button class="cta" data-a="save" style="font-size:20px">Save session <span class="ic" style="width:44px;height:44px;font-size:24px">✓</span></button><button class="ghost" data-a="discard" style="color:#ff6b6b">Discard session</button></div>';return}
+ const q=R.qs[R.qi],s=seq(q),k=R.si<0?'out':s[R.si];
+ $('#rhead').innerHTML=`<b>Q${q.n} · ${fmt(q.ms)}</b><span>${k==='out'?'Question '+(R.qi+1)+' of '+M:'Step '+(R.si+1)+' of '+s.length}</span>`;
+ $('#rbody').innerHTML=rStep(q,k,R.si===s.length-1);const t=$('#rt');if(t&&q.solOpen&&!q.solT)t.focus()}
+function rNext(){const q=R.qs[R.qi];if(R.si+1<seq(q).length)R.si++;else rDone()}
+function rDone(){if(R.edit){R.edit=false;R.qi=R.qs.length}else R.qi++;R.si=-1}
+function rAct(a,v){const q=R.qs[R.qi];
+ if(a==='out'){if(q.o!==v)Object.assign(q,blank(),{o:v});R.si=seq(q).length?0:-1;if(R.si<0)rDone()}
+ else if(a==='faster'){q.faster=v==='1';rNext()}
+ else if(a==='cause'){if(q.cause!==v)q.fact=blank().fact;q.cause=v;rNext()}
+ else if(a==='qph')return getPhoto(u=>{q.photo=u;rDraw()});else if(a==='qed')return editPhoto(q.photo,u=>{q.photo=u;rDraw()});else if(a==='qrm')q.photo='';
+ else if(a==='sph')return getPhoto(u=>{q.sols.push(u);q.solI=q.sols.length;rDraw()});else if(a==='srp')return getPhoto(u=>{q.sols[+v]=u;rDraw()});else if(a==='sed')return editPhoto(q.sols[+v],u=>{q.sols[+v]=u;rDraw()});else if(a==='srm'){q.sols.splice(+v,1);q.solI=q.sols.length}else if(a==='sopen')q.solOpen=true;
+ else if(a==='diff'){q.diff=v;rNext()}
+ else if(a==='dif')q.diff=v;
+ else if(a==='top')q.tops=q.tops.includes(v)?q.tops.filter(x=>x!==v):[...q.tops,v];
+ else if(a==='flink')q.fact={...q.fact,mode:'link',id:+v};
+ else if(a==='fnew'){q.fact.mode='new';q.fact.id=-1;rNext()}
+ else if(a==='fkind'){q.fact.kind=v;rNext()}
+ else if(a==='fph')return getPhoto(u=>{q.fact[v+'Photo']=u;rDraw()});else if(a==='fed')return editPhoto(q.fact[v+'Photo'],u=>{q.fact[v+'Photo']=u;rDraw()});else if(a==='frm')q.fact[v+'Photo']='';else if(a==='ftx')q.fact[v+'Open']=true;
+ else if(a==='go'){const k=seq(q)[R.si];if(OK[k](q))rNext();else return}
+ else if(a==='edit'){R.qi=+v;R.si=-1;R.edit=true}
+ else if(a==='save')return rSave();
+ else if(a==='discard')return sheet('Discard this session?','Nothing from it is saved: no history, cards, or stats.','Discard',()=>{resetSetup();go('home')},'Keep reviewing');
+ rDraw()}
+$('#rbody').onclick=e=>{const b=e.target.closest('[data-a]');if(b&&R)rAct(b.dataset.a,b.dataset.v)};
+$('#rbody').oninput=e=>{const t=e.target,q=R.qs[R.qi],f=t.dataset.f,k=seq(q)[R.si];
+ if(f){if(f==='solT')q.solT=t.value;else if(f==='ff')q.fact.front=t.value;else q.fact.back=t.value;const c=$('#rcta');if(c)c.classList.toggle('off',!OK[k](q))}
+ else if(t.id==='rsq'){const s=t.value.toLowerCase();$('#rlist').innerHTML=(k==='tops'||k==='dt')?topChips(q,s):factRows(q,s)}};
+$('#rback').onclick=()=>{if(R.qi>=R.qs.length){R.qi=R.qs.length-1;R.si=seq(R.qs[R.qi]).length-1;R.edit=false}else if(R.si>=0)R.si--;else if(R.qi>0){R.qi--;R.si=seq(R.qs[R.qi]).length-1}rDraw()};
+function rSave(){$('#resume').hidden=true;const qs=R.qs,c=f=>qs.filter(f).length,fast=c(q=>q.o==='right'&&q.ms<=SLOW),slow=c(q=>q.o==='right'&&q.ms>SLOW),wr=c(q=>q.o==='wrong'),ct=c(q=>q.o==='cant'),wq=c(q=>q.o==='wq'),
+ att=fast+slow+wr+ct,acc=att?Math.round((fast+slow)/att*100):0,act=qs.reduce((a,q)=>a+q.ms,0),qc=c(q=>q.photo),fl=c(q=>q.fact.mode==='link'),fn=c(q=>q.fact.mode==='new'),
+ ph=qs.reduce((a,q)=>a+(q.photo?1:0)+q.solI,0),why={},tp={};
+ qs.filter(q=>q.o==='wrong'||q.o==='cant').forEach(q=>{const l=cl(q.cause,q.o);why[l]=(why[l]||0)+1;q.tops.forEach(t=>tp[t]=(tp[t]||0)+1)});
+ const chips=o=>Object.entries(o).map(([k,n])=>`<span class="chip" style="padding:8px 14px;font-size:14px;cursor:default">${esc(k)} <b style="color:var(--lime)">${n}</b></span>`).join('')||'<span class="mini" style="margin:0">None</span>';
+ const top=Object.entries(why).sort((a,b)=>b[1]-a[1])[0],dl=Math.round((act/qs.length-190000)/1000);
+ const seg=[['Right and fast',fast,'#5fd35f'],['Right but slow',slow,'#ffb020'],['Wrong',wr,'#ff3b3b'],['Couldn’t solve',ct,'#8d8d8d'],['Wrong question',wq,'#444']];
+ $('#summary').innerHTML=`<div class="card" style="padding:22px 18px"><div class="mini" style="margin:0 0 6px">SESSION SUMMARY</div><div style="font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.15">${esc(T.chap)}</div><div class="mini" style="margin:6px 0 0">${esc(T.sub)} · ${T.how}</div>
+ <div style="display:flex;gap:3px;height:10px;margin:18px 0 12px">${seg.filter(x=>x[1]).map(x=>`<i style="flex:${x[1]};background:${x[2]};border-radius:5px"></i>`).join('')}</div>
+ ${seg.map(x=>`<div class="mt" style="font-size:14px;margin:7px 0"><i style="background:${x[2]}"></i>${x[0]}<b style="margin-left:auto;color:#fff">${x[1]}</b></div>`).join('')}
+ <div class="sg"><div><small>Questions timed</small><b>${qs.length}</b></div><div><small>Accuracy</small><b>${acc}%</b></div><div><small>Active time</small><b>${fmt(act)}</b></div><div><small>Average / question</small><b>${fmt(act/qs.length)}</b></div><div><small>Question cards added</small><b>${qc}</b></div><div><small>Fact cards linked / created</small><b>${fl} / ${fn}</b></div></div>
+ <div class="prev" style="margin:0 0 14px"><small>Compared with your last 5 ${esc(T.sub)} sessions (sample data)</small><b style="margin:0">Average ${Math.abs(dl)}s ${dl<=0?'faster':'slower'} per question</b>${top?`<small style="margin-top:10px">Next</small><b style="margin:0">${top[1]} of your misses: ${esc(top[0])}. Review that first.</b>`:''}</div>
+ <div class="sec" style="text-align:left;margin:6px 0 8px">Why questions were missed</div><div class="tg" style="gap:8px">${chips(why)}</div>
+ <div class="sec" style="text-align:left;margin:18px 0 8px">Topics to revisit</div><div class="tg" style="gap:8px">${chips(tp)}</div></div>
+ <div class="row">${rings(0,ph?0:null)}<div class="t"><b>Saved on this device</b><span>Cloud backup runs next</span><div class="mt"><i style="background:${ph?'var(--blue)':'#444'}"></i>${ph?ph+' photo'+(ph>1?'s':'')+' waiting for Google Drive':'No photos to back up'}</div></div><button class="btn-s btn-g" data-go="sync">Sync</button></div>
+ <button class="cta" id="sdone" style="font-size:22px;margin-top:6px">Done <span class="ic">✓</span></button>`;
+ $('#sdone').onclick=()=>{resetSetup();go('home')};
+ $('.hist').insertAdjacentHTML('afterbegin',`<div class="hrow"><div><b>${esc(T.sub)}</b><span class="sb">${esc(T.chap.toLowerCase())}</span><span class="pl">${Math.round(T.total/60000)} min</span></div><div><span class="u">${Math.max(1,Math.round(act/60000))} min</span><span class="nn">${qs.length}</span><span class="tl">total attempt</span></div><div><span class="nn">${acc}%</span><span class="tl">Accuracy</span></div><div><span class="nn">${fmt(act/qs.length).replace(/^0/,'')}</span><span class="tl">avg time per question</span></div></div>`);
+ go('summary')}
+
+// ===== Photos: pick, rotate, crop (used by every photo slot) =====
+function shotH(u,rep,ed,rm,v,l){const d=v!==undefined?` data-v="${v}"`:'';return `<div class="shot has"><img src="${u}" alt="${l||'Selected photo'}"><div class="sa"><button data-a="${rep}"${d}>Replace</button><button data-a="${ed}"${d}>Rotate / crop</button><button data-a="${rm}"${d}>Remove</button></div></div>`}
+let PE=null;const clp=(v,a,b)=>Math.min(Math.max(v,a),b);
+function getPhoto(cb){const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=()=>{const f=i.files[0];if(!f)return;const r=new FileReader();r.onload=()=>editPhoto(r.result,cb);r.readAsDataURL(f)};i.click()}
+function editPhoto(url,cb){const im=new Image();im.onload=()=>{PE={im,rot:0,ang:0,pre:'0',ptrs:new Map(),cb};$('#pe-a').value=0;peUi();$('#ped').hidden=false;document.body.style.overflow='hidden';requestAnimationFrame(peDraw)};im.src=url}
+function peUi(){$('#pe-av').textContent=PE.ang+'\u00b0';$$('#pe-ch button').forEach(b=>b.classList.toggle('on',b.dataset.r===PE.pre))}
+function peDraw(){if(!PE)return;const im=PE.im,sw=im.naturalWidth,sh=im.naturalHeight,o=PE.rot%2,bw=o?sh:sw,bh=o?sw:sh,t=Math.abs(PE.ang)*Math.PI/180,a=Math.min(1/(Math.cos(t)+bh/bw*Math.sin(t)),1/(bw/bh*Math.sin(t)+Math.cos(t))),k=Math.min(1,1800/Math.max(bw,bh)),w=Math.max(1,Math.round(bw*a*k)),h=Math.max(1,Math.round(bh*a*k)),s=document.createElement('canvas');s.width=w;s.height=h;
+ const c=s.getContext('2d');c.translate(w/2,h/2);c.rotate((PE.rot*90+PE.ang)*Math.PI/180);c.drawImage(im,-sw*k/2,-sh*k/2,sw*k,sh*k);PE.src=s;
+ const st=$('#pe-st').getBoundingClientRect(),P=30,sc=Math.min((st.width-2*P)/w,(st.height-2*P)/h),dw=Math.max(80,Math.round(w*sc)),dh=Math.max(80,Math.round(h*sc)),cv=$('#pe-cv');cv.width=dw;cv.height=dh;cv.getContext('2d').drawImage(s,0,0,dw,dh);PE.dw=dw;PE.dh=dh;PE.sc=dw/w;peSet()}
+function peR(){return PE.pre==='o'?PE.dw/PE.dh:(+PE.pre||0)}
+function peSet(){const r=peR(),W=PE.dw,H=PE.dh;let w=W,h=H;if(r>0){if(W/H>r)w=H*r;else h=W/r}PE.box={x:(W-w)/2,y:(H-h)/2,w,h};peBox()}
+function peBox(){const b=PE.box,e=$('#pe-box');e.style.cssText=`left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px`;e.classList.toggle('lock',peR()>0);$('#pe-dim').textContent=Math.round(b.w/PE.sc)+' \u00d7 '+Math.round(b.h/PE.sc)+' px'}
+function peClose(){$('#ped').hidden=true;document.body.style.overflow='';PE=null}
+const pst=$('#pe-st');
+pst.onpointerdown=e=>{if(!PE)return;pst.setPointerCapture(e.pointerId);PE.ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+ if(PE.ptrs.size===2){const p=[...PE.ptrs.values()];PE.pz={d:Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]),b:{...PE.box}};PE.d=null}
+ else if(PE.ptrs.size===1){const t=e.target,h=t.dataset&&t.dataset.h||(t.id==='pe-box'?'m':null);PE.d=h?{h,x:e.clientX,y:e.clientY,b:{...PE.box}}:null}};
+pst.onpointermove=e=>{if(!PE||!PE.ptrs.has(e.pointerId))return;PE.ptrs.set(e.pointerId,[e.clientX,e.clientY]);const W=PE.dw,H=PE.dh,M=48;
+ if(PE.pz&&PE.ptrs.size===2){const p=[...PE.ptrs.values()],k=Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])/PE.pz.d,o=PE.pz.b,cx=o.x+o.w/2,cy=o.y+o.h/2;
+  let w=clp(o.w/k,M,W),h=o.h*(w/o.w);if(h>H){h=H;w=o.w*(h/o.h)}if(h<M){h=M;w=o.w*h/o.h}
+  PE.box={x:clp(cx-w/2,0,W-w),y:clp(cy-h/2,0,H-h),w,h};return peBox()}
+ const d=PE.d;if(!d||PE.ptrs.size!==1)return;const dx=e.clientX-d.x,dy=e.clientY-d.y,o=d.b,L=peR(),g=d.h;let x=o.x,y=o.y,w=o.w,h=o.h;
+ if(g==='m'){x=clp(o.x+dx,0,W-w);y=clp(o.y+dy,0,H-h);const S=8;if(Math.abs(x)<S)x=0;if(Math.abs(x+w-W)<S)x=W-w;if(Math.abs(y)<S)y=0;if(Math.abs(y+h-H)<S)y=H-h}
+ else if(g.length===2){const ax=g.includes('w')?o.x+o.w:o.x,ay=g.includes('n')?o.y+o.h:o.y,px=(g.includes('w')?o.x:o.x+o.w)+dx,py=(g.includes('n')?o.y:o.y+o.h)+dy,mx=g.includes('w')?ax:W-ax,my=g.includes('n')?ay:H-ay;
+  w=clp(Math.abs(px-ax),Math.min(M,mx),mx);h=clp(Math.abs(py-ay),Math.min(M,my),my);
+  if(L>0){if(w/h>L)w=h*L;else h=w/L;if(w>mx){w=mx;h=w/L}if(h>my){h=my;w=h*L}}
+  x=g.includes('w')?ax-w:ax;y=g.includes('n')?ay-h:ay}
+ else if(!L){if(g==='w'){x=clp(o.x+dx,0,o.x+o.w-M);w=o.w+o.x-x}if(g==='e')w=clp(o.w+dx,M,W-o.x);if(g==='n'){y=clp(o.y+dy,0,o.y+o.h-M);h=o.h+o.y-y}if(g==='s')h=clp(o.h+dy,M,H-o.y)}
+ PE.box={x,y,w,h};peBox()};
+pst.onpointerup=pst.onpointercancel=e=>{if(!PE)return;PE.ptrs.delete(e.pointerId);if(PE.ptrs.size<2)PE.pz=null;if(!PE.ptrs.size)PE.d=null};
+$('#pe-l').onclick=()=>{PE.rot=(PE.rot+3)%4;peDraw()};$('#pe-r').onclick=()=>{PE.rot=(PE.rot+1)%4;peDraw()};
+$('#pe-a').oninput=e=>{PE.ang=+e.target.value;peUi();cancelAnimationFrame(PE.raf);PE.raf=requestAnimationFrame(peDraw)};
+$('#pe-av').onclick=()=>{PE.ang=0;$('#pe-a').value=0;peUi();peDraw()};
+$('#pe-ch').onclick=e=>{const b=e.target.closest('button');if(!b)return;PE.pre=b.dataset.r;peUi();peSet();if(navigator.vibrate)navigator.vibrate(8)};
+$('#pe-rs').onclick=()=>{PE.rot=0;PE.ang=0;PE.pre='0';$('#pe-a').value=0;peUi();peDraw()};$('#pe-x').onclick=peClose;
+$('#pe-ok').onclick=()=>{const b=PE.box,k=1/PE.sc,o=document.createElement('canvas');o.width=Math.max(1,Math.round(b.w*k));o.height=Math.max(1,Math.round(b.h*k));o.getContext('2d').drawImage(PE.src,b.x*k,b.y*k,b.w*k,b.h*k,0,0,o.width,o.height);const u=o.toDataURL('image/jpeg',.88),cb=PE.cb;peClose();cb(u)};
+
+// ===== Study schedule =====
+const WD=['M','T','W','Th','F','Sa','S'],WF=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'],TODAY=2;
+const hm=m=>pad(Math.floor(m/60))+':'+pad(m%60),lf=m=>{const h=Math.floor(m/60),r=m%60;return((h?h+' h':'')+(h&&r?' ':'')+(r?r+' min':''))||'0 min'},cp=o=>JSON.parse(JSON.stringify(o));
+let SV=WD.map((_,i)=>({off:i===6,iv:[[420,720],[780,1080],[1140,1380]]})),SC=null;
+const bad=(iv,i)=>{const v=iv[i];return v[1]-v[0]<15?'Must be at least 15 minutes':iv.some((o,j)=>j!==i&&o[0]<v[1]&&v[0]<o[1])?'Overlaps another interval':''};
+const dayBad=d=>!d.off&&(!d.iv.length||d.iv.some((_,i)=>bad(d.iv,i)));
+function gtoast(m){const t=$('#gtoast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2600)}
+function schOpen(){SC={d:TODAY,days:cp(SV),sel:-1};schDraw();go('sched');window.scrollTo(0,0)}
+function schDraw(){const D=SC.days[SC.d],iv=D.iv,tot=iv.reduce((a,v)=>a+v[1]-v[0],0);
+ $('#scwk').innerHTML=WD.map((n,i)=>{const x=SC.days[i];return `<button class="wd${i===SC.d?' on':''}${x.off?' off':''}${i===TODAY?' today':''}${dayBad(x)?' err':''}" data-d="${i}" aria-pressed="${i===SC.d}" aria-label="${WF[i]}, ${x.off?'day off':x.iv.length+' intervals'}">${n}${!x.off&&x.iv.length?'<i></i>':''}</button>`}).join('');
+ $('#scsum').innerHTML=`<b>${WF[SC.d]}${SC.d===TODAY?' \u00b7 today':''}</b><span>${D.off?'Day off':iv.length+' interval'+(iv.length===1?'':'s')+' \u00b7 '+lf(tot)}</span>`;
+ $('#scoff').checked=D.off;$('#scbody').hidden=D.off;$('#scoffmsg').hidden=!D.off;$('#scoffmsg').textContent=`No studying on ${WF[SC.d]}s. Measure won\u2019t start sessions or record time that day.`;
+ $('#scblk').innerHTML=iv.map((v,i)=>`<b class="${bad(iv,i)?'bad':''}${SC.sel===i?' sel':''}" data-b="${i}" style="left:${v[0]/14.4}%;width:${(v[1]-v[0])/14.4}%"></b>`).join('');
+ $('#sclist').innerHTML=iv.length?iv.map((v,i)=>{const e=bad(iv,i);return `<div class="gr${SC.sel===i?' sel':''}" data-r="${i}"><label class="tp">${hm(v[0])}<input type="time" step="300" value="${hm(Math.min(v[0],1439))}" data-i="${i}" data-k="0" aria-label="Start time"></label><span class="arw">\u2192</span><label class="tp">${hm(v[1])}<input type="time" step="300" value="${hm(Math.min(v[1],1439))}" data-i="${i}" data-k="1" aria-label="End time"></label><span class="ld">${lf(v[1]-v[0])}</span><button class="xb" data-x="${i}" aria-label="Delete interval">\u2212</button></div>${e?`<div class="er">${e}</div>`:''}`}).join(''):'<div class="er" style="padding:14px 16px">Add at least one interval, or mark this day off.</div>';
+ $('#sctot').textContent='Weekly total: '+lf(SC.days.reduce((a,d)=>a+(d.off?0:d.iv.reduce((b,v)=>b+v[1]-v[0],0)),0));
+ $('#scdone').disabled=SC.days.some(dayBad)}
+$('#scwk').onclick=e=>{const b=e.target.closest('[data-d]');if(b){SC.d=+b.dataset.d;SC.sel=-1;schDraw()}};
+$('#scoff').onchange=e=>{const D=SC.days[SC.d];D.off=e.target.checked;if(!D.off&&!D.iv.length)D.iv=[[540,1020]];schDraw()};
+$('#sclist').onchange=e=>{const t=e.target;if(t.dataset.i===undefined||!t.value)return;const iv=SC.days[SC.d].iv,v=iv[+t.dataset.i],[h,m]=t.value.split(':').map(Number),x=t.value==='23:59'?1440:h*60+m;if(t.dataset.k==='0')v[0]=x;else v[1]=x;iv.sort((a,b)=>a[0]-b[0]);SC.sel=-1;schDraw()};
+$('#sclist').onclick=e=>{const x=e.target.closest('[data-x]');if(x){SC.days[SC.d].iv.splice(+x.dataset.x,1);SC.sel=-1;schDraw()}};
+$('#scblk').onclick=e=>{const b=e.target.closest('[data-b]');if(!b)return;SC.sel=+b.dataset.b;schDraw();const r=$('#sclist [data-r="'+SC.sel+'"]');if(r)r.scrollIntoView({block:'nearest',behavior:'smooth'})};
+const sst=$('#scst'),smin=(e,r)=>clp(Math.round((e.clientX-r.left)/r.width*48)*30,0,1440);
+sst.onpointerdown=e=>{scLine(e);if(e.target.dataset.b!==undefined)return;const r=sst.getBoundingClientRect(),a=smin(e,r);SC.g={r,a,b:a};sst.setPointerCapture(e.pointerId)};
+sst.onpointermove=e=>{scLine(e);const g=SC&&SC.g;if(!g)return;g.b=smin(e,g.r);const lo=Math.min(g.a,g.b),hi=Math.max(g.a,g.b),G=$('#scgh');G.hidden=hi-lo<30;G.style.left=lo/14.4+'%';G.style.width=(hi-lo)/14.4+'%'};
+sst.onpointerup=e=>{if(e.pointerType==='touch')$('#scln').hidden=true;const g=SC&&SC.g;if(!g)return;SC.g=null;$('#scgh').hidden=true;const lo=Math.min(g.a,g.b),hi=Math.max(g.a,g.b);if(hi-lo<30)return;const iv=SC.days[SC.d].iv;if(iv.some(o=>o[0]<hi&&lo<o[1]))return gtoast('That overlaps another interval');iv.push([lo,hi]);iv.sort((a,b)=>a[0]-b[0]);SC.sel=iv.findIndex(o=>o[0]===lo);schDraw()};
+sst.onpointercancel=()=>{if(SC)SC.g=null;$('#scgh').hidden=true};
+function scLine(e){const m=smin(e,sst.getBoundingClientRect()),p=m/14.4,L=$('#scln'),em=L.firstChild;L.hidden=false;L.classList.toggle('t',e.pointerType==='touch');if(e.pointerType==='touch'&&SC&&SC.lm!==m&&navigator.vibrate)navigator.vibrate(4);if(SC)SC.lm=m;L.style.left=p+'%';em.textContent=hm(m);em.style.transform=p<9?'translateX(-2px)':p>91?'translateX(calc(-100% + 2px))':'translateX(-50%)'}
+sst.onpointerleave=()=>{if(!(SC&&SC.g))$('#scln').hidden=true};
+$('#scadd').onclick=()=>{const iv=SC.days[SC.d].iv;let s=360;iv.slice().sort((a,b)=>a[0]-b[0]).forEach(o=>{if(o[0]<s+60&&s<o[1])s=o[1]});if(s+60>1440)return gtoast('No free hour left on this day');iv.push([s,s+60]);iv.sort((a,b)=>a[0]-b[0]);SC.sel=iv.findIndex(o=>o[0]===s);schDraw()};
+function ccDraw(){$('#sccw').innerHTML=WD.map((n,i)=>`<button class="wd${SC.cp.has(i)?' on':''}" data-d="${i}" ${i===SC.d?'disabled style="opacity:.3"':''} aria-label="${WF[i]}" aria-pressed="${SC.cp.has(i)}">${n}</button>`).join('');$('#sccok').disabled=!SC.cp.size;$('#scch3').textContent='Copy '+WF[SC.d]+' to\u2026'}
+$('#sccopy').onclick=()=>{SC.cp=new Set();ccDraw();$('#sccs').classList.add('on')};
+$('#sccw').onclick=e=>{const b=e.target.closest('[data-d]');if(!b||b.disabled)return;const i=+b.dataset.d;SC.cp.has(i)?SC.cp.delete(i):SC.cp.add(i);ccDraw()};
+$('#sccok').onclick=()=>{const n=SC.cp.size;SC.cp.forEach(i=>SC.days[i]=cp(SC.days[SC.d]));$('#sccs').classList.remove('on');schDraw();gtoast('Copied to '+n+' day'+(n>1?'s':''))};
+$('#sccx').onclick=()=>$('#sccs').classList.remove('on');
+$('#scdone').onclick=()=>{SV=cp(SC.days);go('home');gtoast('Schedule saved. It starts tomorrow.')};
+$('#sccancel').onclick=()=>JSON.stringify(SC.days)===JSON.stringify(SV)?go('home'):sheet('Discard changes?','Your schedule edits won\u2019t be saved.','Discard',()=>go('home'),'Keep editing');
+(()=>{const b=$('.band');b.setAttribute('role','button');b.tabIndex=0;b.setAttribute('aria-label','Today\u2019s study intervals. Open study schedule.');b.onclick=schOpen;b.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();schOpen()}}})();
+</script>
+</body>
+</html>
