@@ -2304,24 +2304,31 @@ function App() {
   return (
     <main className="setup-shell measure-home measure-screen-enter">
       <section className="setup-card measure-home-card" aria-labelledby="app-title">
-        <header className="measure-home-heading">
-          <div>
-            <p className="eyebrow">MEASURE · YOUR PRACTICE</p>
-            <h1 id="app-title">Today</h1>
+        <section className="home-sync-card measure-top-utility" aria-label="Backup and account">
+          <button type="button" className="home-sync-open" onClick={() => setActiveTab("sync")}>
+            <span className="home-sync-icon" aria-hidden="true">↻</span>
+            <span className="home-sync-copy">
+              <strong>{!authUser ? "Back up your practice" : syncStatus === "syncing" ? "Syncing your data…" : syncStatus === "error" ? "Sync needs attention" : pendingPhotoCount > 0 ? "Photos waiting for backup" : syncStatus === "synced" ? "Everything is backed up" : "Check your backup"}</strong>
+              <span>{!authUser ? "Saved locally · Connect an account to back up" : pendingPhotoCount > 0 ? `${pendingPhotoCount} photos waiting · View sync details` : "Sessions, cards and photo backup"}</span>
+            </span>
+            <span className="home-sync-chevron" aria-hidden="true">›</span>
+          </button>
+          <div className="measure-utility-account">
+            <span>{authUser?.email ?? "Local account"}</span>
+            <button type="button" onClick={() => document.getElementById("measure-account")?.scrollIntoView({ behavior: "smooth", block: "center" })}>Account</button>
           </div>
-          <span className="measure-date">{new Date().toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}</span>
-        </header>
+        </section>
 
         <StudyIntervalPanel userId={authUser.id} sessions={savedSessions} />
 
         <section className="measure-insights" aria-label="Practice overview">
           <div className="measure-insight-pair">
-            <article className="measure-stat measure-stat-slow">
-              <strong>{formatAverage(averageAttemptMs)}</strong>
+            <article className={`measure-stat measure-stat-slow`}>
+              <div className="measure-stat-value"><strong>{averageAttemptMs === null ? "—" : `${Math.floor(averageAttemptMs / 60000)}:${String(Math.floor(averageAttemptMs / 1000) % 60).padStart(2, "0")}.${String(Math.floor(averageAttemptMs % 1000 / 100))}`}</strong><em className="measure-delta is-neutral">—</em></div>
               <span>Average time per question</span>
             </article>
-            <article className="measure-stat measure-stat-good">
-              <strong>{accuracy === null ? "—" : `${accuracy}%`}</strong>
+            <article className="measure-stat">
+              <div className="measure-stat-value"><strong>{accuracy === null ? "—" : `${accuracy}%`}</strong><em className="measure-delta is-neutral">—</em></div>
               <span>Accuracy</span>
             </article>
           </div>
@@ -2335,7 +2342,7 @@ function App() {
                 <span>{stuckAttempts} <small>Couldn't solve</small></span>
               </div>
             </div>
-            <div className="measure-insight-divider" />
+            <div className="measure-insight-divider" aria-hidden="true" />
             <div className="measure-count-block">
               <span className="measure-overline">Fact reviews</span>
               <strong>{(recalledFacts + forgottenFacts).toLocaleString()}</strong>
@@ -2345,18 +2352,17 @@ function App() {
               </div>
             </div>
           </div>
+          <div className="measure-insight-bottom">
+            <div className="measure-kpi">
+              <span className="measure-kpi-icon" aria-hidden="true">☷</span>
+              <div><strong>—</strong><span>Syllabus covered</span></div>
+            </div>
+            <div className="measure-kpi measure-kpi-streak">
+              <span className="measure-kpi-icon" aria-hidden="true">♨</span>
+              <div><strong>— <small>days</small></strong><span>Current streak · Highest —</span></div>
+            </div>
+          </div>
           <p className="measure-insight-footnote">Totals from your saved practice and revision records.</p>
-        </section>
-
-        <section className="home-sync-card" aria-label="Sync status">
-          <button type="button" className="home-sync-open" onClick={() => setActiveTab("sync")}>
-            <span className="home-sync-icon" aria-hidden="true">↻</span>
-            <span className="home-sync-copy">
-              <strong>{!authUser ? "Back up your practice" : syncStatus === "syncing" ? "Syncing your data…" : syncStatus === "error" ? "Sync needs attention" : pendingPhotoCount > 0 ? "Photos waiting for backup" : syncStatus === "synced" ? "Everything is backed up" : "Check your backup"}</strong>
-              <span>{!authUser ? "Your data stays on this device until you connect a backup" : pendingPhotoCount > 0 ? `${pendingPhotoCount} photo${pendingPhotoCount === 1 ? "" : "s"} waiting · View sync details` : "View sessions, cards and photo backup"}</span>
-            </span>
-            <span className="home-sync-chevron" aria-hidden="true">›</span>
-          </button>
         </section>
 
         <section className="measure-create-card" aria-labelledby="measure-create-title">
@@ -2424,6 +2430,7 @@ function App() {
           </form>
         </section>
 
+        <div id="measure-account">
         <AccountPanel
           configured={supabaseConfigured}
           email={authUser?.email}
@@ -2436,6 +2443,7 @@ function App() {
           onSignOut={() => void signOut()}
           onImportLocalSessions={() => void importLocalSessions()}
         />
+        </div>
         <p className="storage-note">
           {authUser
             ? "Sessions are stored locally first and synced securely when online."
