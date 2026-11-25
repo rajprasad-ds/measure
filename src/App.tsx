@@ -68,6 +68,7 @@ import AccountPanel from "./features/account/AccountPanel";
 import CardsScreen from "./features/cards/CardsScreen";
 import MainNavigation from "./features/navigation/MainNavigation";
 import SyncScreen from "./features/sync/SyncScreen";
+import StudyIntervalPanel from "./features/study-interval/StudyIntervalPanel";
 
 const DURATIONS = [30, 45, 60, 90, 120];
 const ACTIVE_SESSION_SAVE_DEBOUNCE_MS = 300;
@@ -2042,6 +2043,8 @@ function App() {
           Choose what you’re practicing. Your session opens in a landscape-style
           view.
         </p>
+
+        <StudyIntervalPanel userId={authUser.id} sessions={savedSessions} />
 
         <section className="home-sync-card" aria-label="Sync status">
           <button type="button" className="home-sync-open" onClick={() => setActiveTab("sync")}>
