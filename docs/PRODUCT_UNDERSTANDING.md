@@ -1195,3 +1195,101 @@ The earlier crop editor relied on a zoomed canvas with direct drag and pinch ges
 - The component uses Pointer Events for drag/pinch, explicit crop handles, aspect presets, and canvas-based JPEG export.
 - This is an initial implementation and has **not yet been build-verified or tested on a physical mobile device**. In particular, verify touch pointer capture, handle resizing, pinch midpoint behavior, rotated images, and pixel-accurate export before considering it complete.
 - Do not merge to `main` until the user has tested it on mobile and approved the result.
+
+
+## 17.9 Study Interval feature — research findings and implementation handoff (25 November 2026)
+
+### Current product understanding
+
+The Study Interval feature is the next focused Phase 1 feature. Its purpose is to represent the student's available study time as a recurring weekly schedule. It is a study-availability system, not a revision timetable and not a revision-session generator.
+
+The following product behaviour is already established in Section 5 and remains authoritative:
+
+- Each weekday is either **OFF** or has one or more study intervals.
+- OFF days have no intervals; study activity must not be started and no study time may be recorded on those days.
+- Intervals represent all study availability, including normal question practice and future revision activities. They are not reserved exclusively for Measure-generated revision.
+- The weekly schedule is the source of truth.
+- The schedule applicable to a calendar day is established at the start of that day and remains fixed for the rest of that day. Editing the recurring weekly schedule during the day affects the next calendar day, not the current one.
+- Past days and their actual activity records must never be rewritten by later schedule edits.
+- The application identifies intervals as passed, active, or upcoming.
+- User-triggered plan refresh and revision-time allocation are separate later planning concerns; do not silently add them to this focused Study Interval feature.
+
+Example of a weekday with multiple intervals: 08:00–12:00, 13:00–18:00, and 19:00–23:00.
+
+### Findings from the initial technical review
+
+The current product notes identify no existing weekly schedule model or Study Interval UI. The feature therefore needs a new settings/data model and time-aware application logic. This is a preliminary repository-level finding, not a substitute for inspecting the current `phase-1` source tree and Supabase migrations immediately before implementation.
+
+The project uses React, TypeScript, Vite, Dexie/IndexedDB and Supabase. The expected implementation responsibilities are:
+
+1. Persist the authenticated user's recurring weekly schedule in Supabase.
+2. Enforce owner isolation with Supabase row-level security.
+3. Provide a central schedule/domain service so Home, practice and other screens do not independently interpret intervals.
+4. Resolve the applicable weekday schedule and derive passed/active/upcoming interval state using a consistent local-time policy.
+5. Cache the current day's resolved schedule locally if required for offline use, while keeping Supabase as the authoritative source and avoiding unsafe stale-write overwrites.
+6. Integrate study-activity eligibility without breaking the distinct lifecycle rules for normal practice, question revision and fact revision.
+
+### Data-model direction — proposal, not yet approved
+
+Do not create migrations until the current schema, existing user settings patterns, sync approach and mockups have been reviewed.
+
+A reasonable starting design is a user-owned weekly schedule with one or more interval rows per weekday, or a user-owned schedule document with validated weekday/interval entries. Choose between relational rows and a structured document based on the repository's existing conventions and the need for atomic edits/querying. Store weekday and local wall-clock start/end times as schedule values; do not treat recurring local times as fixed UTC instants.
+
+Schedule changes must preserve the agreed "today stays fixed; changes take effect tomorrow" rule. Investigate a versioned schedule/effective-date approach or an equivalent daily snapshot/resolution mechanism. Do not create permanent daily schedule copies without demonstrating that they are needed. The chosen implementation must also define what happens when a schedule is edited offline and later synced, and must not allow an old cached version to overwrite a newer cloud version silently.
+
+All schedule records must be scoped to the exact authenticated Supabase user ID. RLS must prevent cross-account reads and writes. Saving a complete weekly configuration should be atomic so a partial save cannot leave an inconsistent schedule.
+
+### Central logic direction — proposal
+
+Keep schedule interpretation in a shared domain/service module rather than duplicating date/time calculations in components. The service should expose clear operations equivalent to:
+
+- Resolve the schedule applicable to a given local calendar date.
+- Find the current interval and classify intervals as passed, active or upcoming.
+- Calculate remaining study availability for the day.
+- Determine whether a new study activity may be started at a given time.
+
+These are conceptual responsibilities, not prescribed function names or a commitment to a particular API. Use one documented timezone/day-boundary policy throughout the app. Verify browser/device timezone behaviour and midnight transitions before implementation; the product direction is local-calendar-day based, but authoritative timezone persistence and travel/timezone-change semantics still need a decision.
+
+### Open product decisions — do not guess
+
+The following were identified during the initial design discussion and must be resolved with the owner before implementation if they affect behaviour:
+
+1. **Overnight intervals:** Initial recommendation is to require each interval to start and end within the same calendar day. Confirm with the owner.
+2. **Overlapping intervals:** Initial recommendation is to reject overlaps and require valid start-before-end intervals. Confirm whether adjacent intervals are allowed (they should normally be).
+3. **Activity crossing an interval boundary:** Decide whether an already-running practice/revision activity may continue past the interval end, or whether the boundary blocks/ends it. Do not infer this from the OFF-day rule.
+4. **Timezone changes:** Confirm how schedules should behave if the device timezone changes, including travel and daylight-saving transitions where relevant. The schedule should use local wall-clock intent, but the authoritative timezone strategy is not yet settled.
+5. **Day-start resolution and offline edits:** Confirm how the app establishes the day's fixed schedule after midnight when offline, and how later cloud reconciliation handles edits made on multiple devices.
+
+### UI/design dependency
+
+The owner has prepared design mockups and will provide them before implementation. The interval representation is expected to be understandable from the existing mockup; the configuration screen design is not yet settled.
+
+- Wait for the owner's mockups before designing or implementing the configuration screen.
+- Review the actual references against the product rules above. Do not invent a new visual direction or assume the configuration interaction.
+- Ask only about genuine conflicts or missing behaviour after reviewing the mockups.
+- Design for mobile compatibility as part of the feature, but do not start the wider application UI redesign as a prerequisite.
+- Keep the configuration workflow low-friction and do not expose technical implementation details to the student.
+
+### Future-agent implementation instructions
+
+When continuing this task:
+
+1. Start by confirming the active branch is `phase-1`, inspect its current HEAD and working tree, and fetch the latest `phase-1` source. Do not assume older branch names or handoff SHAs remain current.
+2. Read this document's Sections 5, 16.10 and 17.9, plus the owner's supplied mockups. Section 5 is the authoritative product requirement; this section records the implementation handoff and unresolved decisions.
+3. Inspect the current Supabase migrations/schema, RLS policies, user settings patterns, Dexie schema and app sync architecture before proposing or writing a migration. Determine whether any schedule-related tables or partial implementation have appeared since this note.
+4. Trace how the app currently determines the user's date/time, handles midnight, stores local preferences and gates session starts. Reuse existing conventions where sound.
+5. Review the mockups first. Confirm only the open decisions that materially affect correctness; do not broaden the work into revision allocation, adaptive scheduling, analytics, or the full UI redesign.
+6. Implement the recurring schedule, secure persistence, local/offline handling and shared interval interpretation as one focused feature. Keep the current-day schedule stable after a schedule edit, and preserve historical activity.
+7. Ensure OFF-day and interval eligibility checks are applied consistently to all relevant study-start paths. Do not break normal-practice interruption/feedback rules or the separate question/fact revision lifecycles.
+8. Add automated tests for weekday mapping, OFF days, multiple intervals, interval boundaries, overlap/invalid-time validation, schedule version/effective-date behaviour, timezone/day rollover, owner isolation and offline reconciliation. Add UI tests for configuration and mobile layouts where the current test setup supports them.
+9. Run the repository's test suite, TypeScript check and production build. Report exact results; do not claim end-to-end correctness from a build alone.
+10. Test in the browser, including mobile-sized layouts, schedule edits during the day, reload/offline behaviour, account switching and the next-midnight transition. Verify that a second account cannot read or alter the first account's schedule.
+11. Keep the change on `phase-1`. Do not merge into `main` or deploy without the owner's explicit approval. Update this document with actual schema, migration, implementation, test and verification results after the feature is completed.
+
+### Scope boundary and Phase 1 status
+
+Study Interval configuration and interpretation are the remaining focused feature identified before the wider UI redesign. The wider UI redesign and mobile compatibility remain pending. Final regression testing and production verification are also required before declaring Phase 1 complete.
+
+Do not treat the following as part of this Study Interval implementation unless separately approved: revision allocation percentages, question/fact time splitting, automatic daily revision-plan generation, adaptive question/fact selection, or analytics expansion.
+
+No Supabase migration, backend implementation, UI implementation or test completion is claimed by this research note. This section records the current understanding, proposed technical direction and handoff instructions only.
