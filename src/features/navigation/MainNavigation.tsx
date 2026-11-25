@@ -1,3 +1,5 @@
+import { createPortal } from "react-dom";
+
 type Tab = "practice" | "cards" | "history" | "sync";
 
 type Props = {
@@ -34,6 +36,7 @@ export default function MainNavigation({ activeTab, onNavigate }: Props) {
           <span>{label}</span>
         </button>
       ))}
-    </nav>
+    </nav>,
+    document.body,
   );
 }
