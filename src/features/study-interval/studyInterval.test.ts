@@ -3,6 +3,7 @@ import {
   getActiveStudyInterval,
   getLocalDateKey,
   getPracticeTimelineSegments,
+  getPracticeSessionEndAt,
   getScheduledAvailabilityMs,
   getWeekday,
   resolveDayIntervals,
@@ -178,5 +179,17 @@ describe("getPracticeTimelineSegments", () => {
         { startedAt: iso(10), endedAt: iso(10) },
       ]),
     ).toEqual([]);
+  });
+});
+
+
+describe("getPracticeSessionEndAt", () => {
+  it("uses the earlier of the chosen duration and interval boundary", () => {
+    expect(getPracticeSessionEndAt(1_000, 61_000, 31_000)).toBe(31_000);
+    expect(getPracticeSessionEndAt(1_000, 21_000, 31_000)).toBe(21_000);
+  });
+
+  it("does not allow a session without a containing interval", () => {
+    expect(getPracticeSessionEndAt(1_000, 61_000, null)).toBe(1_000);
   });
 });
