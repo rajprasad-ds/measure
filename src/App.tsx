@@ -2476,7 +2476,7 @@ function App() {
           <div id="measure-account">
             <AccountPanel
               configured={supabaseConfigured}
-              email={authUser?.email}
+              email={undefined}
               authMessage={authMessage}
               authError={authError}
               isSubmittingAuth={isSubmittingAuth}
