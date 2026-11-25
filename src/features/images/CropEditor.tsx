@@ -116,7 +116,7 @@ export default function CropEditor({ file, onCancel, onUse, saving = false }: Pr
       const [a,b] = [...pointers.current.values()];
       const distance = Math.hypot(b.x-a.x,b.y-a.y);
       const currentMid = { x:(a.x+b.x)/2-bounds.left-bounds.width/2, y:(a.y+b.y)/2-bounds.top-bounds.height/2 };
-      const startMid = { x:(g.midpoint!.x+bounds.width/2-bounds.left)-bounds.width/2, y:(g.midpoint!.y+bounds.height/2-bounds.top)-bounds.height/2 };
+      const startMid = { x:(g.midpoint!.x-bounds.left-bounds.width/2, y:(g.midpoint!.y-bounds.top-bounds.height/2 };
       const nextZoom = clamp(g.zoom * distance / Math.max(1,g.distance || 1), 1, 5);
       const scale = nextZoom / g.zoom;
       setZoom(nextZoom);
