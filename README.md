@@ -42,12 +42,14 @@ build. Use `npm run build` to verify the app before deployment.
    `images` metadata table, image-level RLS, and card→image foreign keys.
 7. Run `supabase/migrations/20261125120000_weekly_study_schedules.sql` to add
    the per-account weekly Study Interval schedule table and its RLS policies.
-8. In **Authentication → URL Configuration**, add the local redirect URL
+8. Run `supabase/migrations/20261125130000_feedback_grace_period.sql` to add
+   the configurable feedback grace setting and committed feedback timestamp.
+9. In **Authentication → URL Configuration**, add the local redirect URL
    `http://localhost:5173/**` (and `http://127.0.0.1:5173/**` if using that
    address) to the redirect allow list.
-9. Keep email/password authentication enabled. With email confirmation
+10. Keep email/password authentication enabled. With email confirmation
    enabled, new users must confirm the email before signing in.
-10. Start the app locally, create an account, and test a session. Existing
+11. Start the app locally, create an account, and test a session. Existing
     device-only sessions are not uploaded automatically; while signed in, use
     **Import local data to this account** to opt into uploading it.
 
