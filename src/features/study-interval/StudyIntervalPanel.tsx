@@ -12,6 +12,7 @@ import {
   getOrCreateStudyDaySnapshot,
   getWeeklyStudySchedule,
   saveWeeklyStudySchedule,
+  syncStudySchedule,
 } from "./studyIntervalRepository";
 
 const WEEKDAYS: Array<{ id: Weekday; label: string }> = [
@@ -121,6 +122,8 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
     setNotice(null);
     try {
       await saveWeeklyStudySchedule(userId, schedule);
+      // Cloud sync is best-effort; the local schedule is already committed.
+      void syncStudySchedule(userId);
       setHasSavedSchedule(true);
       // If today's snapshot already exists, this returns it unchanged. A schedule
       // edited during the day therefore takes effect from the next day.
