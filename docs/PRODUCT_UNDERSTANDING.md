@@ -1360,3 +1360,26 @@ Important scope boundary:
 Step 4 follow-up correctness fix:
 
 - The first Home visit of a local calendar day now captures an OFF snapshot even when no weekly schedule exists yet. Creating the first schedule later that day therefore does not retroactively open today's intervals; the schedule becomes active on the next local day. This preserves the "day is fixed once it starts" rule.
+
+
+## Step 5 — normal-practice feedback deadline and expiry
+
+Implemented on `phase-1`:
+
+- Added an account-level feedback grace setting in the Study Interval editor: **2, 6 or 12 hours**. The default for existing/new schedules is **6 hours**.
+- The selected grace period is copied into the immutable local daily schedule snapshot. Changing the recurring setting later does not change the deadline for a day whose snapshot already exists.
+- For a normal question-practice session, the deadline is calculated from the end of that day's **final scheduled interval**, plus the captured grace period. It is not calculated from the end of the individual practice session or the first interval.
+- The feedback screen displays the deadline. Feedback can be completed after study intervals close, but not after the deadline.
+- Submission checks the deadline before preparing the save and again inside the same IndexedDB transaction that writes the session, attempts, question-card updates and links. A session receives `feedbackSubmittedAt` inside that transaction; the UI moves to the summary only after the transaction successfully resolves. Photo upload and cloud sync are post-commit work and do not determine whether feedback was submitted.
+- The local submission timestamp is included in the cloud session metadata and synced separately from photo upload. The migration adds `sessions.feedback_submitted_at` and `weekly_study_schedules.feedback_grace_hours`.
+- On recovery, the app resolves the original day's frozen snapshot and deadline. Expired pending feedback is discarded instead of being offered for resume. While the feedback screen is open, a local timer enforces expiry even when offline or after the scheduled intervals have ended.
+- Expiry removes only the pending active-session snapshot. It does not delete independently saved fact cards or their images, and it does not create session, attempt, question-history or revision-planning records.
+- The policy applies only to normal question practice. Question revision and fact revision lifecycle behavior remains unchanged.
+
+### Verification status and limitations
+
+- Added unit tests for deadline calculation from the final interval, 2/6/12-hour grace values, OFF days, and the inclusive deadline boundary. Tests and TypeScript/build checks have **not** been run in this remote GitHub editing workflow.
+- The new Supabase migration has been committed but has **not** been applied to the live Supabase project. Apply it after the weekly schedule migration and before expecting the new grace setting or cloud submission timestamp to sync.
+- Offline expiry is based on the device clock. Clock tampering remains out of scope.
+- Expiry cleanup intentionally preserves image/card records unless they are explicitly tied to the pending snapshot and can be proven unreferenced; the current implementation does not perform broad orphan-image deletion.
+- Browser testing is still required for feedback recovery across reload, expiry while the app is closed, the deadline boundary, and a failed IndexedDB transaction. No CI result is claimed.
