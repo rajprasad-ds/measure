@@ -111,6 +111,8 @@ function App() {
   const [syncError, setSyncError] = useState<string | null>(null);
   const [driveConnectionStatus, setDriveConnectionStatus] = useState<"loading" | "idle" | "connecting" | "connected" | "error">("loading");
   const [driveConnectionError, setDriveConnectionError] = useState<string | null>(null);
+  const [driveDiagnostics, setDriveDiagnostics] = useState<string[]>([]);
+  const driveConnectionInProgress = useRef(false);
   const [unassignedSessionCount, setUnassignedSessionCount] = useState(0);
   const [unassignedCardCount, setUnassignedCardCount] = useState(0);
   const [pendingPhotoCount, setPendingPhotoCount] = useState(0);
@@ -130,6 +132,17 @@ function App() {
   const previousAuthUserId = useRef<string | null>(null);
   const accountDataLoadVersion = useRef(0);
 
+  useEffect(() => {
+    const onDriveDiagnostic = (event: Event) => {
+      const detail = (event as CustomEvent<Record<string, unknown>>).detail;
+      if (!detail) return;
+      const safeDetails = Object.entries(detail).filter(([key]) => key !== "at").map(([key, value]) => String(key) + "=" + String(value)).join(" · ");
+      const line = String(detail.at ?? new Date().toISOString()) + " — " + String(detail.event) + (safeDetails ? " · " + safeDetails : "");
+      setDriveDiagnostics((current) => [...current, line].slice(-12));
+    };
+    window.addEventListener("measure:drive-diagnostic", onDriveDiagnostic);
+    return () => window.removeEventListener("measure:drive-diagnostic", onDriveDiagnostic);
+  }, []);
   useEffect(() => {
     const nextUserId = authUser?.id ?? null;
     if (previousAuthUserId.current && previousAuthUserId.current !== nextUserId) {
