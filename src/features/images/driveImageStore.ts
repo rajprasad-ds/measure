@@ -85,7 +85,7 @@ function requestAccessToken(forceConsent: boolean, ownerUserId: string): Promise
       scope: DRIVE_SCOPE,
       prompt: forceConsent ? "select_account consent" : "",
       callback: (resp: any) => {
-              if (requestGeneration !== authorizationGeneration) {
+        if (requestGeneration !== authorizationGeneration) {
           reject(new Error("Google Drive authorization was cleared because the signed-in account changed. Reconnect Drive to continue."));
           return;
         }
@@ -101,7 +101,7 @@ function requestAccessToken(forceConsent: boolean, ownerUserId: string): Promise
           accessToken = token;
           authorizedOwnerUserId = ownerUserId;
           accessTokenExpiresAt = Date.now() + Math.max(0, Number(resp.expires_in ?? 0)) * 1_000;
-                  resolve(token);
+          resolve(token);
         }
       },
     });
@@ -245,7 +245,7 @@ export class DriveImageStore implements ImageStore {
   }
 
   reconnect(ownerUserId: string): Promise<void> {
-      if (!ownerUserId) return Promise.reject(new Error("Sign in to Measure before connecting Google Drive."));
+    if (!ownerUserId) return Promise.reject(new Error("Sign in to Measure before connecting Google Drive."));
     clearDriveAuthorization();
     if ((window as any).google?.accounts?.oauth2) {
       return requestAccessToken(true, ownerUserId).then(() => undefined);
