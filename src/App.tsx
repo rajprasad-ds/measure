@@ -1806,7 +1806,7 @@ function App() {
             await database.questions.put(updated);
             updatedQuestionCards.set(questionId, updated);
           }
-          if (isFeedbackExpired(session.feedbackDeadlineAt, Date.now())) {
+          if (session.sessionKind === "practice" && isFeedbackExpired(session.feedbackDeadlineAt, Date.now())) {
             throw new Error("The feedback deadline passed before the session could be committed.");
           }
           record.feedbackSubmittedAt = new Date().toISOString();
