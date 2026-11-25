@@ -1,54 +1,58 @@
 # Visual baseline: Measure
 
 ## Authority and aesthetic
-- Primary reference: `docs/design/mockup-v4.html`.
-- Copy its restrained, high-contrast dark dashboard, precise typography, compact information density, centered metric hierarchy, soft gradient separators, and floating icon navigation.
-- It should feel like a deliberate study instrument, not a generic admin dashboard or a stack of generic cards.
+- Visual authority: `docs/design/mockup-v4.html`.
+- Target: restrained, high-contrast study instrument; deliberate, editorial, compact, not a generic admin dashboard.
+- Preserve the mockup's hierarchy, spacing, iconography, metric semantics and divider treatments, not just its palette.
+- Prefer native-feeling typography: system stack `-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif`; use Roboto only where the source mockup explicitly requires it. Do not use novelty/funky display fonts for metrics.
+- SF fonts are not guaranteed on Windows/Android; fall back cleanly to system sans.
 
 ## Palette roles
-| Role | Value / rule |
+| Role | Rule |
 |---|---|
 | App background | `#141414` |
-| Card surface | `#050505` to `#111111` by hierarchy |
-| Lime accent | `#a3ff3c` for active/action states |
-| Positive | green; use for favourable change, not every headline number |
-| Negative | red; use for unfavourable change |
-| Secondary | muted neutral grey |
-| Divider | vertical and horizontal separators use a transparent-to-`#555`-to-transparent gradient, never a flat grey line |
+| Card surface | `#050505`–`#111111` |
+| Lime | `#a3ff3c`; active/action affordance only |
+| Green | favourable measured change only |
+| Red | unfavourable measured change only |
+| Neutral | default border, labels, separators and unknown comparisons |
+| Divider | gradient fade; never a flat solid grey rule |
 
-## Typography
-- Roboto/system sans stack.
-- Main metric values are large, white, centered, tabular numerals; labels are smaller and muted.
-- Change indicators are compact, adjacent to the metric, and carry a signed delta (e.g. `+2%`).
-- Do not use coloured headline values to communicate the direction of change; colour the delta and relevant outline instead.
-- Average time per question uses compact `m:ss` or `m:ss.d` formatting, never hour-formatted stopwatch output for ordinary per-question averages.
+**Colour is semantic, not decoration.** No green/red metric border or text unless a valid comparison/calculated state supplies that meaning. No permanently green/red stat cards. When comparison is unavailable, use neutral border and omit the delta.
+
+## Typography and number formatting
+- Headline metric values: large, white, centered, tabular numerals, confident weight.
+- Labels: small, muted, closely associated with values.
+- Change indicator: compact signed value beside headline, coloured only by meaning.
+- Average time/question: readable human duration. Prefer `3.7s` for sub-minute averages; `1m 03s` for longer values. Avoid stopwatch-looking `0:03.7` and never show hours for ordinary per-question averages.
+- Main central counts must be visibly larger than the four surrounding metric values. Use a serious system sans, not a novelty typeface.
 
 ## Metric semantics
-- Average time: large white value; signed delta beside it. Rising average time is red/negative; falling is green/positive.
-- Accuracy: large white percentage; signed delta beside it. Rising is green/positive; falling is red/negative.
-- Metric outline/border follows the same delta meaning. Neutral/unknown comparison uses neutral border and no invented delta.
-- Syllabus coverage and streak are separate lower dashboard indicators, as shown in mockup. Only display grounded calculations; otherwise show an honest unavailable state.
-- Main middle metrics are centered around their columns, not left anchored.
+- Average time: headline white; delta compares the same metric against yesterday. Higher average time is normally adverse (red); lower is favourable (green).
+- Accuracy: headline white; delta compares against yesterday. Higher is favourable (green); lower is adverse (red).
+- Delta and border meaning must be derived from a valid comparison. No comparison -> no delta and neutral border.
+- Syllabus coverage is **not currently defined**. A session touching a chapter does not mean that chapter is complete. Do not display a percentage or infer completion from session presence. Keep the metric out of the UI until a defensible completion formula and data contract are agreed.
+- Streak may be displayed only with an explicitly documented definition of an active day and consecutive-day handling.
 
-## Shape, spacing and borders
-- Use rounded metric containers, but keep them visually light and proportionate; avoid oversized pill-like stat cards.
-- The top two metrics should be balanced in width and height.
-- Keep supporting labels close to values; avoid oversized padding that makes values float.
-- Preserve clear separation between dashboard regions without boxing every element.
+## Shape, spacing and hierarchy
+- All four surrounding stat tiles share one coherent rounded-rectangle system: same generous corner radius, consistent thicker border weight, padding and alignment.
+- Default border is neutral. State colour may override it only when a valid comparison exists.
+- Main central figures dominate; surrounding four tiles are clearly secondary and should not compete in size.
+- Central split columns are centered, with a 1px × 90px vertical fade: `linear-gradient(transparent, #555, transparent)`.
+- Lower supporting metrics must not look like unstyled text or orphaned KPIs; either use the same component system or omit until designed.
 
-## Anti-patterns / avoid list
-- No redundant `Today + date` masthead consuming prime vertical space.
-- No huge hour-prefixed average time values.
-- No green accuracy headline when green belongs to the positive delta.
-- No coloured borders without a clear metric-change meaning.
-- No left-aligned oversized totals in the central split.
-- No solid grey divider where mockup uses a fade gradient.
-- No history list presented as plain uncontained rows; use a scrollable inset panel and refined session cards.
-- No text-only bottom nav; every item has a recognizable icon and label.
-- No navigation that scrolls away with the page or sits after the last content block.
+## Anti-patterns
+- No redundant Today/date masthead.
+- No giant account card or sign-out section interrupting the primary task.
+- No text-only bottom navigation.
+- No nav that participates in document flow or appears only after scrolling.
+- No arbitrary colour, coloured headline values, or decorative status borders.
+- No `0:03.7` stopwatch formatting for average time/question.
+- No claim that a chapter is complete merely because it was practised.
+- No central headline numbers that are similar in size to secondary stats.
+- No account/sync/study schedule UI competing with the Create Session action.
 
 ## Motion
-- Control feedback: 150–210ms.
-- Screen transitions: ~280ms.
-- Sheets: ~300ms.
-- Use transform/opacity for motion; respect `prefers-reduced-motion`.
+- Controls: 150–210ms; screen: ~280ms; sheets: ~300ms.
+- Animate transform/opacity only; respect `prefers-reduced-motion`.
+- A transformed/animated ancestor can change the containing block for descendants using `position: fixed`. Keep the bottom navigation outside transformed screen containers (or render it in a root-level portal) so it remains viewport-fixed throughout scrolling.
