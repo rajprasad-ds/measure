@@ -16,3 +16,14 @@
     transition-duration: .01ms !important;
   }
 }
+
+.measure-home button, .measure-create-card input, .measure-create-card .search-select-control > input {
+  transition: background-color var(--measure-motion-control) var(--measure-ease),
+    border-color var(--measure-motion-control) var(--measure-ease),
+    color var(--measure-motion-control) var(--measure-ease),
+    transform var(--measure-motion-fast) var(--measure-ease);
+}
+.measure-home button:active { transform: scale(.985); }
+.study-schedule-screen { animation: measure-screen-enter 260ms var(--measure-ease) both; }
+.study-copy-overlay { animation: measure-screen-enter 180ms ease both; }
+.study-copy-sheet { animation: measure-sheet-enter 300ms var(--measure-ease) both; }
