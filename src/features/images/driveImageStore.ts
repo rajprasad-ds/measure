@@ -28,13 +28,7 @@ let authorizationGeneration = 0;
 
 const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 60_000;
 
-function emitDriveDiagnostic(event: string, details: Record<string, string | number | boolean | null> = {}) {
-  if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent("measure:drive-diagnostic", { detail: { event, at: new Date().toISOString(), ...details } }));
-}
-
 export function clearDriveAuthorization() {
-  emitDriveDiagnostic("authorization_cleared", { hadToken: Boolean(accessToken), hadPendingRequest: Boolean(tokenPromise) });
   authorizationGeneration += 1;
   accessToken = null;
   accessTokenExpiresAt = 0;
@@ -80,7 +74,6 @@ function getClientId(): string {
 }
 
 function requestAccessToken(forceConsent: boolean, ownerUserId: string): Promise<string> {
-  emitDriveDiagnostic("token_request_started", { forceConsent, gsiReady: Boolean((window as any).google?.accounts?.oauth2) });
   const gsi = (window as any).google?.accounts?.oauth2;
   if (!gsi) return Promise.reject(new Error("Google Identity Services is not ready. Please try again."));
   const clientId = getClientId();
@@ -92,8 +85,7 @@ function requestAccessToken(forceConsent: boolean, ownerUserId: string): Promise
       scope: DRIVE_SCOPE,
       prompt: forceConsent ? "select_account consent" : "",
       callback: (resp: any) => {
-        emitDriveDiagnostic("token_callback_received", { hasError: Boolean(resp.error), errorCode: typeof resp.error === "string" ? resp.error : null, hasAccessToken: Boolean(resp.access_token), expiresInSeconds: Number(resp.expires_in ?? 0) });
-        if (requestGeneration !== authorizationGeneration) {
+              if (requestGeneration !== authorizationGeneration) {
           reject(new Error("Google Drive authorization was cleared because the signed-in account changed. Reconnect Drive to continue."));
           return;
         }
@@ -109,8 +101,7 @@ function requestAccessToken(forceConsent: boolean, ownerUserId: string): Promise
           accessToken = token;
           authorizedOwnerUserId = ownerUserId;
           accessTokenExpiresAt = Date.now() + Math.max(0, Number(resp.expires_in ?? 0)) * 1_000;
-          emitDriveDiagnostic("token_saved", { tokenValid: hasDriveAccessToken(ownerUserId), expiresInSeconds: Number(resp.expires_in ?? 0) });
-          resolve(token);
+                  resolve(token);
         }
       },
     });
@@ -254,8 +245,7 @@ export class DriveImageStore implements ImageStore {
   }
 
   reconnect(ownerUserId: string): Promise<void> {
-    emitDriveDiagnostic("reconnect_started", { hasOwner: Boolean(ownerUserId) });
-    if (!ownerUserId) return Promise.reject(new Error("Sign in to Measure before connecting Google Drive."));
+      if (!ownerUserId) return Promise.reject(new Error("Sign in to Measure before connecting Google Drive."));
     clearDriveAuthorization();
     if ((window as any).google?.accounts?.oauth2) {
       return requestAccessToken(true, ownerUserId).then(() => undefined);
