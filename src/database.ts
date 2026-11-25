@@ -6,6 +6,7 @@ export type WeeklyStudyScheduleRecord = {
   id: string;
   ownerUserId: string;
   schedule: WeeklyStudySchedule;
+  feedbackGraceHours?: 2 | 6 | 12;
   timezone: string;
   updatedAt: string;
   syncStatus: "pending" | "synced";
@@ -16,6 +17,7 @@ export type StudyDaySnapshotRecord = {
   ownerUserId: string;
   dateKey: string;
   weekday: number;
+  feedbackGraceHours?: 2 | 6 | 12;
   schedule: {
     off: boolean;
     intervals: Array<{ id: string; start: string; end: string }>;
@@ -64,6 +66,8 @@ export type SessionRecord = {
   syllabusExam?: string;
   startedAt: string;
   endedAt: string;
+  /** Set when the complete feedback transaction is committed locally. */
+  feedbackSubmittedAt?: string;
   plannedDurationMinutes: number;
   status: "completed" | "ended_early";
   rightCount: number;
