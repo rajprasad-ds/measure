@@ -1,0 +1,18 @@
+@keyframes measure-screen-enter {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes measure-sheet-enter {
+  from { opacity: 0; transform: translate3d(0, 18px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.measure-screen-enter { animation: measure-screen-enter var(--measure-motion-screen) var(--measure-ease) both; }
+.measure-sheet-enter { animation: measure-sheet-enter 320ms var(--measure-ease) both; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
