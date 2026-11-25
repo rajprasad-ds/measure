@@ -39,6 +39,8 @@ export type ActiveSession = SessionSetup & {
   startedAt: number;
   endsAt: number;
   endedAt: number | null;
+  /** Absolute local timestamp after which unfinished feedback is discarded. */
+  feedbackDeadlineAt?: number;
   questionNumber: number;
   questionNumberText: string;
   questionElapsedMs: number;
