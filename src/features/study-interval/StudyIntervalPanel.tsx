@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import type { SessionRecord } from "../../database";
 import {
-  getLocalDateKey,
   getPracticeTimelineSegments,
   getWeekday,
   resolveDayIntervals,
