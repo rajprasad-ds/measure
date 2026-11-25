@@ -1293,3 +1293,23 @@ Study Interval configuration and interpretation are the remaining focused featur
 Do not treat the following as part of this Study Interval implementation unless separately approved: revision allocation percentages, question/fact time splitting, automatic daily revision-plan generation, adaptive question/fact selection, or analytics expansion.
 
 No Supabase migration, backend implementation, UI implementation or test completion is claimed by this research note. This section records the current understanding, proposed technical direction and handoff instructions only.
+
+
+### Step 2 implementation status — recurring schedule persistence
+
+**Implemented on `phase-1` (25 November 2026):**
+- Dexie schema v10 adds `weeklySchedules` and `studyDaySnapshots`.
+- Weekly schedules are keyed by the authenticated user ID and stored locally first with a pending/synced state.
+- Each daily snapshot is keyed by account ID plus local calendar date. The first snapshot captured for a date is immutable; later recurring-schedule edits do not rewrite it.
+- Snapshot records preserve the weekday's OFF flag, intervals, capture timestamp and device timezone identifier.
+- The Supabase migration `20261125120000_weekly_study_schedules.sql` creates one recurring schedule row per authenticated account, with select/insert/update/delete RLS policies.
+- Account sync reconciles the local schedule with the cloud row. The newer timestamp wins; failed network/schema operations leave the local copy available for retry.
+- README setup instructions now include the migration.
+
+**Scope/verification notes:**
+- The schedule editor and Home timeline are not yet connected to these records.
+- No practice-start gating or session cutoff is implemented by this persistence step.
+- Daily snapshots are device-local. A second device captures its own daily snapshot from the account's recurring schedule when it first resolves that date.
+- Timezone changes during a day and multi-device simultaneous edits are not fully serialized by a server-side compare-and-swap operation. The current reconciliation uses timestamps; this is a known limitation to address before claiming conflict-proof multi-device editing.
+- Automated tests cover schedule shape, OFF-day consistency, required intervals and overlap validation. Dexie migration/reload behavior and Supabase RLS must still be verified in the local app and Supabase project.
+- No Supabase migration has been applied to the live project from this repository change. The owner must run the new SQL migration in Supabase SQL Editor before cloud schedule sync can work.
