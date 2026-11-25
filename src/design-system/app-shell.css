@@ -363,3 +363,33 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .measure-home-card { max-width:520px; }
   .measure-utility-bar { padding:12px 15px; }
 }
+
+/* Secondary dashboard metrics: deliberately quiet, compact and highly rounded. */
+.measure-insight-pair { gap:9px; }
+.measure-stat.measure-stat-compact {
+  min-height:66px; height:66px; padding:9px 13px 8px;
+  border-width:1px; border-radius:999px; background:#090909;
+  display:flex; flex-direction:column; justify-content:center; gap:2px;
+}
+.measure-stat.measure-stat-compact .measure-stat-value {
+  display:flex; align-items:baseline; justify-content:center; gap:7px;
+}
+.measure-stat.measure-stat-compact strong {
+  font-size:clamp(17px,4.5vw,20px); line-height:1.05; font-weight:680;
+  letter-spacing:-.025em;
+}
+.measure-stat.measure-stat-compact .measure-delta { font-size:9px; }
+.measure-stat.measure-stat-compact > span {
+  text-align:center; font-size:9px; line-height:1.15; color:#969696;
+}
+.measure-insight-pair-lower { margin-top:8px; }
+.measure-insight-pair-lower .measure-stat.measure-stat-compact { min-height:62px; height:62px; }
+.measure-insight-footnote { margin:6px 4px 0; color:#737373; font-size:9px; line-height:1.35; }
+.measure-stat.is-negative { border-color:#a34242!important; }
+.measure-stat.is-positive { border-color:#438553!important; }
+.measure-stat.is-neutral { border-color:#343434!important; }
+@media (max-width:390px) {
+  .measure-stat.measure-stat-compact { min-height:62px; height:62px; padding-inline:8px; }
+  .measure-stat.measure-stat-compact strong { font-size:17px; }
+  .measure-stat.measure-stat-compact > span { font-size:8.5px; }
+}
