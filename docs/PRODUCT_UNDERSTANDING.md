@@ -1355,3 +1355,8 @@ Important scope boundary:
 - A user who has not configured a weekly schedule must configure one before starting normal practice.
 - The app uses the device's local date/time and the previously captured local-day snapshot. Device clock tampering and cross-device snapshot serialization remain out of scope.
 - Tests/build have not been executed in this remote-edit workflow; local browser testing and Supabase migration verification remain pending.
+
+
+Step 4 follow-up correctness fix:
+
+- The first Home visit of a local calendar day now captures an OFF snapshot even when no weekly schedule exists yet. Creating the first schedule later that day therefore does not retroactively open today's intervals; the schedule becomes active on the next local day. This preserves the "day is fixed once it starts" rule.
