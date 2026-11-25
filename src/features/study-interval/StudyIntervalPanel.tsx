@@ -45,7 +45,7 @@ function emptySchedule(): WeeklyStudySchedule {
 
 function makeIntervalId(): string {
   return globalThis.crypto?.randomUUID?.() ??
-    \`interval-\${Date.now()}-\${Math.random().toString(36).slice(2)}\`;
+    `interval-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function toMinutes(value: string): number {
@@ -55,14 +55,14 @@ function toMinutes(value: string): number {
 
 function toClock(value: number): string {
   const safe = Math.max(0, Math.min(1439, value));
-  return \`\${String(Math.floor(safe / 60)).padStart(2, "0")}:\${String(safe % 60).padStart(2, "0")}\`;
+  return `${String(Math.floor(safe / 60)).padStart(2, "0")}:${String(safe % 60).padStart(2, "0")}`;
 }
 
 function durationLabel(value: number): string {
   const safe = Math.max(0, Math.round(value));
   const hours = Math.floor(safe / 60);
   const minutes = safe % 60;
-  return [hours ? \`\${hours}h\` : "", minutes ? \`\${minutes}m\` : ""].filter(Boolean).join(" ") || "0m";
+  return [hours ? `${hours}h` : "", minutes ? `${minutes}m` : ""].filter(Boolean).join(" ") || "0m";
 }
 
 function formatTime(timestamp: number): string {
@@ -343,7 +343,7 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
             <button
               key={id}
               type="button"
-              className={\`study-weekday\${selectedDay === id ? " is-selected" : ""}\${schedule[id].off ? " is-off" : ""}\${id === todayWeekday ? " is-today" : ""}\`}
+              className={`study-weekday${selectedDay === id ? " is-selected" : ""}${schedule[id].off ? " is-off" : ""}${id === todayWeekday ? " is-today" : ""}`}
               aria-label={label}
               aria-pressed={selectedDay === id}
               onClick={() => {
@@ -364,7 +364,7 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
             {selectedDay === todayWeekday ? " · today" : ""}
           </strong>
           <span>
-            {selected.off ? "Day off" : \`\${selected.intervals.length} intervals · \${durationLabel(totalForDay)}\`}
+            {selected.off ? "Day off" : `${selected.intervals.length} intervals · ${durationLabel(totalForDay)}`}
           </span>
         </div>
 
@@ -416,12 +416,12 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
                 <button
                   key={interval.id}
                   type="button"
-                  className={\`study-editor-block\${selectedIntervalId === interval.id ? " is-selected" : ""}\${selectedErrors.has(interval.id) ? " has-error" : ""}\`}
+                  className={`study-editor-block${selectedIntervalId === interval.id ? " is-selected" : ""}${selectedErrors.has(interval.id) ? " has-error" : ""}`}
                   style={{
-                    left: \`\${toMinutes(interval.start) / 14.4}%\`,
-                    width: \`\${(toMinutes(interval.end) - toMinutes(interval.start)) / 14.4}%\`,
+                    left: `${toMinutes(interval.start) / 14.4}%`,
+                    width: `${(toMinutes(interval.end) - toMinutes(interval.start)) / 14.4}%`,
                   }}
-                  aria-label={\`Select interval \${interval.start} to \${interval.end}\`}
+                  aria-label={`Select interval ${interval.start} to ${interval.end}`}
                   aria-pressed={selectedIntervalId === interval.id}
                   onPointerDown={(event) => event.stopPropagation()}
                   onClick={() => setSelectedIntervalId(interval.id)}
@@ -430,7 +430,7 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
               {dragStart !== null && dragEnd !== null && dragHigh - dragLow >= 30 && (
                 <span
                   className="study-editor-drag-range"
-                  style={{ left: \`\${dragLow / 14.4}%\`, width: \`\${(dragHigh - dragLow) / 14.4}%\` }}
+                  style={{ left: `${dragLow / 14.4}%`, width: `${(dragHigh - dragLow) / 14.4}%` }}
                 />
               )}
             </div>
@@ -449,7 +449,7 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
                 const duration = toMinutes(interval.end) - toMinutes(interval.start);
                 return (
                   <div
-                    className={\`study-interval-edit-item\${selectedIntervalId === interval.id ? " is-selected" : ""}\`}
+                    className={`study-interval-edit-item${selectedIntervalId === interval.id ? " is-selected" : ""}`}
                     key={interval.id}
                     data-interval-row={interval.id}
                   >
@@ -478,7 +478,7 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
                     <button
                       type="button"
                       className="study-interval-delete"
-                      aria-label={\`Remove \${interval.start} to \${interval.end}\`}
+                      aria-label={`Remove ${interval.start} to ${interval.end}`}
                       onClick={() => {
                         updateDay(selectedDay, (current) => ({
                           off: current.intervals.length === 1,
@@ -609,7 +609,7 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
         aria-label="Open study schedule editor"
       >
         <span className="study-interval-home-heading">
-          <strong>{activeInterval ? \`\${leftLabel} left\` : todaySchedule?.off ? "Day off" : "No active interval"}</strong>
+          <strong>{activeInterval ? `${leftLabel} left` : todaySchedule?.off ? "Day off" : "No active interval"}</strong>
           <span><b>{spentLabel}</b> spent <i aria-hidden="true">›</i></span>
         </span>
         <span className="study-interval-home-tracks">
@@ -627,18 +627,18 @@ export default function StudyIntervalPanel({ userId, sessions }: Props) {
             const current = interval.status === "active";
             return (
               <span className="study-interval-home-track-wrap" key={interval.id}>
-                <span className={\`study-interval-home-track\${current ? " is-current" : ""}\${interval.status === "upcoming" ? " is-future" : ""}\`}>
+                <span className={`study-interval-home-track${current ? " is-current" : ""}${interval.status === "upcoming" ? " is-future" : ""}`}>
                   {intervalSegments.map((segment, index) => (
                     <i
-                      key={\`\${segment.startAt}-\${segment.endAt}-\${index}\`}
+                      key={`${segment.startAt}-${segment.endAt}-${index}`}
                       style={{
-                        left: \`\${((segment.startAt - interval.startAt) / duration) * 100}%\`,
-                        width: \`\${((segment.endAt - segment.startAt) / duration) * 100}%\`,
+                        left: `${((segment.startAt - interval.startAt) / duration) * 100}%`,
+                        width: `${((segment.endAt - segment.startAt) / duration) * 100}%`,
                       }}
                     />
                   ))}
                   {current && (
-                    <u style={{ left: \`\${Math.max(0, Math.min(100, ((now - interval.startAt) / duration) * 100))}%\` }} />
+                    <u style={{ left: `${Math.max(0, Math.min(100, ((now - interval.startAt) / duration) * 100))}%` }} />
                   )}
                 </span>
                 <span className={current ? "is-current-label" : ""}>
