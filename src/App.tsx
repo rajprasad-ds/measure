@@ -1863,8 +1863,25 @@ function App() {
     if (!recoveryCandidate || !authUser) return;
     const resumedAt = Date.now();
     let candidate = recoveryCandidate;
+    const daySnapshot = candidate.session.sessionKind === "practice"
+      ? await getOrCreateStudyDaySnapshot(authUser.id, new Date(candidate.session.startedAt))
+      : null;
+    if (candidate.session.sessionKind === "practice") {
+      const deadlineAt = daySnapshot
+        ? getFeedbackDeadlineAt(new Date(candidate.session.startedAt), daySnapshot.schedule, daySnapshot.feedbackGraceHours ?? 6)
+        : null;
+      if (isFeedbackExpired(deadlineAt, resumedAt)) {
+        await discardExpiredPendingSession(candidate.session);
+        setRecoveryCandidate(null);
+        setStudyIntervalError("The feedback deadline has passed. The unfinished practice session was discarded. Independently saved fact cards were kept.");
+        return;
+      }
+      candidate = {
+        ...candidate,
+        session: { ...candidate.session, feedbackDeadlineAt: deadlineAt ?? undefined },
+      };
+    }
     if (candidate.session.sessionKind === "practice" && candidate.session.phase === "active") {
-      const daySnapshot = await getOrCreateStudyDaySnapshot(authUser.id, new Date(candidate.session.startedAt));
       const intervals = daySnapshot
         ? resolveDayIntervals(new Date(candidate.session.startedAt), daySnapshot.schedule, candidate.session.startedAt)
         : [];
