@@ -70,7 +70,8 @@ export function validateWeeklyStudySchedule(schedule: WeeklyStudySchedule): stri
 export async function getWeeklyStudySchedule(
   userId: string,
 ): Promise<WeeklyStudyScheduleRecord | undefined> {
-  return database.weeklySchedules.get(userId);
+  const record = await database.weeklySchedules.get(userId);
+  return record?.ownerUserId === userId ? record : undefined;
 }
 
 /**
@@ -142,7 +143,8 @@ export async function getOrCreateStudyDaySnapshot(
 export async function syncStudySchedule(
   userId: string,
 ): Promise<{ status: StudyScheduleSyncStatus; schedule: WeeklyStudySchedule | null }> {
-  const local = await database.weeklySchedules.get(userId);
+  const localRow = await database.weeklySchedules.get(userId);
+  const local = localRow?.ownerUserId === userId ? localRow : undefined;
   if (!supabase) {
     return {
       status: local ? "offline" : "not-configured",
