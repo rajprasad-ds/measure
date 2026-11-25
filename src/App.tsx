@@ -1867,6 +1867,7 @@ function App() {
         syncingSessionId={syncingSessionId}
         syncingFactCardId={syncingFactCardId}
         driveProgress={syncDriveProgress}
+        driveDiagnostics={driveDiagnostics}
         onBack={() => setActiveTab("practice")}
         onNavigate={navigate}
         onSyncNow={() => {
