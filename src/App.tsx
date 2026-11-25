@@ -135,6 +135,7 @@ function App() {
   const activeSessionWriteQueue = useRef<Promise<void>>(Promise.resolve());
   const previousAuthUserId = useRef<string | null>(null);
   const accountDataLoadVersion = useRef(0);
+  const expiredSessionCleanupInProgress = useRef(false);
 
   useEffect(() => {
     const nextUserId = authUser?.id ?? null;
@@ -760,15 +761,15 @@ function App() {
 
   useEffect(() => {
     if (!session || session.phase !== "feedback" || !isFeedbackExpired(session.feedbackDeadlineAt, now)) return;
-    let cancelled = false;
-    void clearActiveSessionSnapshot().then(() => {
-      if (cancelled) return;
+    if (expiredSessionCleanupInProgress.current) return;
+    expiredSessionCleanupInProgress.current = true;
+    void discardExpiredPendingSession(session).then(() => {
       setSession(null);
       setStudyIntervalError("The feedback deadline has passed. This unfinished practice session was discarded; independently saved fact cards were kept.");
     }).catch((error: unknown) => {
-      if (!cancelled) setPersistenceError(error instanceof Error ? error.message : "Could not discard expired feedback.");
+      expiredSessionCleanupInProgress.current = false;
+      setPersistenceError(error instanceof Error ? error.message : "Could not discard expired feedback.");
     });
-    return () => { cancelled = true; };
   }, [session, now]);
 
   useEffect(() => {
@@ -947,6 +948,7 @@ function App() {
     setIsStartingSession(true);
     setStudyIntervalError(null);
     const startedAt = Date.now();
+    expiredSessionCleanupInProgress.current = false;
     try {
       const daySnapshot = await getOrCreateStudyDaySnapshot(authUser.id, new Date(startedAt));
       if (!daySnapshot) {
