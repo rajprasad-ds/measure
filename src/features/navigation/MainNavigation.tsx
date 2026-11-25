@@ -6,7 +6,7 @@ type Props = {
 };
 
 const TABS: Array<{ id: Tab; label: string }> = [
-  { id: "practice", label: "Practice" },
+  { id: "practice", label: "Home" },
   { id: "cards", label: "Cards" },
   { id: "history", label: "History" },
   { id: "sync", label: "Sync" },
