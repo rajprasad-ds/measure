@@ -33,6 +33,7 @@ import CardImage from "../images/CardImage";
 
 type Props = {
   session: ActiveSession;
+  feedbackDeadlineAt: number;
   userId?: string;
   onImageUploadComplete: () => void;
   persistenceError: string | null;
@@ -161,6 +162,7 @@ function getStepTitle(
 
 export default function SessionFeedbackScreen({
   session,
+  feedbackDeadlineAt,
   userId,
   onImageUploadComplete,
   persistenceError,
