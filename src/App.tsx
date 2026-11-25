@@ -71,6 +71,7 @@ import SyncScreen from "./features/sync/SyncScreen";
 import StudyIntervalPanel from "./features/study-interval/StudyIntervalPanel";
 import { getActiveStudyInterval, getPracticeSessionEndAt, resolveDayIntervals } from "./features/study-interval/studyInterval";
 import { getOrCreateStudyDaySnapshot } from "./features/study-interval/studyIntervalRepository";
+import { getFeedbackDeadlineAt, isFeedbackExpired } from "./features/study-interval/feedbackDeadline";
 
 const DURATIONS = [30, 45, 60, 90, 120];
 const ACTIVE_SESSION_SAVE_DEBOUNCE_MS = 300;
@@ -320,6 +321,35 @@ function App() {
       document.removeEventListener("keydown", markInteraction);
     };
   }, [session?.phase]);
+
+  useEffect(() => {
+    if (!recoveryCandidate || !authUser || recoveryCandidate.session.feedbackDeadlineAt !== undefined) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const daySnapshot = await getOrCreateStudyDaySnapshot(authUser.id, new Date(recoveryCandidate.session.startedAt));
+        const deadlineAt = daySnapshot
+          ? getFeedbackDeadlineAt(new Date(recoveryCandidate.session.startedAt), daySnapshot.schedule, daySnapshot.feedbackGraceHours ?? 6)
+          : null;
+        if (cancelled) return;
+        if (isFeedbackExpired(deadlineAt, Date.now())) {
+          await database.activeSession.delete("current");
+          if (!cancelled) {
+            setRecoveryCandidate(null);
+            setStudyIntervalError("The feedback deadline has passed. The unfinished practice session was discarded. Independently saved fact cards were kept.");
+          }
+          return;
+        }
+        setRecoveryCandidate((current) => current ? {
+          ...current,
+          session: { ...current.session, feedbackDeadlineAt: deadlineAt ?? undefined },
+        } : current);
+      } catch (error) {
+        if (!cancelled) setPersistenceError(error instanceof Error ? error.message : "Could not check the feedback deadline.");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [recoveryCandidate, authUser]);
 
   useEffect(() => {
     let cancelled = false;
@@ -679,6 +709,25 @@ function App() {
   }, [authUser]);
 
   useEffect(() => {
+    if (!session || session.phase !== "feedback") return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, [session?.phase]);
+
+  useEffect(() => {
+    if (!session || session.phase !== "feedback" || !isFeedbackExpired(session.feedbackDeadlineAt, now)) return;
+    let cancelled = false;
+    void clearActiveSessionSnapshot().then(() => {
+      if (cancelled) return;
+      setSession(null);
+      setStudyIntervalError("The feedback deadline has passed. This unfinished practice session was discarded; independently saved fact cards were kept.");
+    }).catch((error: unknown) => {
+      if (!cancelled) setPersistenceError(error instanceof Error ? error.message : "Could not discard expired feedback.");
+    });
+    return () => { cancelled = true; };
+  }, [session, now]);
+
+  useEffect(() => {
     if (!session || session.phase !== "active") return;
 
     const timer = window.setInterval(() => setNow(Date.now()), 30);
@@ -880,6 +929,7 @@ function App() {
         // The scheduled boundary takes precedence over the chosen session duration.
         endsAt: getPracticeSessionEndAt(startedAt, startedAt + setup.duration * 60_000, activeInterval.endAt),
         endedAt: null,
+        feedbackDeadlineAt: getFeedbackDeadlineAt(new Date(startedAt), daySnapshot.schedule, daySnapshot.feedbackGraceHours ?? 6) ?? undefined,
         questionNumber: setup.startingQuestion,
         questionNumberText: String(setup.startingQuestion),
         questionElapsedMs: 0,
@@ -1382,6 +1432,12 @@ function App() {
 
   async function saveSession() {
     if (!session) return;
+    if (isFeedbackExpired(session.feedbackDeadlineAt, Date.now())) {
+      await clearActiveSessionSnapshot();
+      setSession(null);
+      setStudyIntervalError("The feedback deadline has passed. This unfinished practice session was discarded; independently saved fact cards were kept.");
+      return;
+    }
     const recordId = globalThis.crypto.randomUUID();
     const timestamp = new Date().toISOString();
     const timedQuestions = Object.entries(session.questionTimesMs)
@@ -1656,6 +1712,11 @@ function App() {
         "rw",
         [database.sessions, database.attempts, database.activeSession, database.questions, database.factCards, database.questionFactLinks],
         async () => {
+          // Re-check inside the same local transaction as the complete feedback write.
+          if (isFeedbackExpired(session.feedbackDeadlineAt, Date.now())) {
+            throw new Error("The feedback deadline passed before the session could be committed.");
+          }
+          record.feedbackSubmittedAt = new Date().toISOString();
           await database.sessions.add(record);
           if (draftQuestions.length) await database.questions.bulkAdd(draftQuestions);
           if (draftFacts.length) await database.factCards.bulkAdd(draftFacts);
