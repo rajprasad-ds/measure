@@ -2287,6 +2287,14 @@ function App() {
   const stuckAttempts = completedAttempts.filter((attempt) => attempt.result === "couldnt_solve").length;
   const totalAttempts = completedAttempts.length;
   const accuracy = totalAttempts ? Math.round((rightAttempts / totalAttempts) * 100) : null;
+  // Provisional dashboard estimate: chapters touched by practice, not chapters mastered.
+  const totalSyllabusChapters = jeeSyllabus.subjects.reduce((sum, subject) => sum + subject.chapters.length, 0);
+  const touchedChapterIds = new Set(savedSessions
+    .filter((record) => record.sessionKind !== "question_revision" && record.chapterId)
+    .map((record) => record.chapterId));
+  const syllabusCoverageEstimate = totalSyllabusChapters
+    ? Math.round((touchedChapterIds.size / totalSyllabusChapters) * 100)
+    : 0;
   const averageAttemptMs = totalAttempts
     ? Math.round(completedAttempts.reduce((sum, attempt) => sum + attempt.timeMs, 0) / totalAttempts)
     : null;
@@ -2365,11 +2373,11 @@ function App() {
 
         <section className="measure-insights" aria-label="Practice overview">
           <div className="measure-insight-pair">
-            <article className={`measure-stat ${averageDeltaMs === null || averageDeltaMs === 0 ? "is-neutral" : averageDeltaMs > 0 ? "is-negative" : "is-positive"}`}>
+            <article className={`measure-stat measure-stat-compact ${averageDeltaMs === null || averageDeltaMs === 0 ? "is-neutral" : averageDeltaMs > 0 ? "is-negative" : "is-positive"}`}>
               <div className="measure-stat-value"><strong>{averageAttemptMs === null ? "—" : averageAttemptMs < 60_000 ? `${(averageAttemptMs / 1000).toFixed(1)}s` : `${Math.floor(averageAttemptMs / 60_000)}m ${String(Math.floor(averageAttemptMs / 1000) % 60).padStart(2, "0")}s`}</strong><em className={`measure-delta ${averageDeltaMs === null || averageDeltaMs === 0 ? "is-neutral" : averageDeltaMs > 0 ? "is-negative" : "is-positive"}`}>{averageDeltaMs === null ? "—" : formatDeltaTime(averageDeltaMs)}</em></div>
               <span>Average time per question</span>
             </article>
-            <article className="measure-stat">
+            <article className={`measure-stat measure-stat-compact ${accuracyDelta === null || accuracyDelta === 0 ? "is-neutral" : accuracyDelta > 0 ? "is-positive" : "is-negative"}`}>
               <div className="measure-stat-value"><strong>{accuracy === null ? "—" : `${accuracy}%`}</strong><em className={`measure-delta ${accuracyDelta === null || accuracyDelta === 0 ? "is-neutral" : accuracyDelta > 0 ? "is-positive" : "is-negative"}`}>{accuracyDelta === null ? "—" : `${accuracyDelta > 0 ? "+" : ""}${accuracyDelta}%`}</em></div>
               <span>Accuracy</span>
             </article>
@@ -2395,15 +2403,16 @@ function App() {
             </div>
           </div>
           <div className="measure-insight-pair measure-insight-pair-lower">
-            <article className="measure-stat is-neutral">
+            <article className="measure-stat measure-stat-compact is-neutral">
               <div className="measure-stat-value"><strong>{currentStreak}</strong></div>
-              <span>Current streak · days</span>
+              <span>Streak · days</span>
             </article>
-            <article className="measure-stat is-neutral">
-              <div className="measure-stat-value"><strong>{highestStreak}</strong></div>
-              <span>Longest streak · days</span>
+            <article className="measure-stat measure-stat-compact is-neutral">
+              <div className="measure-stat-value"><strong>{syllabusCoverageEstimate}%</strong></div>
+              <span>Syllabus coverage · estimate*</span>
             </article>
           </div>
+          <p className="measure-insight-footnote">*Provisional: counts chapters touched by practice, not completed or mastered.</p>
           <p className="measure-insight-footnote">Totals from your saved practice and revision records.</p>
         </section>
 
